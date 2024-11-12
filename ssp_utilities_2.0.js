@@ -1,15 +1,15 @@
 // ==UserScript==
 // @name         SSP Utilities 2.0
 // @namespace    MXP6
-// @version      1.0
-// @description  Build for a better SSP
+// @version      1.2
+// @description  Build with love for a better SSP
 // @author       cattanma & emproved by tcipatan
 // @match        https://trans-logistics-eu.amazon.com/ssp/dock/*
 // @match        https://www.amazonlogistics.eu/ssp/dock/*
 // @require      http://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js
-// @downloadURL
-// @updateURL
+// @downloadURL  https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/ssp_utilities_2.0.js
+// @updateURL    https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/ssp_utilities_2.0.js
 // @grant        GM_addStyle
 // @grant        GM_xmlhttpRequest
 // @run-at       document-start
