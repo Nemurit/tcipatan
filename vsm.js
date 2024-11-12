@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VSM
 // @namespace    MXP6
-// @version      1.2
+// @version      1.3
 // @description  Adds VSM in SSP
 // @author       tcipatan
 // @match        https://trans-logistics-eu.amazon.com/ssp/dock/*
@@ -34,7 +34,7 @@
 
     // Mappatura manuale (puoi aggiungere tutte le righe necessarie)
     const mapping = {
-       "LH-LYS8-MIX-ALL":	"LY01",
+               "LH-LYS8-MIX-ALL":	"LY01",
 "AMZL-DVN3-ND-F-VCRI":	"AVN3",
 "LH-LIN8-AMZL-DVN1-XD-F-VCRI":	"LI04",
 "CC-POIT-VENETO37-H2":	"PO37",
@@ -610,7 +610,7 @@
                         const colSFilterText = colSFilter.textContent.trim();
 
                         // Aggiungi la mappatura solo se la chiave esiste
-                        colVsm.textContent = mapping[colSFilterText] || 'Non mappato';
+                        colVsm.textContent = mapping[colSFilterText] || '-';
 
                         // Inserisce colVsm dopo colSFilter all'interno di ogni <li>
                         colSFilter.parentNode.insertBefore(colVsm, colSFilter.nextSibling);
