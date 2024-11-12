@@ -583,7 +583,6 @@
 "LH-LIN8-AMZL-DER3-XD":	"LI03",
 "AMZL-DLG1-ND-ALL":	"ALG1",
 "CC-NXV-FRIULI-H2":	"NFR1"
-
     };
 
     // Funzione che aggiunge <span class="colVsm"> all'interno della classe 'childTree'
