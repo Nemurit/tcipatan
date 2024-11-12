@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VSM
 // @namespace    MXP6
-// @version      1.4
+// @version      1.2.1
 // @description  Adds VSM in SSP
 // @author       tcipatan
 // @match        https://trans-logistics-eu.amazon.com/ssp/dock/*
@@ -41,7 +41,7 @@
         "AMZL-DWP1-ND-ALL": "AWP1",
         "AMZL-DWP1-ND-F-VCRI": "AWP1",
         "AMZL-DMU2-ND-MERGE": "DMU2",
-        
+        "AMZL-DWP1-ND-MERGE": "AWP1",
         "LH-LYS8-MIX-ALL":	"LY01",
 "AMZL-DVN3-ND-F-VCRI":	"AVN3",
 "LH-LIN8-AMZL-DVN1-XD-F-VCRI":	"LI04",
