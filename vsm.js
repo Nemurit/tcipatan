@@ -2,7 +2,7 @@
 // @name         VSM
 // @namespace    MXP6
 // @version      1.5
-// @description  Adds VSM in SSP
+// @description  Adds VSM in ssp table
 // @author       tcipatan
 // @match        https://trans-logistics-eu.amazon.com/ssp/dock/*
 // @match        https://www.amazonlogistics.eu/ssp/dock/*
