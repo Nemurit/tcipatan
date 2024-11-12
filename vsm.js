@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VSM
 // @namespace    MXP6
-// @version      1.1
+// @version      1.2
 // @author       tcipatan
 // @match        https://trans-logistics-eu.amazon.com/ssp/dock/*
 // @match        https://www.amazonlogistics.eu/ssp/dock/*
@@ -10,8 +10,8 @@
 // @grant        GM_addStyle
 // @grant        GM_xmlhttpRequest
 // @run-at       document-start
-// @updateURL    https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/vsm
-// @downloadURL  https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/vsm
+// @updateURL    https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/vsm.js
+// @downloadURL  https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/vsm.js
 // ==/UserScript==
 
 
