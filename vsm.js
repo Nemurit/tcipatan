@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VSM
 // @namespace    MXP6
-// @version      1.2.1
+// @version      1.5
 // @description  Adds VSM in SSP
 // @author       tcipatan
 // @match        https://trans-logistics-eu.amazon.com/ssp/dock/*
