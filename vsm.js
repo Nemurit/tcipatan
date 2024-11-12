@@ -10,8 +10,8 @@
 // @grant        GM_addStyle
 // @grant        GM_xmlhttpRequest
 // @run-at       document-start
-// @updateURL    http://boardg.altervista.org/script/VSM-Nov20224.user.js
-// @downloadURL  http://boardg.altervista.org/script/VSM-Nov20224.user.js
+// @updateURL    https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/vsm
+// @downloadURL  https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/vsm
 // ==/UserScript==
 
 
