@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VSM
 // @namespace    MXP6
-// @version      1.3
+// @version      1.4
 // @description  Adds VSM in SSP
 // @author       tcipatan
 // @match        https://trans-logistics-eu.amazon.com/ssp/dock/*
@@ -34,7 +34,15 @@
 
     // Mappatura manuale (puoi aggiungere tutte le righe necessarie)
     const mapping = {
-               "LH-LYS8-MIX-ALL":	"LY01",
+        "AMZL-DVN1-ND-F-VCRI": "AVN1",
+        "AMZL-DVN1-ND": "AVN1",
+        "AMZL-DFV1-ND": "AFV1",
+        "AMZL-DFV1-ND-F-VCRI": "AFV1",
+        "AMZL-DWP1-ND-ALL": "AWP1",
+        "AMZL-DWP1-ND-F-VCRI": "AWP1",
+        "AMZL-DMU2-ND-MERGE": "DMU2",
+        
+        "LH-LYS8-MIX-ALL":	"LY01",
 "AMZL-DVN3-ND-F-VCRI":	"AVN3",
 "LH-LIN8-AMZL-DVN1-XD-F-VCRI":	"LI04",
 "CC-POIT-VENETO37-H2":	"PO37",
