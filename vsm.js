@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         VSM
 // @namespace    MXP6
-// @version      1.8
+// @version      1.8.1
 // @description  Adds VSM in ssp table
 // @author       tcipatan
 // @match        https://trans-logistics-eu.amazon.com/ssp/dock/*
@@ -34,18 +34,8 @@
 
     // Mappatura manuale (puoi aggiungere tutte le righe necessarie)
     const mapping = {
-        "AMZL-DER5-ND": "AER5",
-        "AMZL-DER5-ND-F-VCCRI": "AER5",
-        "AMZL-DLZ2-ND": "ALZ2",
-        "AMZL-DLZ2-ND-MERGE": "ALZ2",
-        "AMZL-DVN1-ND-F-VCRI": "AVN1",
-        "AMZL-DVN1-ND": "AVN1",
-        "AMZL-DFV1-ND": "AFV1",
-        "AMZL-DFV1-ND-F-VCRI": "AFV1",
-        "AMZL-DWP1-ND-ALL": "AWP1",
-        "AMZL-DWP1-ND-F-VCRI": "AWP1",
-        "AMZL-DMU2-ND-MERGE": "DMU2",
-        "AMZL-DWP1-ND-MERGE": "AWP1",
+        "AMZL-DER5-ND-F-VCRI": "AER5",
+        
         "LH-LYS8-MIX-ALL":	"LY01",
 "AMZL-DVN3-ND-F-VCRI":	"AVN3",
 "LH-LIN8-AMZL-DVN1-XD-F-VCRI":	"LI04",
@@ -153,6 +143,7 @@
 "CC-POIT-LAZIO29-H2":	"PO29",
 "LH-LYS8-LIL8-XD-F-VCRI":	"LY08",
 "LH-MUC7-BER8-XD-F-VCRI":	"MUC8",
+"AMZL-DAR2-ND-ALL":	"DAR2",
 "SEA-LH-FCO9-AMZL-DSG1-XD":	"FC04",
 "CC-POIT-EMILIA19-H2-ALL":	"PO19",
 "CC-NXV-PIEMONTE-H2":	"NPM1",
@@ -221,6 +212,7 @@
 "LH-BLQ8-AMZL-DAP5-XD-ALL":	"BQ02",
 "CC-NXV-LAZIO-H2-ALL":	"NLZ1",
 "LH-MRS9-AMZL-DLP4-XD-F-VCRI":	"MR04",
+"AMZL-DAR2-ND-F-VCRI":	"DAR2",
 "AMZL-DLZ1-ND-MR-ALL":	"MLZ1",
 "AIR-MXPA-EBLG-DNW6-BAG":	"EB92",
 "AIR-MXPA-EBLG-DHG1-BAG":	"BE79",
@@ -294,7 +286,6 @@
 "LH-LYS8-MHG9-XD":	"LY09",
 "DMXP6_MRMR38707_ROZZANO-ALL":	"ROZ1",
 "AIR-MXPA-LEBL-BCN8-XD":	"LEB8",
-"LH-LIN8-AMZL-DSG1-XD-F-VCRI":	"LI05",
 "CC-POIT-EMILIA5-H2-ALL":	"POE5",
 "AMZL-DLO3-ND-F-VCRI":	"ALO3",
 "LH-LIN8-MIX":	"LI01",
@@ -318,6 +309,7 @@
 "LH-ORY8-MIX-MERGE":	"ORY1",
 "CC-POIT-TRENTI71-H2":	"PO71",
 "CC-POIT-IT-H1-ALL":	"PO01",
+"AMZL-DAR2-ND":	"DAR2",
 "LH-LIN8-AMZL-DVN1-XD-ALL":	"LI04",
 "LH-FCO9-AMZL-DLZ3-XD":	"FC03",
 "DMXP6_GEGE50121_SANREMOR-ALL":	"SAN1",
@@ -332,6 +324,7 @@
 "AIR-MXPA-HAJA-MHG9-XD-ALL":	"HA04",
 "AIR-MXPA-HAJA-DNM8-BAG":	"HA98",
 "LH-LIN8-MIX-ALL":	"LI01",
+"AMZL-DER5-ND-ALL":	"AER5",
 "CC-POIT-UMBTOS12-H2":	"PO12",
 "AMZL-DPI2-ND":	"API2",
 "CC-BRT-IT-H1":	"BR01",
@@ -359,6 +352,7 @@
 "AMZL-DNP1-ND-MERGE":	"NPI1",
 "AMZL-DLY1-ND-MR-F-VCRI":	"MDL1",
 "CC-NXV-LOMBARDI-H2":	"NLO1",
+"AMZL-DER5-ND":	"AER5",
 "AMZL-DLO3-ND-MERGE":	"ALO3",
 "LH-CGN9-MIX-F-VCRI":	"CGN1",
 "AMZL-DWP2-ND-MERGE":	"AWP2",
@@ -435,6 +429,7 @@
 "AMZL-DLG1-ND-XPT-ALL":	"XLG1",
 "AMZL-DPI3-ND":	"API3",
 "AIR-MXPA-HAJA-DNW9-BAG":	"HA99",
+"AMZL-DER5-ND-F-VCRI":	"AER5",
 "CC-POIT-VENFRI11-H2-F-VCRI":	"PO11",
 "CC-POIT-LOMVEN72-H2-F-VCRI":	"PO72",
 "AIR-MXPA-HAJA-ALL":	"HA01",
