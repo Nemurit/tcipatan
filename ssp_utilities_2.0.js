@@ -2,7 +2,7 @@
 // @name         SSP Utilities 2.0
 // @namespace    MXP6
 // @version      1.2
-// @description  Build with love for a better SSP
+// @description  Build with love for a better SSP!
 // @author       cattanma & emproved by tcipatan
 // @match        https://trans-logistics-eu.amazon.com/ssp/dock/*
 // @match        https://www.amazonlogistics.eu/ssp/dock/*
