@@ -34,6 +34,7 @@
 
     // Mappatura manuale (puoi aggiungere tutte le righe necessarie)
     const mapping = {
+        "AMZL-DLZ2-ND-MERGE": "ALZ2",
         "AMZL-DVN1-ND-F-VCRI": "AVN1",
         "AMZL-DVN1-ND": "AVN1",
         "AMZL-DFV1-ND": "AFV1",
