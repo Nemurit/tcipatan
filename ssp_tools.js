@@ -565,7 +565,7 @@
                         dataType: 'json'
                     });
                     searchBtn.innerHTML = 'Search';
-                    window.open('https://trans-logistics' + urlRegion + '.amazon.com'+response.suggestedUrl,'_blank')
+                    window.open('https://www.amazonlogistics.eu/'+response.suggestedUrl,'_blank')
                 } catch(e) {
                     console.error(e);
                 }
