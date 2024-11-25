@@ -371,7 +371,7 @@
         const ttLink = document.createTextNode("TT");
         b.appendChild(ttLink);
         b.title = "Open VRID in TT";
-        b.href = "https://www.amazonlogistics.eu/ssp/dock/hrz/ob?/sortcenter/tantei?nodeId=" + facility + "&searchId=" + vrid;
+        b.href = "https://www.amazonlogistics.eu/sortcenter/tantei?nodeId=MXP6&searchId=" + vrid;
         b.target = "_blank";
         b.style.marginLeft = "5px";
         b.addEventListener('click', function(e) {
