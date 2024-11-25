@@ -774,7 +774,7 @@
                                                 }
                                             }
 
-                                            alert("ACES Target = " + (target / 10000).toFixed(1) + "mÂ³");
+                                            alert("ACES Target = " + (target / 10000).toFixed(1) + "m³");
                                         } else {
                                             console.log(vrid + " is empty");
                                         }
