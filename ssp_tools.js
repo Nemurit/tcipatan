@@ -719,7 +719,7 @@
 
                                        if (typeof json.ret.aaData.ROOT_NODE !== "undefined") {
     if (json.ret.aaData.ROOT_NODE[0].container.contType === "TRAILER") {
-        for (let n = 0; n < json.ret.aaData.ROOT_NODE[0].childNodes.length; n++) {
+        for (let n = 1; n < json.ret.aaData.ROOT_NODE[0].childNodes.length; n++) {
             const containerNode = json.ret.aaData.ROOT_NODE[0].childNodes[n].container;
             const contType = containerNode.contType;
             const contentCount = containerNode.contentCount; // Assumendo che esista un campo `contentCount`
@@ -731,7 +731,7 @@
             }
         }
     } else {
-        for (let n = 0; n < json.ret.aaData.ROOT_NODE.length; n++) {
+        for (let n = 1; n < json.ret.aaData.ROOT_NODE.length; n++) {
             const containerNode = json.ret.aaData.ROOT_NODE[n].container;
             const contType = containerNode.contType;
             const contentCount = containerNode.contentCount; // Assumendo che esista un campo `contentCount`
