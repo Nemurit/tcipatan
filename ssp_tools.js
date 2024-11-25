@@ -797,7 +797,7 @@
     window.onload = function() {
         addExpandAllButton();
         getSTEM();
-        //containerCountButton();
+        containerCountButton();
     }
 
     function getSTEM() {
