@@ -742,7 +742,7 @@
                                                 }
                                             }
 
-                                            let target = 0;
+                                            let target = 1;
                                             for (const label in containers) {
                                                 const [contType, stackFilter] = containers[label];
 
