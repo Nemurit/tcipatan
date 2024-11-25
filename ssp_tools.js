@@ -655,7 +655,7 @@
                                 if (result) {
                                     GM_xmlhttpRequest({
                                         method: "GET",
-                                        url: "https://www.amazonlogistics.eu/ssp/dock/hrz/ob/fetchdata?entity=detachLoadFromTrailer&nodeId=MXP6&planId=" + loadId + "&trailerId=" + trailerId + "&vrId=" + vrid,
+                                        url: "https://www.amazonlogistics.eu/fetchdata?entity=detachLoadFromTrailer&nodeId=MXP6&planId=" + loadId + "&trailerId=" + trailerId + "&vrId=" + vrid,
                                         onload: function(response) {
                                             setTimeout(function() {
                                                 GM_xmlhttpRequest({
