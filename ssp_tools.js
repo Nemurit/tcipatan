@@ -422,7 +422,7 @@
 
         // Add ubication API
         const f = document.createElement('a');
-        const dc = document.createTextNode('ðŸ“ ');
+        const dc = document.createTextNode('📍');
         f.appendChild(dc);
         f.title = "Open VRID in FMC Map";
         f.href = "https://www.amazonlogistics.eu/fmc/map?loadId=" + vrid;
@@ -436,7 +436,7 @@
 
         // Add pause loading
         const g = document.createElement('a');
-        const gc = document.createTextNode('â ¸ï¸ ');
+        const gc = document.createTextNode('⏸️');
         g.addEventListener("click", function() {
             pauseLoading(vrid)
         });
@@ -451,7 +451,7 @@
 
         // Add start detatch attach
         const sda = document.createElement('a');
-        const sdac = document.createTextNode('â ¯ï¸ ');
+        const sdac = document.createTextNode('⏯️');
         sda.addEventListener("click", function() {
             detachAttach(vrid);
         })
