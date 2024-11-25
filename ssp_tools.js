@@ -717,67 +717,70 @@
                                         const json = response.response;
                                         let containers = {};
 
-                                        if (typeof json.ret.aaData.ROOT_NODE !== "undefined") {
-                                            if (json.ret.aaData.ROOT_NODE[0].container.contType === "TRAILER") {
-                                                for (let n = 0; n < json.ret.aaData.ROOT_NODE[0].childNodes.length; n++) {
-                                                    const containerNode = json.ret.aaData.ROOT_NODE[0].childNodes[n].container;
-                                                    const contType = containerNode.contType;
+                                       if (typeof json.ret.aaData.ROOT_NODE !== "undefined") {
+    if (json.ret.aaData.ROOT_NODE[0].container.contType === "TRAILER") {
+        for (let n = 0; n < json.ret.aaData.ROOT_NODE[0].childNodes.length; n++) {
+            const containerNode = json.ret.aaData.ROOT_NODE[0].childNodes[n].container;
+            const contType = containerNode.contType;
+            const contentCount = containerNode.contentCount; // Assumendo che esista un campo `contentCount`
 
-                                                    if (contType === "CART" || contType === "GAYLORD" || contType === "PALLET") {
-                                                        const label = containerNode.label;
-                                                        const stackFilter = containerNode.stackFilter;
-                                                        containers[label] = [contType, stackFilter];
-                                                    }
-                                                }
-                                            } else {
-                                                for (let n = 0; n < json.ret.aaData.ROOT_NODE.length; n++) {
-                                                    const containerNode = json.ret.aaData.ROOT_NODE[n].container;
-                                                    const contType = containerNode.contType;
+            if (contentCount !== "-" && (contType === "CART" || contType === "GAYLORD" || contType === "PALLET")) {
+                const label = containerNode.label;
+                const stackFilter = containerNode.stackFilter;
+                containers[label] = [contType, stackFilter];
+            }
+        }
+    } else {
+        for (let n = 0; n < json.ret.aaData.ROOT_NODE.length; n++) {
+            const containerNode = json.ret.aaData.ROOT_NODE[n].container;
+            const contType = containerNode.contType;
+            const contentCount = containerNode.contentCount; // Assumendo che esista un campo `contentCount`
 
-                                                    if (contType === "CART" || contType === "GAYLORD" || contType === "PALLET") {
-                                                        const label = containerNode.label;
-                                                        const stackFilter = containerNode.stackFilter;
-                                                        containers[label] = [contType, stackFilter];
-                                                    }
-                                                }
-                                            }
+            if (contentCount !== "-" && (contType === "CART" || contType === "GAYLORD" || contType === "PALLET")) {
+                const label = containerNode.label;
+                const stackFilter = containerNode.stackFilter;
+                containers[label] = [contType, stackFilter];
+            }
+        }
+    }
 
-                                            let target = 1;
-                                            for (const label in containers) {
-                                                const [contType, stackFilter] = containers[label];
+    let target = 1;
+    for (const label in containers) {
+        const [contType, stackFilter] = containers[label];
 
-                                                switch (contType) { // Tutti i valori sono x10000 per evitare il float
-                                                    case "CART":
-                                                        if (stackFilter.endsWith("F-VCRI")) {
-                                                            target += 8024;
-                                                        } else if (stackFilter.endsWith("BAG")) {
-                                                            target += 8024;
-                                                        } else if (stackFilter.endsWith("ALL")) {
-                                                            target += 11832;
-                                                        } else {
-                                                            target += 11832;
-                                                        }
-                                                        break;
+        switch (contType) { // Tutti i valori sono x10000 per evitare il float
+            case "CART":
+                if (stackFilter.endsWith("F-VCRI")) {
+                    target += 8024;
+                } else if (stackFilter.endsWith("BAG")) {
+                    target += 8024;
+                } else if (stackFilter.endsWith("ALL")) {
+                    target += 11832;
+                } else {
+                    target += 11832;
+                }
+                break;
 
-                                                    case "GAYLORD":
-                                                    case "PALLET":
-                                                        if (stackFilter.endsWith("F-VCRI")) {
-                                                            target += 9222;
-                                                        } else if (stackFilter.endsWith("BAG")) {
-                                                            target += 9222;
-                                                        } else if (stackFilter.endsWith("ALL")) {
-                                                            target += 12879;
-                                                        } else {
-                                                            target += 12879;
-                                                        }
-                                                        break;
-                                                }
-                                            }
+            case "GAYLORD":
+            case "PALLET":
+                if (stackFilter.endsWith("F-VCRI")) {
+                    target += 9222;
+                } else if (stackFilter.endsWith("BAG")) {
+                    target += 9222;
+                } else if (stackFilter.endsWith("ALL")) {
+                    target += 12879;
+                } else {
+                    target += 12879;
+                }
+                break;
+        }
+    }
 
-                                            alert("ACES Target = " + (target / 10000).toFixed(1) + "mÂ³");
-                                        } else {
-                                            console.log(vrid + " is empty");
-                                        }
+    alert("ACES Target = " + (target / 10000).toFixed(1) + "m³");
+} else {
+    console.log(vrid + " is empty");
+}
+
                                     }
                                 });
                             };
