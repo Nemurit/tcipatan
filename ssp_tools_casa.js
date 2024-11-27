@@ -951,39 +951,54 @@
         });
     }
 
-   document.addEventListener("DOMContentLoaded", function() {
-    document.addEventListener("keydown", function(e) {
-        if (((e.which || e.keyCode) == 116) || ((e.which || e.keyCode)) == 192) {
-            e.preventDefault();
-
-            let smallHeight = 0;
-            let scrollTop = document.documentElement.scrollTop;
-            console.log(document.documentElement.scrollTop);
-            console.log(document.documentElement.scrollHeight);
-            setTimeout(function() {
-                smallHeight = document.documentElement.scrollHeight;
-            }, 50);
-
-            const setScrollTop = function() {
-                if (document.documentElement.scrollHeight == smallHeight) {
-                    setTimeout(setScrollTop, 20);
-                    return;
-                }
-                document.documentElement.scrollTop = scrollTop;
-            }
-
-            setTimeout(setScrollTop, 100);
-
-            localStorage.setItem("sspScrollTop", document.documentElement.scrollTop);
+  document.addEventListener("DOMContentLoaded", function() {
+    const observer = new MutationObserver(function(mutations) {
+        for (const mutation of mutations) {
             const manualRefresh = document.querySelector("#manualRefresh");
             if (manualRefresh) {
-                manualRefresh.click();
-            } else {
-                console.error("Elemento #manualRefresh non trovato.");
+                console.log("#manualRefresh trovato, aggiungo l'evento.");
+                observer.disconnect(); // Smetti di osservare dopo aver trovato l'elemento
+                aggiungiEventListener(manualRefresh);
+                break;
             }
         }
     });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    function aggiungiEventListener(manualRefresh) {
+        document.addEventListener("keydown", function(e) {
+            if (((e.which || e.keyCode) == 116) || ((e.which || e.keyCode)) == 192) {
+                e.preventDefault();
+
+                let smallHeight = 0;
+                let scrollTop = document.documentElement.scrollTop;
+                console.log("Scroll top:", scrollTop);
+                console.log("Scroll height:", document.documentElement.scrollHeight);
+
+                setTimeout(function() {
+                    smallHeight = document.documentElement.scrollHeight;
+                }, 50);
+
+                const setScrollTop = function() {
+                    if (document.documentElement.scrollHeight == smallHeight) {
+                        setTimeout(setScrollTop, 20);
+                        return;
+                    }
+                    document.documentElement.scrollTop = scrollTop;
+                }
+
+                setTimeout(setScrollTop, 100);
+
+                localStorage.setItem("sspScrollTop", document.documentElement.scrollTop);
+
+                console.log("Click manualRefresh eseguito.");
+                manualRefresh.click();
+            }
+        });
+    }
 });
+
 
 })();
 
