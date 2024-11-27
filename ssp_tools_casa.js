@@ -927,6 +927,104 @@
         }
     }
 
+   function highlightValues() {
+        console.log('Esecuzione della funzione highlightValues...');
+
+        // Se i filtri sono già applicati, resettiamo tutto e rendiamo visibili tutte le righe
+        if (filterApplied) {
+            console.log('Rimozione dei filtri, mostrando tutte le righe...');
+            let liRows = document.querySelectorAll(".treeMenu.treeview li");
+            liRows.forEach(li => {
+                li.style.display = "";  // Mostra tutte le righe
+                li.classList.remove("visible-item");
+                li.style.backgroundColor = "";  // Rimuove il colore di evidenziazione
+            });
+            filterApplied = false;  // Reset dello stato
+            return;
+        }
+
+        // Se non sono stati applicati filtri, procediamo a nascondere e colorare
+        let liRows = document.querySelectorAll(".treeMenu.treeview li");
+        console.log('Righe <li> trovate in treeMenu.treeview:', liRows);
+
+        liRows.forEach(li => {
+            let colCount = li.querySelector(".colCount");
+            let colSFilter = li.querySelector(".colSFilter");
+            let colVsm = li.querySelector(".colVsm"); // Nuova selezione di colVsm
+
+            if (colCount && colSFilter) {
+                let colCountValue = parseInt(colCount.textContent.trim(), 10);
+                let colSFilterValue = colSFilter.textContent.trim();
+
+                console.log('Esaminando <li>: ', {
+                    'ColCount': colCount ? colCount.innerText : 'N/A',
+                    'ColSFilter': colSFilter ? colSFilter.innerText : 'N/A',
+                    'Container Count': colCountValue,
+                    'Filter Name': colSFilterValue
+                });
+
+                // Condizione: Verifica se 'colCount' è inferiore o uguale a 120 e 'colSFilter' termina con '-VCRI'
+                if (colCountValue <= 120 && colSFilterValue.endsWith("-VCRI")) {
+                    li.classList.add("visible-item");
+                    colCount.style.color = "red";
+
+                    if (colVsm) colVsm.style.color = "green";  // Evidenzia colVsm in verde
+
+                    console.log('Riga evidenziata (<li>):', {
+                        'Container Count': colCountValue,
+                        'Filter Name': colSFilterValue
+                    });
+                }
+                // Nuova condizione: Verifica se 'colCount' è inferiore a 50 e 'colSFilter' non termina con '-VCRI' e non è '-BAG'
+                else if (colCountValue < 50 && !colSFilterValue.endsWith("-VCRI") && !colSFilterValue.endsWith("-BAG")) {
+                    li.classList.add("visible-item");
+                    colCount.style.color = "orange";
+
+                    if (colVsm) {
+                        colVsm.style.color = "green";  // Evidenzia colVsm in verde
+                        colVsm.style.fontWeight = "bold";  // Imposta il grassetto su colVsm
+                    }
+
+                    console.log('Riga evidenziata (<li>) con colCount < 50 e filtro diverso:', {
+                        'Container Count': colCountValue,
+                        'Filter Name': colSFilterValue
+                    });
+                } else {
+                    li.classList.remove("visible-item");
+                    li.style.backgroundColor = "";  // Rimuove il colore di evidenziazione
+                    if (colVsm) colVsm.style.color = ""; // Resetta il colore di colVsm
+                }
+            }
+        });
+
+        let allLiRows = document.querySelectorAll(".treeMenu.treeview li");
+        allLiRows.forEach(li => {
+            if (!li.classList.contains("visible-item")) {
+                li.style.display = "none";  // Nascondi gli <li> che non sono visibili
+            } else {
+                li.style.display = "";  // Mostra gli <li> che sono visibili
+            }
+        });
+
+        filterApplied = true;
+    }
+
+    function addHighlightButton() {
+        let highlightButton = document.createElement("button");
+        highlightButton.type = "button";
+        highlightButton.id = "highlight-values-button";
+        highlightButton.innerHTML = "<b>Cons</b>";
+        highlightButton.style.marginLeft = '3px';
+        highlightButton.addEventListener("click", highlightValues);
+
+        let contCountColumn = document.querySelector(".contCountColumn");
+        if (contCountColumn) {
+            contCountColumn.appendChild(highlightButton);
+        }
+    }
+
+
+
     function containerCountButton() {
         var existingButton = document.getElementById('expand-all-button');
         if (!existingButton) {
@@ -1267,22 +1365,5 @@ selectorTxt,    /* Required: The jQuery selector string that
                 containerDiv.appendChild(warningDiv);
             }
         }
-function addHighlightButton() {
-    console.log("addHighlightButton eseguito");
-    let highlightButton = document.createElement("button");
-    highlightButton.type = "button";
-    highlightButton.id = "highlight-values-button";
-    highlightButton.innerHTML = "<b>Cons</b>";
-    highlightButton.style.marginLeft = '3px';
-    highlightButton.addEventListener("click", highlightValues);
-
-    let contCountColumn = document.querySelector(".contCountColumn");
-    if (contCountColumn) {
-        console.log("Elemento contCountColumn trovato");
-        contCountColumn.appendChild(highlightButton);
-    } else {
-        console.log("Elemento contCountColumn non trovato");
-    }
-}
 
 })();
