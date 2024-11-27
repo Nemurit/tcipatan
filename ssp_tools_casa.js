@@ -1253,17 +1253,21 @@ selectorTxt,    /* Required: The jQuery selector string that
             }
         }
 function addHighlightButton() {
-        let highlightButton = document.createElement("button");
-        highlightButton.type = "button";
-        highlightButton.id = "highlight-values-button";
-        highlightButton.innerHTML = "<b>Cons</b>";
-        highlightButton.style.marginLeft = '3px';
-        highlightButton.addEventListener("click", highlightValues);
+    console.log("addHighlightButton eseguito");
+    let highlightButton = document.createElement("button");
+    highlightButton.type = "button";
+    highlightButton.id = "highlight-values-button";
+    highlightButton.innerHTML = "<b>Cons</b>";
+    highlightButton.style.marginLeft = '3px';
+    highlightButton.addEventListener("click", highlightValues);
 
-        let contCountColumn = document.querySelector(".contCountColumn");
-        if (contCountColumn) {
-            contCountColumn.appendChild(highlightButton);
-        }
+    let contCountColumn = document.querySelector(".contCountColumn");
+    if (contCountColumn) {
+        console.log("Elemento contCountColumn trovato");
+        contCountColumn.appendChild(highlightButton);
+    } else {
+        console.log("Elemento contCountColumn non trovato");
     }
-    }
+}
+
 })();
