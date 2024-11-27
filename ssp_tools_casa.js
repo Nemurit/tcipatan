@@ -1243,4 +1243,6 @@ selectorTxt,    /* Required: The jQuery selector string that
                 containerDiv.appendChild(warningDiv);
             }
         }
+
+    }
 })();
