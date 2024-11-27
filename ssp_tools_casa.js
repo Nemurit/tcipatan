@@ -951,6 +951,7 @@
         });
     }
 
+   document.addEventListener("DOMContentLoaded", function() {
     document.addEventListener("keydown", function(e) {
         if (((e.which || e.keyCode) == 116) || ((e.which || e.keyCode)) == 192) {
             e.preventDefault();
@@ -974,9 +975,16 @@
             setTimeout(setScrollTop, 100);
 
             localStorage.setItem("sspScrollTop", document.documentElement.scrollTop);
-            document.querySelector("#manualRefresh").click();
+            const manualRefresh = document.querySelector("#manualRefresh");
+            if (manualRefresh) {
+                manualRefresh.click();
+            } else {
+                console.error("Elemento #manualRefresh non trovato.");
+            }
         }
     });
+});
+
 })();
 
 window.addEventListener ("load", function () {
