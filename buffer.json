@@ -1,9 +1,9 @@
 {
-  "A Dispari": ["D3", "E3", "F3", "G3", "H3", "K3", "L3", "M3"],
-  "A Pari": ["D4", "E4", "F4", "G4", "H4", "K4", "L4", "M4"],
-  "B Dispari": ["B3", "B4", "B5", "B6", "B7", "B8", "B9", "B10", "B11", "B12"],
-  "B Pari": ["E4", "E5", "E6", "E7", "E8", "E9", "E10", "E11", "E12"],
-  "C Lato 13": ["J13", "K13", "L13", "M13", "N13", "O13", "P13"],
-  "Flat C": ["J14", "K14", "L14", "M14", "N14", "O14", "P14"],
-  "Colonne 15": ["J15", "K15", "L15", "M15", "N15", "O15", "P15"]
+  "A Dispari": ["BUFFER D3 - E3", "BUFFER E3 - F3", "BUFFER F3 - G3", "BUFFER G3 - H3", "BUFFER H3 - K3", "BUFFER K3 - L3", "BUFFER L3 - M3"],
+  "A Pari": ["BUFFER D4 - E4", "BUFFER E4 - F4", "BUFFER F4 - G4", "BUFFER G4 - H4", "BUFFER H4 - K4", "BUFFER K4 - L4", "BUFFER L4 - M4"],
+  "B Dispari": ["BUFFER B3 - B4", "BUFFER B4 - B5", "BUFFER B5 - B6", "BUFFER B6 - B7", "BUFFER B7 - B8", "BUFFER B8 - B9", "BUFFER B9 - B10", "BUFFER B10 - B11", "BUFFER B11 - B12"],
+  "B Pari": ["BUFFER E4 - E5", "BUFFER E5 - E6", "BUFFER E6 - E7", "BUFFER E7 - E8", "BUFFER E8 - E9", "BUFFER E9 - E10", "BUFFER E10 - E11", "BUFFER E11 - E12"],
+  "C Lato 13": ["BUFFER J13 - K13", "BUFFER K13 - L13", "BUFFER L13 - M13", "BUFFER M13 - N13", "BUFFER N13 - O13", "BUFFER O13 - P13"],
+  "Flat C": ["BUFFER J14 - K14", "BUFFER K14 - L14", "BUFFER L14 - M14", "BUFFER M14 - N14", "BUFFER N14 - O14", "BUFFER O14 - P14"],
+  "Colonne 15": ["BUFFER J15 - K15", "BUFFER K15 - L15", "BUFFER L15 - M15", "BUFFER M15 - N15", "BUFFER N15 - O15", "BUFFER O15 - P15"]
 }
