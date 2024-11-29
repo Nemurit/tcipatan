@@ -1,0 +1,46 @@
+{
+  "A Dispari": {
+    "zona": "A Dispari",
+    "sottoZone": {
+      "D3-D5": "Sotto-classe 1",
+      "D6-L3": "Sotto-classe 2"
+    }
+  },
+  "A Pari": {
+    "zona": "A Pari",
+    "sottoZone": {
+      "D4-N4": "Sotto-classe 1"
+    }
+  },
+  "B Dispari": {
+    "zona": "B Dispari",
+    "sottoZone": {
+      "B3-B6": "Sotto-classe 1",
+      "B7-B12": "Sotto-classe 2"
+    }
+  },
+  "B Pari": {
+    "zona": "B Pari",
+    "sottoZone": {
+      "D4-E12": "Sotto-classe 1"
+    }
+  },
+  "C Lato 13": {
+    "zona": "C Lato 13",
+    "sottoZone": {
+      "J13-P13": "Sotto-classe 1"
+    }
+  },
+  "Flat C": {
+    "zona": "Flat C",
+    "sottoZone": {
+      "J14-P14": "Sotto-classe 1"
+    }
+  },
+  "Colonne 15": {
+    "zona": "Colonne 15",
+    "sottoZone": {
+      "J15-P15": "Sotto-classe 1"
+    }
+  }
+}
