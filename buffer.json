@@ -11,7 +11,10 @@
   "B Pari": {
     "BUFFER": ["B4-B5", "B5-B6", "B6-B7"]
   },
-  "C Generico": {
-    "BUFFER": ["C1-C2", "C2-C3"]
+  "C Lato 13": {
+    "BUFFER": ["H13-J13", "K13-M13"]
+  },
+  "C Lato 14": {
+    "BUFFER": ["H14-J14", "K14-M14"]
   }
 }
