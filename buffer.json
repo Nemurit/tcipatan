@@ -1,37 +1,17 @@
 {
   "A Dispari": {
-    "BUFFER": [
-      "D3 - E3"
-    ]
+    "BUFFER": ["D3-E3", "E3-F3", "F3-G3", "G3-H3"]
   },
   "A Pari": {
-    "BUFFER": [
-      "D4", "E4", "F4", "G4", "H4", "K4", "L4", "M4"
-    ]
+    "BUFFER": ["D4-E4", "E4-F4", "F4-G4", "G4-H4"]
   },
   "B Dispari": {
-    "BUFFER": [
-      "D4 - D5"
-    ]
+    "BUFFER": ["B5-B6", "B6-B7", "B7-B8"]
   },
   "B Pari": {
-    "BUFFER": [
-      "B2", "B4", "B8", "B10", "B12"
-    ]
+    "BUFFER": ["B4-B5", "B5-B6", "B6-B7"]
   },
-  "C Lato 13": {
-    "BUFFER": [
-      "J13", "K13", "L13", "M13", "N13", "O13", "P13"
-    ]
-  },
-  "Flat C": {
-    "BUFFER": [
-      "J14", "K14", "L14", "M14", "N14", "O14", "P14"
-    ]
-  },
-  "Colonne 15": {
-    "BUFFER": [
-      "J15", "K15", "L15", "M15", "N15", "O15", "P15"
-    ]
+  "C Generico": {
+    "BUFFER": ["C1-C2", "C2-C3"]
   }
 }
