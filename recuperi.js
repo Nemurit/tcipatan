@@ -36,7 +36,7 @@
         const endTime = new Date().getTime();
         const startTime = endTime - 24 * 60 * 60 * 1000;
 
-        const apiUrl = https://www.amazonlogistics.eu/sortcenter/vista/controller/getContainersDetailByCriteria;
+        const apiUrl = 'https://www.amazonlogistics.eu/sortcenter/vista/controller/getContainersDetailByCriteria';
         const payload = {
             entity: "getContainersDetailByCriteria",
             nodeId: nodeId,
@@ -55,7 +55,7 @@
 
         GM_xmlhttpRequest({
             method: "GET",
-            url: ${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })},
+            url: `${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })}`,
             onload: function(response) {
                 try {
                     const data = JSON.parse(response.responseText);
@@ -130,29 +130,52 @@
         let rowCount = 0;
         let totalContainers = 0;
 
-        Object.entries(filteredSummary).forEach(([location, lanes]) => {
+        // Display a maximum of 4 rows initially
+        const rowsToDisplay = Object.entries(filteredSummary).slice(0, 4);
+
+        rowsToDisplay.forEach(([location, lanes]) => {
             Object.entries(lanes).forEach(([lane, data]) => {
                 const row = $('<tr></tr>');
-                row.append(<td>${location}</td>);
-                row.append(<td>${lane}</td>);
-                row.append(<td>${data.count}</td>);
+                row.append(`<td>${location}</td>`);
+                row.append(`<td>${lane}</td>`);
+                row.append(`<td>${data.count}</td>`);
                 tbody.append(row);
                 rowCount++;
                 totalContainers += data.count;
             });
         });
 
-        const totalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale</td><td>' + totalContainers + '</td></tr>');
-        tbody.append(totalRow);
-        table.append(tbody);
+        // Add the "Show All" button if there are more than 4 rows
+        if (Object.entries(filteredSummary).length > 4) {
+            const showAllButton = $('<button id="showAllButton" style="margin-top: 10px;">Mostra Tutte le Righe</button>');
+            showAllButton.on('click', function() {
+                // Display all rows
+                Object.entries(filteredSummary).forEach(([location, lanes]) => {
+                    Object.entries(lanes).forEach(([lane, data]) => {
+                        const row = $('<tr></tr>');
+                        row.append(`<td>${location}</td>`);
+                        row.append(`<td>${lane}</td>`);
+                        row.append(`<td>${data.count}</td>`);
+                        tbody.append(row);
+                    });
+                });
+                showAllButton.remove(); // Remove "Show All" button after showing all rows
+            });
+            table.append(tbody);
+            table.append(showAllButton);
+        } else {
+            const totalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale</td><td>' + totalContainers + '</td></tr>');
+            tbody.append(totalRow);
+            table.append(tbody);
+        }
+
         $('#mainContainer').append(table);
 
-        GM_addStyle(
+        GM_addStyle(`
             #bufferSummaryTable {
                 width: 60%;
                 float: right;
                 border-collapse: collapse;
-                margin-right: 5%;
                 margin-top: 20px;
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             }
@@ -171,15 +194,39 @@
             #bufferSummaryTable tr:hover {
                 background-color: #f1f1f1;
             }
-        );
+            #mainContainer {
+                width: 100%;
+                display: flex;
+                justify-content: flex-end;
+            }
+            #filterContainer {
+                width: 35%;
+                margin: 20px;
+                display: none; /* Initially hidden */
+            }
+            #showAllButton {
+                background-color: #007bff;
+                color: #fff;
+                border: none;
+                padding: 8px 15px;
+                border-radius: 5px;
+                cursor: pointer;
+            }
+            #showAllButton:hover {
+                background-color: #0056b3;
+            }
+        `);
     }
 
     // Add filters
     function addFilters() {
-        $('#mainContainer').remove();
+        const mainContainer = $('<div id="mainContainer"></div>');
+        const filterContainer = $('<div id="filterContainer"></div>');
 
-        const mainContainer = $('<div id="mainContainer" style="width: 100%;"></div>');
-        const filterContainer = $('<div id="filterContainer" style="width: 35%; float: left; margin: 20px;"></div>');
+        const filterButton = $('<button style="padding: 8px 15px; background-color: #007bff; color: #fff; border: none; border-radius: 5px;">Visualizza Filtri</button>');
+        filterButton.on('click', function() {
+            $('#filterContainer').toggle(); // Toggle visibility of filters
+        });
 
         const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 8px 12px; margin-right: 10px; width: 90%;"/>');
         bufferFilterInput.val(selectedBufferFilter);
@@ -204,7 +251,9 @@
         filterContainer.append(laneFilterInput);
         filterContainer.append(viewDataButton);
 
+        mainContainer.append(filterButton);
         mainContainer.append(filterContainer);
+
         $('body').append(mainContainer);
     }
 
