@@ -55,7 +55,7 @@
 
         GM_xmlhttpRequest({
             method: "GET",
-            url: ${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })},
+            url: `${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })}`,
             onload: function(response) {
                 try {
                     const data = JSON.parse(response.responseText);
@@ -136,9 +136,9 @@
         rowsToDisplay.forEach(([location, lanes]) => {
             Object.entries(lanes).forEach(([lane, data]) => {
                 const row = $('<tr></tr>');
-                row.append(<td>${location}</td>);
-                row.append(<td>${lane}</td>);
-                row.append(<td>${data.count}</td>);
+                row.append(`<td>${location}</td>`);
+                row.append(`<td>${lane}</td>`);
+                row.append(`<td>${data.count}</td>`);
                 tbody.append(row);
                 rowCount++;
                 totalContainers += data.count;
@@ -153,9 +153,9 @@
                 Object.entries(filteredSummary).forEach(([location, lanes]) => {
                     Object.entries(lanes).forEach(([lane, data]) => {
                         const row = $('<tr></tr>');
-                        row.append(<td>${location}</td>);
-                        row.append(<td>${lane}</td>);
-                        row.append(<td>${data.count}</td>);
+                        row.append(`<td>${location}</td>`);
+                        row.append(`<td>${lane}</td>`);
+                        row.append(`<td>${data.count}</td>`);
                         tbody.append(row);
                     });
                 });
@@ -210,13 +210,13 @@
         $('body').append(mainContainer);
 
         // Set styles for fixed layout
-        GM_addStyle(
+        GM_addStyle(`
             #mainContainer {
-               position: fixed;
-               top: 10px;
-               right: 10px;
-               width: 300px;
-               background-color: white;
+            position: fixed;
+    top: 10px;
+    right: 10px;
+    width: 300px;
+    background-color: white;
     padding: 20px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     z-index: 1000;
@@ -263,7 +263,7 @@
                 border: none;
                 border-radius: 5px;
             }
-        );
+        `);
     }
 
     fetchStackingFilterMap(() => {
