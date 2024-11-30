@@ -196,13 +196,13 @@
             }
         });
 
-        const applyFiltersButton = $('<button style="padding: 8px 15px; margin-top: 10px; background-color: #007bff; color: #fff; border: none; border-radius: 5px;">Applica Filtri</button>');
-        applyFiltersButton.on('click', fetchBufferSummary);
+        const viewDataButton = $('<button style="padding: 8px 15px; margin-top: 10px; background-color: #007bff; color: #fff; border: none; border-radius: 5px;">Visualizza Recuperi</button>');
+        viewDataButton.on('click', fetchBufferSummary);
 
         filterContainer.append('<h3>Filtri</h3>');
         filterContainer.append(bufferFilterInput);
         filterContainer.append(laneFilterInput);
-        filterContainer.append(applyFiltersButton);
+        filterContainer.append(viewDataButton);
 
         mainContainer.append(filterContainer);
         $('body').append(mainContainer);
@@ -210,6 +210,5 @@
 
     fetchStackingFilterMap(() => {
         addFilters();
-        fetchBufferSummary();
     });
 })();
