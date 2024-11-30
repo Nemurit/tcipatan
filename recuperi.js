@@ -251,6 +251,12 @@
                 background-color: #f1f1f1;
             }
 
+            #bufferSummaryTable tbody {
+                display: block;
+                max-height: 300px; /* Fixed height for scroll */
+                overflow-y: auto;
+            }
+
             button {
                 cursor: pointer;
                 width: 100%;
