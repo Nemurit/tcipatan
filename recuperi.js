@@ -169,7 +169,10 @@
             table.append(tbody);
         }
 
-        $('#mainContainer').append(table);
+        // Wrap the tbody in a scrollable wrapper
+        const tableWrapper = $('<div id="bufferSummaryTableWrapper"></div>');
+        tableWrapper.append(table);
+        $('#mainContainer').append(tableWrapper);
     }
 
     // Add filters
@@ -220,54 +223,23 @@
                 padding: 10px;
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
                 z-index: 1000;
-                
+                overflow-y: auto;
+                max-height: 90vh;
             }
 
             #filterContainer {
                 display: none;
             }
 
-            #bufferSummaryTable {
-                width: 100%;
-                border-collapse: collapse;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            #bufferSummaryTableWrapper {
+                max-height: 300px;
                 overflow-y: auto;
             }
-
-            #bufferSummaryTable th, #bufferSummaryTable td {
-                border: 1px solid #ddd;
-                padding: 8px;
-                text-align: left;
-                
-            }
-
-            #bufferSummaryTable th {
-                background-color: #f4f4f4;
-                font-weight: bold;
-            }
-
-            #bufferSummaryTable tr:nth-child(even) {
-                background-color: #f9f9f9;
-            }
-
-            #bufferSummaryTable tr:hover {
-                background-color: #f1f1f1;
-            }
-
-            button {
-                cursor: pointer;
-                width: 100%;
-                padding: 10px;
-                margin-top: 10px;
-                background-color: #007bff;
-                color: white;
-                border: none;
-                border-radius: 5px;
-            }
         `);
+
+        fetchStackingFilterMap();
     }
 
-    fetchStackingFilterMap(() => {
-        addFilters();
-    });
+    // Initialize
+    addFilters();
 })();
