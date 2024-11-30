@@ -236,6 +236,7 @@
         containermain.style.display = 'flex';
         containermain.style.flexDirection = 'row'; // Pulsanti orizzontali
 
+        // Aggiungi il pulsante "Visualizza TRUCKS"
         containermain.appendChild(createButtonForPageLoadAndDataExtraction());
 
         dropdown = document.createElement('select');
