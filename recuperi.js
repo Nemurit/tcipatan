@@ -55,7 +55,7 @@
 
         GM_xmlhttpRequest({
             method: "GET",
-            url: `${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })}`,
+            url: ${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })},
             onload: function(response) {
                 try {
                     const data = JSON.parse(response.responseText);
@@ -75,50 +75,38 @@
         });
     }
 
-  // Process data and create the summary
-function processAndDisplay(containers) {
-    const filteredSummary = {};
-    containers.forEach(container => {
-        const location = container.location || '';
-        const stackingFilter = container.stackingFilter || 'N/A';
-        const lane = stackingToLaneMap[stackingFilter] || 'N/A';
+    // Process data and create the summary
+    function processAndDisplay(containers) {
+        const filteredSummary = {};
+        containers.forEach(container => {
+            const location = container.location || '';
+            const stackingFilter = container.stackingFilter || 'N/A';
+            const lane = stackingToLaneMap[stackingFilter] || 'N/A';
 
-        if (
-            location.toUpperCase().startsWith("BUFFER") &&
-            (selectedBufferFilter === '' || location.toUpperCase().includes(selectedBufferFilter.toUpperCase())) &&
-            (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
-        ) {
-            if (!filteredSummary[location]) {
-                filteredSummary[location] = {};
+            if (
+                location.toUpperCase().startsWith("BUFFER") &&
+                (selectedBufferFilter === '' || location.toUpperCase().includes(selectedBufferFilter.toUpperCase())) &&
+                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
+            ) {
+                if (!filteredSummary[location]) {
+                    filteredSummary[location] = {};
+                }
+                if (!filteredSummary[location][lane]) {
+                    filteredSummary[location][lane] = { count: 0 };
+                }
+                filteredSummary[location][lane].count++;
             }
-            if (!filteredSummary[location][lane]) {
-                filteredSummary[location][lane] = { count: 0 };
-            }
-            filteredSummary[location][lane].count++;
-        }
-    });
+        });
 
-    // Sort buffers numerically based on the number part of the buffer name
-    const sortedSummary = Object.entries(filteredSummary)
-        .sort((a, b) => {
-            const aBufferNumber = extractBufferNumber(a[0]);
-            const bBufferNumber = extractBufferNumber(b[0]);
-            return aBufferNumber - bBufferNumber; // Sort numerically in ascending order
-        })
-        .reduce((acc, [location, lanes]) => {
-            acc[location] = lanes;
-            return acc;
-        }, {});
+        const sortedSummary = Object.keys(filteredSummary)
+            .sort((a, b) => naturalSort(a, b))
+            .reduce((acc, key) => {
+                acc[key] = filteredSummary[key];
+                return acc;
+            }, {});
 
-    displayTable(sortedSummary);
-}
-
-// Extract the numeric part from the buffer name
-function extractBufferNumber(bufferName) {
-    const match = bufferName.match(/\d+/); // Match the first sequence of digits in the buffer name
-    return match ? parseInt(match[0], 10) : 0; // Return the numeric part, or 0 if no number is found
-}
-
+        displayTable(sortedSummary);
+    }
 
     // Natural sort function
     function naturalSort(a, b) {
@@ -148,9 +136,9 @@ function extractBufferNumber(bufferName) {
         rowsToDisplay.forEach(([location, lanes]) => {
             Object.entries(lanes).forEach(([lane, data]) => {
                 const row = $('<tr></tr>');
-                row.append(`<td>${location}</td>`);
-                row.append(`<td>${lane}</td>`);
-                row.append(`<td>${data.count}</td>`);
+                row.append(<td>${location}</td>);
+                row.append(<td>${lane}</td>);
+                row.append(<td>${data.count}</td>);
                 tbody.append(row);
                 rowCount++;
                 totalContainers += data.count;
@@ -165,9 +153,9 @@ function extractBufferNumber(bufferName) {
                 Object.entries(filteredSummary).forEach(([location, lanes]) => {
                     Object.entries(lanes).forEach(([lane, data]) => {
                         const row = $('<tr></tr>');
-                        row.append(`<td>${location}</td>`);
-                        row.append(`<td>${lane}</td>`);
-                        row.append(`<td>${data.count}</td>`);
+                        row.append(<td>${location}</td>);
+                        row.append(<td>${lane}</td>);
+                        row.append(<td>${data.count}</td>);
                         tbody.append(row);
                     });
                 });
@@ -222,16 +210,17 @@ function extractBufferNumber(bufferName) {
         $('body').append(mainContainer);
 
         // Set styles for fixed layout
-        GM_addStyle(`
+        GM_addStyle(
             #mainContainer {
                 position: fixed;
                 top: 10px;
                 right: 40px;
-                width: 400px;
+                width: 300px;
                 background-color: white;
                 padding: 20px;
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
                 z-index: 1000;
+                overflow-y: auto;
             }
 
             #filterContainer {
@@ -263,12 +252,6 @@ function extractBufferNumber(bufferName) {
                 background-color: #f1f1f1;
             }
 
-            #bufferSummaryTable tbody {
-                display: block;
-                max-height: 300px; /* Fixed height for scroll */
-                overflow-y: auto;
-            }
-
             button {
                 cursor: pointer;
                 width: 100%;
@@ -279,7 +262,7 @@ function extractBufferNumber(bufferName) {
                 border: none;
                 border-radius: 5px;
             }
-        `);
+        );
     }
 
     fetchStackingFilterMap(() => {
