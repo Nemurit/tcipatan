@@ -51,7 +51,7 @@
                 isClosed: [true],
                 isMissing: [false]
             },
-            containerTypes: ["PALLET", "GAYLORD", "BAG", "CART"]
+            containerTypes: ["PALLET", "GAYLORD", "CART"]
         };
 
         GM_xmlhttpRequest({
@@ -101,20 +101,18 @@
             }
         });
 
-        // Ordinamento: prima per numero, poi per lettera
         const sortedSummary = {};
         Object.keys(filteredSummary).forEach(lane => {
             const laneSummary = filteredSummary[lane];
             sortedSummary[lane] = Object.keys(laneSummary)
                 .sort((a, b) => {
-                    const numA = parseBufferNumber(a); // Estrai numero da A
-                    const numB = parseBufferNumber(b); // Estrai numero da B
+                    const numA = parseBufferNumber(a);
+                    const numB = parseBufferNumber(b);
 
-                    // Se i numeri sono uguali, ordina per lettera
                     if (numA === numB) {
-                        return a.localeCompare(b);  // Ordinamento alfabetico per le lettere
+                        return a.localeCompare(b);
                     }
-                    return numA - numB;  // Ordinamento numerico
+                    return numA - numB;
                 })
                 .reduce((acc, location) => {
                     acc[location] = laneSummary[location];
@@ -125,10 +123,9 @@
         displayTable(sortedSummary);
     }
 
-    // Funzione per estrarre il numero dal nome del buffer (ad esempio "B4", "E3")
     function parseBufferNumber(bufferName) {
-        const match = bufferName.match(/(\d+)/); // Trova il numero nella stringa
-        return match ? parseInt(match[0], 10) : 0;  // Restituisce il numero trovato
+        const match = bufferName.match(/(\d+)/);
+        return match ? parseInt(match[0], 10) : 0;
     }
 
     function displayTable(sortedSummary) {
@@ -147,15 +144,12 @@
         let totalContainers = 0;
 
         Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
-            // Aggiungi una riga per la Lane con testo a sinistra e totale container nella stessa riga
             let laneTotal = 0;
 
-            // Calcolo del totale dei container
             Object.entries(laneSummary).forEach(([location, data]) => {
                 laneTotal += data.count;
             });
 
-            // Definizione del colore in base al totale dei container
             let laneColor = '';
             if (laneTotal <= 10) {
                 laneColor = 'green';
@@ -165,15 +159,12 @@
                 laneColor = 'red';
             }
 
-            // Aggiungi la riga con il totale dei container per la lane
             tbody.append(`<tr><td colspan="2" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td></tr>`);
 
-            // Aggiungi le righe per i buffer specifici della lane
             Object.entries(laneSummary).forEach(([location, data]) => {
                 const row = $('<tr></tr>');
                 const count = data.count;
 
-                // Colore per il numero di container
                 let color = '';
                 if (count <= 10) {
                     color = 'green';
@@ -191,7 +182,6 @@
             totalContainers += laneTotal;
         });
 
-        // Aggiungi una riga con il totale globale
         const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Globale</td><td>' + totalContainers + '</td></tr>');
         tbody.append(globalTotalRow);
 
@@ -245,7 +235,18 @@
             }
         });
 
+        const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="padding: 10px; font-size: 16px; width: 200px; margin-top: 10px;">');
+        laneFilterInput.val(selectedLaneFilters.join(', '));
+
+        laneFilterInput.on('keydown', function(event) {
+            if (event.key === "Enter") {
+                selectedLaneFilters = laneFilterInput.val().split(',').map(filter => filter.trim());
+                fetchBufferSummary();
+            }
+        });
+
         filterContainer.append(bufferFilterInput);
+        filterContainer.append(laneFilterInput);
         $('body').append(filterContainer);
     }
 
@@ -255,11 +256,11 @@
         toggleButton.on('click', function() {
             isVisible = !isVisible;
             if (isVisible) {
-                fetchBufferSummary();  // Mostra la tabella e i filtri
+                fetchBufferSummary();
                 $(this).text("Nascondi Recuperi");
             } else {
-                $('#filterContainer').remove();  // Nasconde i filtri
-                $('#bufferSummaryTable').remove();  // Nasconde la tabella
+                $('#filterContainer').remove();
+                $('#bufferSummaryTable').remove();
                 $(this).text("Mostra Recuperi");
             }
         });
@@ -267,9 +268,8 @@
         $('body').append(toggleButton);
     }
 
-    // Esegui l'inizializzazione e il recupero dei dati
     fetchStackingFilterMap(function() {
-        addToggleButton();  // Aggiungi il pulsante "Mostra/Nascondi"
+        addToggleButton();
         fetchBufferSummary();
     });
 
