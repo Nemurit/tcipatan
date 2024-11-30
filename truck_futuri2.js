@@ -230,8 +230,11 @@
         mainContainer.style.top = '10px';
         mainContainer.style.left = '10px';
         mainContainer.style.zIndex = '10001';
+        mainContainer.style.padding = '10px';
+        mainContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+        mainContainer.style.borderRadius = '5px';
         mainContainer.style.display = 'flex';
-        mainContainer.style.flexDirection = 'column'; // Stack elements vertically
+        mainContainer.style.flexDirection = 'row'; // Pulsanti orizzontali
 
         mainContainer.appendChild(createButtonForPageLoadAndDataExtraction());
 
@@ -329,5 +332,4 @@
     }
 
     createButtons(); // Crea i pulsanti all'avvio
-
 })();
