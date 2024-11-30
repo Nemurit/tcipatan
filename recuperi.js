@@ -198,7 +198,7 @@
 
         $('#filterContainer').remove();
 
-        const filterContainer = $('<div id="filterContainer" style="margin-bottom: 20px; text-align: center; position: absolute; right: 10px; top: 10px;"></div>');
+        const filterContainer = $('<div id="filterContainer" style="margin-bottom: 20px; text-align: center; position: absolute; right: 120px; top: 10px;"></div>');
 
         const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 8px 12px; margin-right: 10px; width: 250px; border-radius: 5px; border: 1px solid #ccc;"/>');
         bufferFilterInput.val(selectedBufferFilter);
