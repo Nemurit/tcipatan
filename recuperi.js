@@ -98,14 +98,17 @@
             }
         });
 
-        // Ordina i buffer prima per lettera e poi per numero
+        // Ordinamento: prima per numero, poi per lettera
         const sortedSummary = Object.keys(filteredSummary)
             .sort((a, b) => {
-                const letterComparison = a.localeCompare(b, undefined, { sensitivity: 'base' });
-                if (letterComparison === 0) {
-                    return parseBufferNumber(a) - parseBufferNumber(b);  // Ordinamento numerico all'interno dello stesso gruppo di lettere
+                const numA = parseBufferNumber(a); // Estrai numero da A
+                const numB = parseBufferNumber(b); // Estrai numero da B
+
+                // Se i numeri sono uguali, ordina per lettera
+                if (numA === numB) {
+                    return a.localeCompare(b);  // Ordinamento alfabetico per le lettere
                 }
-                return letterComparison;
+                return numA - numB;  // Ordinamento numerico
             })
             .reduce((acc, key) => {
                 acc[key] = filteredSummary[key];
@@ -115,10 +118,10 @@
         displayTable(sortedSummary);
     }
 
-    // Funzione per estrarre i numeri dal nome del buffer
+    // Funzione per estrarre il numero dal nome del buffer (ad esempio "B4", "E3")
     function parseBufferNumber(bufferName) {
-        const match = bufferName.match(/(\d+)/);
-        return match ? parseInt(match[0], 10) : 0;
+        const match = bufferName.match(/(\d+)/); // Trova il numero nella stringa
+        return match ? parseInt(match[0], 10) : 0;  // Restituisce il numero trovato
     }
 
     function displayTable(filteredSummary) {
@@ -168,7 +171,7 @@
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
                 position: absolute;
                 right: 10px;
-                top: 100px;
+                top: 70px;
             }
             #bufferSummaryTable th, #bufferSummaryTable td {
                 border: 1px solid #ddd;
@@ -200,19 +203,15 @@
         const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 8px 12px; margin-right: 10px; width: 250px; border-radius: 5px; border: 1px solid #ccc;"/>');
         bufferFilterInput.val(selectedBufferFilter);
         bufferFilterInput.on('input', function() {
-            selectedBufferFilter = this.value;  // Non causa un aggiornamento automatico
-            fetchBufferSummary();  // Ricarica i dati con il nuovo filtro
+            selectedBufferFilter = this.value;  // Aggiorna il filtro
+            fetchBufferSummary();  // Ricarica i dati quando il filtro cambia
         });
 
-        const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per Lane (separati da virgola)" style="padding: 8px 12px; margin-right: 10px; width: 250px; border-radius: 5px; border: 1px solid #ccc;"/>');
+        const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per Lane" style="padding: 8px 12px; width: 250px; border-radius: 5px; border: 1px solid #ccc;"/>');
         laneFilterInput.val(selectedLaneFilters.join(', '));
-
-        // Rileva il tasto Invio per il filtro Lane
-        laneFilterInput.on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedLaneFilters = this.value.split(',').map(lane => lane.trim()).filter(lane => lane);  // Aggiungi le lane selezionate
-                fetchBufferSummary();  // Carica i dati quando l'utente preme Invio
-            }
+        laneFilterInput.on('input', function() {
+            selectedLaneFilters = this.value.split(',').map(lane => lane.trim()).filter(lane => lane);  // Aggiungi le lane selezionate
+            fetchBufferSummary();  // Carica i dati quando l'utente preme Invio
         });
 
         filterContainer.append(bufferFilterInput);
