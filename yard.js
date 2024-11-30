@@ -5,11 +5,11 @@
 
     // Funzione per recuperare i dati dal server
     function fetchYardData() {
-        const apiUrl = `https://www.amazonlogistics.eu/yms/shipclerk/#/yard/getContainersDetailByCriteria`;
+        const apiUrl = `https://www.amazonlogistics.eu/yms/shipclerk/#/yard/controller/getContainersDetailByCriteria`;
         const payload = {
             entity: "getYardDetailsByCriteria",
             filterBy: {
-                state: ["In Yard"] // Modifica se necessario
+                state: ["full"] // Modifica se necessario
             }
         };
 
@@ -93,7 +93,7 @@
 
     // Aggiunge il pulsante per attivare/disattivare la tabella
     function addToggleButton() {
-        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 400px; left: 10px; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Dati Yard</button>');
+        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 550px; left: 10px; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Dati Yard</button>');
 
         toggleButton.on('click', function() {
             isVisible = !isVisible;
