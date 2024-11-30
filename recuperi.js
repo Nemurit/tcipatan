@@ -4,9 +4,9 @@
     const nodeId = 'MXP6';
     const stackingFilterMapUrl = 'https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/stacking_filter_map.json';
     let selectedBufferFilter = '';
-    let selectedLaneFilters = [];  // Ora permette un array di lane
+    let selectedLaneFilters = [];
     let stackingToLaneMap = {};
-    let isVisible = false;  // Variabile per tenere traccia della visibilità della tabella
+    let isVisible = false;
 
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
@@ -89,30 +89,38 @@
                 (selectedBufferFilter === '' || location.toUpperCase().includes(selectedBufferFilter.toUpperCase())) &&
                 (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
             ) {
-                if (!filteredSummary[location]) {
-                    filteredSummary[location] = { count: 0 };
+                if (!filteredSummary[lane]) {
+                    filteredSummary[lane] = {};
                 }
 
-                filteredSummary[location].count++;
+                if (!filteredSummary[lane][location]) {
+                    filteredSummary[lane][location] = { count: 0 };
+                }
+
+                filteredSummary[lane][location].count++;
             }
         });
 
         // Ordinamento: prima per numero, poi per lettera
-        const sortedSummary = Object.keys(filteredSummary)
-            .sort((a, b) => {
-                const numA = parseBufferNumber(a); // Estrai numero da A
-                const numB = parseBufferNumber(b); // Estrai numero da B
+        const sortedSummary = {};
+        Object.keys(filteredSummary).forEach(lane => {
+            const laneSummary = filteredSummary[lane];
+            sortedSummary[lane] = Object.keys(laneSummary)
+                .sort((a, b) => {
+                    const numA = parseBufferNumber(a); // Estrai numero da A
+                    const numB = parseBufferNumber(b); // Estrai numero da B
 
-                // Se i numeri sono uguali, ordina per lettera
-                if (numA === numB) {
-                    return a.localeCompare(b);  // Ordinamento alfabetico per le lettere
-                }
-                return numA - numB;  // Ordinamento numerico
-            })
-            .reduce((acc, location) => {
-                acc[location] = filteredSummary[location];
-                return acc;
-            }, {});
+                    // Se i numeri sono uguali, ordina per lettera
+                    if (numA === numB) {
+                        return a.localeCompare(b);  // Ordinamento alfabetico per le lettere
+                    }
+                    return numA - numB;  // Ordinamento numerico
+                })
+                .reduce((acc, location) => {
+                    acc[location] = laneSummary[location];
+                    return acc;
+                }, {});
+        });
 
         displayTable(sortedSummary);
     }
@@ -123,12 +131,12 @@
         return match ? parseInt(match[0], 10) : 0;  // Restituisce il numero trovato
     }
 
-    function displayTable(filteredSummary) {
-        if (!isVisible) return;  // Se non è visibile, non fare nulla
+    function displayTable(sortedSummary) {
+        if (!isVisible) return;
 
         $('#bufferSummaryTable').remove();
 
-        if (Object.keys(filteredSummary).length === 0) {
+        if (Object.keys(sortedSummary).length === 0) {
             return;
         }
 
@@ -136,20 +144,19 @@
         table.append('<thead><tr><th>Buffer</th><th>Numero di Container</th></tr></thead>');
 
         const tbody = $('<tbody></tbody>');
-        let rowCount = 0;
         let totalContainers = 0;
 
-        // Limita le righe a 5 se non ci sono filtri impostati
-        const rowsToShow = (selectedBufferFilter === '' && selectedLaneFilters.length === 0) ? 5 : Infinity;
+        Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
+            // Aggiungi una riga per la Lane
+            tbody.append(`<tr><td colspan="2" style="font-weight: bold; text-align: center;">Lane: ${lane}</td></tr>`);
 
-        // Mostra solo i buffer filtrati, ordinati numericamente prima e poi alfabeticamente
-        Object.entries(filteredSummary).forEach(([location, data]) => {
-            const row = $('<tr></tr>');
-            row.append(`<td>${location}</td>`);
-            row.append(`<td>${data.count}</td>`);
-            tbody.append(row);
-            rowCount++;
-            totalContainers += data.count;
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                const row = $('<tr></tr>');
+                row.append(`<td>${location}</td>`);
+                row.append(`<td>${data.count}</td>`);
+                tbody.append(row);
+                totalContainers += data.count;
+            });
         });
 
         const totalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale</td><td>' + totalContainers + '</td></tr>');
@@ -166,7 +173,7 @@
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
                 position: absolute;
                 right: 10px;
-                top: 70px;  /* Spostato a 70px dal top */
+                top: 70px;
             }
             #bufferSummaryTable th, #bufferSummaryTable td {
                 border: 1px solid #ddd;
@@ -189,7 +196,7 @@
     }
 
     function addFilters() {
-        if (!isVisible) return;  // Non mostrare i filtri se la tabella è nascosta
+        if (!isVisible) return;
 
         $('#filterContainer').remove();
 
