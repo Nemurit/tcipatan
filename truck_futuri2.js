@@ -1,15 +1,3 @@
-// ==UserScript==
-// @name         Truck Futuri handover
-// @namespace    http://tampermonkey.net/
-// @version      0.1
-// @description  truck futuri handover
-// @author       tcipatan
-// @match        https://boardg.altervista.org/handover.html
-// @updateURL    https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/truck_futuri2.js
-// @downloadURL  https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/truck_futuri2.js
-// @grant        GM_addStyle
-// ==/UserScript==
-
 (function () {
     'use strict';
 
