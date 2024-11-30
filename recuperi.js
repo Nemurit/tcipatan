@@ -4,8 +4,9 @@
     const nodeId = 'MXP6';
     const stackingFilterMapUrl = 'https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/stacking_filter_map.json';
     let selectedBufferFilter = '';
-    let selectedLaneFilters = [];  // Ora permette un array di lane
+    let selectedLaneFilters = [];
     let stackingToLaneMap = {};
+    let isRecoveryVisible = false; // Stato iniziale: nascosto
 
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
@@ -97,18 +98,21 @@
             }
         });
 
-        // Ordina i buffer in ordine alfabetico naturale (con ordinamento numerico)
         const sortedSummary = Object.keys(filteredSummary)
             .sort((a, b) => naturalSort(a, b))
             .reduce((acc, key) => {
-                acc[key] = filteredSummary[key];
+                acc[key] = Object.keys(filteredSummary[key])
+                    .sort((a, b) => naturalSort(a, b))
+                    .reduce((accLanes, laneKey) => {
+                        accLanes[laneKey] = filteredSummary[key][laneKey];
+                        return accLanes;
+                    }, {});
                 return acc;
             }, {});
 
         displayTable(sortedSummary);
     }
 
-    // Funzione per ordinamento naturale (ordina "BUFFER 1" prima di "BUFFER 10")
     function naturalSort(a, b) {
         return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
     }
@@ -127,7 +131,6 @@
         let rowCount = 0;
         let totalContainers = 0;
 
-        // Limita le righe a 5 se non ci sono filtri impostati
         const rowsToShow = (selectedBufferFilter === '' && selectedLaneFilters.length === 0) ? 5 : Infinity;
 
         Object.entries(filteredSummary).forEach(([location, lanes]) => {
@@ -158,7 +161,7 @@
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
                 position: absolute;
                 right: 10px;
-                top: 70px; /* Adjusted top to 70px */
+                top: 70px;
             }
             #bufferSummaryTable th, #bufferSummaryTable td {
                 border: 1px solid #ddd;
@@ -176,29 +179,25 @@
                 background-color: #f1f1f1;
             }
         `);
-
-        addFilters();
     }
 
     function addFilters() {
         $('#filterContainer').remove();
 
-        const filterContainer = $('<div id="filterContainer" style="margin-bottom: 20px; text-align: center; position: absolute; right: 10px; top: 10px;"></div>'); // Adjusted top to 10px
+        const filterContainer = $('<div id="filterContainer" style="margin-bottom: 20px; text-align: center; position: absolute; right: 10px; top: 10px; display: none;"></div>');
 
         const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 8px 12px; margin-right: 10px; width: 250px; border-radius: 5px; border: 1px solid #ccc;"/>');
         bufferFilterInput.val(selectedBufferFilter);
         bufferFilterInput.on('input', function() {
-            selectedBufferFilter = this.value;  // Non causa un aggiornamento automatico
+            selectedBufferFilter = this.value;
         });
 
         const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per Lane (separati da virgola)" style="padding: 8px 12px; margin-right: 10px; width: 250px; border-radius: 5px; border: 1px solid #ccc;"/>');
         laneFilterInput.val(selectedLaneFilters.join(', '));
-
-        // Rileva il tasto Invio per il filtro Lane
         laneFilterInput.on('keydown', function(event) {
             if (event.key === "Enter") {
-                selectedLaneFilters = this.value.split(',').map(lane => lane.trim()).filter(lane => lane);  // Aggiungi le lane selezionate
-                fetchBufferSummary();  // Carica i dati quando l'utente preme Invio
+                selectedLaneFilters = this.value.split(',').map(lane => lane.trim()).filter(lane => lane);
+                fetchBufferSummary();
             }
         });
 
@@ -207,5 +206,25 @@
         $('body').append(filterContainer);
     }
 
-    fetchStackingFilterMap(fetchBufferSummary);
+    function toggleRecovery() {
+        isRecoveryVisible = !isRecoveryVisible;
+        $('#filterContainer').toggle(isRecoveryVisible);
+        $('#bufferSummaryTable').toggle(isRecoveryVisible);
+
+        if (isRecoveryVisible) {
+            fetchBufferSummary();
+            $('#toggleButton').text('Nascondi Recuperi');
+        } else {
+            $('#toggleButton').text('Mostra Recuperi');
+        }
+    }
+
+    function addToggleButton() {
+        const button = $('<button id="toggleButton" style="position: absolute; top: 10px; left: 10px; padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
+        button.on('click', toggleRecovery);
+        $('body').append(button);
+    }
+
+    fetchStackingFilterMap(addFilters);
+    addToggleButton();
 })();
