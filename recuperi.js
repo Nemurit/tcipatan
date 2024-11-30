@@ -214,8 +214,8 @@
             #mainContainer {
                 position: fixed;
                 top: 10px;
-                right: 10px;
-                width: 300px;
+                right: 40px;
+                width: 400px;
                 background-color: white;
                 padding: 20px;
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
