@@ -202,16 +202,20 @@
 
         const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 8px 12px; margin-right: 10px; width: 250px; border-radius: 5px; border: 1px solid #ccc;"/>');
         bufferFilterInput.val(selectedBufferFilter);
-        bufferFilterInput.on('input', function() {
-            selectedBufferFilter = this.value;  // Aggiorna il filtro
-            fetchBufferSummary();  // Ricarica i dati quando il filtro cambia
+        bufferFilterInput.on('keydown', function(event) {
+            if (event.key === 'Enter') {  // Aggiungi il controllo per il tasto Invio
+                selectedBufferFilter = this.value;  // Aggiorna il filtro
+                fetchBufferSummary();  // Ricarica i dati quando il filtro cambia
+            }
         });
 
         const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per Lane" style="padding: 8px 12px; width: 250px; border-radius: 5px; border: 1px solid #ccc;"/>');
         laneFilterInput.val(selectedLaneFilters.join(', '));
-        laneFilterInput.on('input', function() {
-            selectedLaneFilters = this.value.split(',').map(filter => filter.trim());
-            fetchBufferSummary();  // Ricarica i dati quando il filtro cambia
+        laneFilterInput.on('keydown', function(event) {
+            if (event.key === 'Enter') {  // Aggiungi il controllo per il tasto Invio
+                selectedLaneFilters = this.value.split(',').map(filter => filter.trim());
+                fetchBufferSummary();  // Ricarica i dati quando il filtro cambia
+            }
         });
 
         filterContainer.append(bufferFilterInput);
@@ -230,7 +234,7 @@
 
     function addToggleButton() {
         const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: 950px; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
-        
+
         toggleButton.on('click', function() {
             isVisible = !isVisible;  // Toggle della visibilità
             if (isVisible) {
