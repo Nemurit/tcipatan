@@ -249,8 +249,27 @@
         $('body').append(filterContainer);
     }
 
+    function addToggleButton() {
+        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: 950px; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
+
+        toggleButton.on('click', function() {
+            isVisible = !isVisible;
+            if (isVisible) {
+                fetchBufferSummary();  // Mostra la tabella e i filtri
+                $(this).text("Nascondi Recuperi");
+            } else {
+                $('#filterContainer').remove();  // Nasconde i filtri
+                $('#bufferSummaryTable').remove();  // Nasconde la tabella
+                $(this).text("Mostra Recuperi");
+            }
+        });
+
+        $('body').append(toggleButton);
+    }
+
     // Esegui l'inizializzazione e il recupero dei dati
     fetchStackingFilterMap(function() {
+        addToggleButton();  // Aggiungi il pulsante "Mostra/Nascondi"
         fetchBufferSummary();
     });
 
