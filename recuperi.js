@@ -51,7 +51,7 @@
                 isClosed: [true],
                 isMissing: [false]
             },
-            containerTypes: ["PALLET", "GAYLORD", "CART"]
+            containerTypes: ["PALLET", "GAYLORD", "BAG", "CART"]
         };
 
         GM_xmlhttpRequest({
@@ -78,6 +78,7 @@
 
     function processAndDisplay(containers) {
         const filteredSummary = {};
+
         containers.forEach(container => {
             const location = container.location || '';
             const stackingFilter = container.stackingFilter || 'N/A';
@@ -88,13 +89,15 @@
                 (selectedBufferFilter === '' || location.toUpperCase().includes(selectedBufferFilter.toUpperCase())) &&
                 (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
             ) {
-                if (!filteredSummary[location]) {
-                    filteredSummary[location] = {};
+                if (!filteredSummary[lane]) {
+                    filteredSummary[lane] = {};
                 }
-                if (!filteredSummary[location][lane]) {
-                    filteredSummary[location][lane] = { count: 0 };
+
+                if (!filteredSummary[lane][location]) {
+                    filteredSummary[lane][location] = { count: 0 };
                 }
-                filteredSummary[location][lane].count++;
+
+                filteredSummary[lane][location].count++;
             }
         });
 
@@ -110,8 +113,8 @@
                 }
                 return numA - numB;  // Ordinamento numerico
             })
-            .reduce((acc, key) => {
-                acc[key] = filteredSummary[key];
+            .reduce((acc, lane) => {
+                acc[lane] = filteredSummary[lane];
                 return acc;
             }, {});
 
@@ -134,7 +137,7 @@
         }
 
         const table = $('<table id="bufferSummaryTable" class="performance"></table>');
-        table.append('<thead><tr><th>Buffer</th><th>Lane</th><th>Numero di Container</th></tr></thead>');
+        table.append('<thead><tr><th>Lane</th><th>Buffer</th><th>Numero di Container</th></tr></thead>');
 
         const tbody = $('<tbody></tbody>');
         let rowCount = 0;
@@ -143,17 +146,27 @@
         // Limita le righe a 5 se non ci sono filtri impostati
         const rowsToShow = (selectedBufferFilter === '' && selectedLaneFilters.length === 0) ? 5 : Infinity;
 
-        Object.entries(filteredSummary).forEach(([location, lanes]) => {
-            Object.entries(lanes).forEach(([lane, data]) => {
-                if (rowCount < rowsToShow) {
-                    const row = $('<tr></tr>');
-                    row.append(`<td>${location}</td>`);
-                    row.append(`<td>${lane}</td>`);
-                    row.append(`<td>${data.count}</td>`);
-                    tbody.append(row);
-                    rowCount++;
-                    totalContainers += data.count;
-                }
+        Object.entries(filteredSummary).forEach(([lane, buffers]) => {
+            // Prima mostra la riga della Lane con il totale
+            let laneTotal = 0;
+            Object.values(buffers).forEach(buffer => {
+                laneTotal += buffer.count;
+            });
+
+            const laneRow = $('<tr></tr>');
+            laneRow.append(`<td colspan="2" style="font-weight: bold; text-align: center;">Lane: ${lane} (Totale: ${laneTotal})</td>`);
+            laneRow.append('<td></td>'); // Lascia vuoto il campo del totale lane
+            tbody.append(laneRow);
+
+            // Poi mostra i buffer per quella lane
+            Object.entries(buffers).forEach(([location, data]) => {
+                const row = $('<tr></tr>');
+                row.append(`<td></td>`); // Lascia vuoto il campo lane
+                row.append(`<td>${location}</td>`);
+                row.append(`<td>${data.count}</td>`);
+                tbody.append(row);
+                rowCount++;
+                totalContainers += data.count;
             });
         });
 
@@ -200,21 +213,23 @@
 
         const filterContainer = $('<div id="filterContainer" style="margin-bottom: 20px; text-align: center; position: fixed; top: 10px; right: 10px; z-index: 9999;"></div>');
 
-        const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 8px 12px; margin-right: 10px; width: 250px; border-radius: 5px; border: 1px solid #ccc;"/>');
+        const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 10px; font-size: 16px; width: 200px; margin-top: 10px;">');
         bufferFilterInput.val(selectedBufferFilter);
+
         bufferFilterInput.on('keydown', function(event) {
-            if (event.key === 'Enter') {  // Aggiungi il controllo per il tasto Invio
-                selectedBufferFilter = this.value;  // Aggiorna il filtro
-                fetchBufferSummary();  // Ricarica i dati quando il filtro cambia
+            if (event.key === 'Enter') {
+                selectedBufferFilter = this.value.trim();
+                fetchBufferSummary();
             }
         });
 
-        const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per Lane" style="padding: 8px 12px; width: 250px; border-radius: 5px; border: 1px solid #ccc;"/>');
-        laneFilterInput.val(selectedLaneFilters.join(', '));
+        const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtra per Lane (separate da virgola)" style="padding: 10px; font-size: 16px; width: 200px; margin-top: 10px;">');
+        laneFilterInput.val(selectedLaneFilters.join(','));
+
         laneFilterInput.on('keydown', function(event) {
-            if (event.key === 'Enter') {  // Aggiungi il controllo per il tasto Invio
+            if (event.key === 'Enter') {
                 selectedLaneFilters = this.value.split(',').map(filter => filter.trim());
-                fetchBufferSummary();  // Ricarica i dati quando il filtro cambia
+                fetchBufferSummary();
             }
         });
 
@@ -224,8 +239,6 @@
 
         GM_addStyle(`
             #filterContainer input {
-                position: relative;
-                top: 0;  /* Non usare position absolute per non interferire con il layout */
                 margin-top: 10px;
                 z-index: 10000;
             }
@@ -236,7 +249,7 @@
         const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: 950px; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
 
         toggleButton.on('click', function() {
-            isVisible = !isVisible;  // Toggle della visibilità
+            isVisible = !isVisible;
             if (isVisible) {
                 fetchBufferSummary();  // Mostra la tabella e i filtri
                 $(this).text("Nascondi Recuperi");
