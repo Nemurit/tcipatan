@@ -177,18 +177,18 @@
         const mainContainer = $('<div id="mainContainer"></div>');
         const filterContainer = $('<div id="filterContainer"></div>');
 
-        const filterButton = $('<button id="filterButton" style="padding: 8px 15px; background-color: #007bff; color: #fff; border: none; border-radius: 5px;">Visualizza Filtri</button>');
+        const filterButton = $('<button id="filterButton" style="padding: 8px 15px; background-color: #007bff; color: #fff; border: none; border-radius: 5px; margin-bottom: 10px;">Visualizza Filtri</button>');
         filterButton.on('click', function() {
             $('#filterContainer').toggle(); // Toggle visibility of filters
         });
 
-        const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 8px 12px; margin-right: 10px; width: 90%;"/>');
+        const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 8px 12px; margin-right: 10px; width: 100%; margin-bottom: 10px;"/>');
         bufferFilterInput.val(selectedBufferFilter);
         bufferFilterInput.on('input', function() {
             selectedBufferFilter = this.value;
         });
 
-        const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per Lane (separati da virgola)" style="padding: 8px 12px; margin-top: 10px; width: 90%;"/>');
+        const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per Lane (separati da virgola)" style="padding: 8px 12px; margin-top: 10px; width: 100%; margin-bottom: 10px;"/>');
         laneFilterInput.val(selectedLaneFilters.join(', '));
         laneFilterInput.on('keydown', function(event) {
             if (event.key === "Enter") {
@@ -197,7 +197,7 @@
             }
         });
 
-        const viewDataButton = $('<button style="padding: 8px 15px; margin-top: 10px; background-color: #007bff; color: #fff; border: none; border-radius: 5px;">Visualizza Recuperi</button>');
+        const viewDataButton = $('<button style="padding: 8px 15px; margin-top: 10px; background-color: #007bff; color: #fff; border: none; border-radius: 5px; width: 100%;">Visualizza Recuperi</button>');
         viewDataButton.on('click', fetchBufferSummary);
 
         filterContainer.append('<h3>Filtri</h3>');
@@ -205,16 +205,21 @@
         filterContainer.append(laneFilterInput);
         filterContainer.append(viewDataButton);
 
+        mainContainer.append(filterButton);
         mainContainer.append(filterContainer);
         $('body').append(mainContainer);
 
+        // Set styles for fixed layout
         GM_addStyle(`
             #mainContainer {
                 position: fixed;
-                top: 20px;
-                right: 20px;
-                z-index: 1000;
+                top: 10px;
+                right: 10px;
                 width: 300px;
+                background-color: white;
+                padding: 20px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                z-index: 1000;
             }
 
             #filterContainer {
@@ -248,6 +253,13 @@
 
             button {
                 cursor: pointer;
+                width: 100%;
+                padding: 10px;
+                margin-top: 10px;
+                background-color: #007bff;
+                color: white;
+                border: none;
+                border-radius: 5px;
             }
         `);
     }
