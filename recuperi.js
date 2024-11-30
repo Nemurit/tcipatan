@@ -51,7 +51,7 @@
                 isClosed: [true],
                 isMissing: [false]
             },
-            containerTypes: ["PALLET", "GAYLORD", "BAG", "CART"]
+            containerTypes: ["PALLET", "GAYLORD",  "CART"]
         };
 
         GM_xmlhttpRequest({
@@ -89,15 +89,11 @@
                 (selectedBufferFilter === '' || location.toUpperCase().includes(selectedBufferFilter.toUpperCase())) &&
                 (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
             ) {
-                if (!filteredSummary[lane]) {
-                    filteredSummary[lane] = {};
+                if (!filteredSummary[location]) {
+                    filteredSummary[location] = { count: 0 };
                 }
 
-                if (!filteredSummary[lane][location]) {
-                    filteredSummary[lane][location] = { count: 0 };
-                }
-
-                filteredSummary[lane][location].count++;
+                filteredSummary[location].count++;
             }
         });
 
@@ -113,8 +109,8 @@
                 }
                 return numA - numB;  // Ordinamento numerico
             })
-            .reduce((acc, lane) => {
-                acc[lane] = filteredSummary[lane];
+            .reduce((acc, location) => {
+                acc[location] = filteredSummary[location];
                 return acc;
             }, {});
 
@@ -137,7 +133,7 @@
         }
 
         const table = $('<table id="bufferSummaryTable" class="performance"></table>');
-        table.append('<thead><tr><th>Lane</th><th>Buffer</th><th>Numero di Container</th></tr></thead>');
+        table.append('<thead><tr><th>Buffer</th><th>Numero di Container</th></tr></thead>');
 
         const tbody = $('<tbody></tbody>');
         let rowCount = 0;
@@ -146,28 +142,14 @@
         // Limita le righe a 5 se non ci sono filtri impostati
         const rowsToShow = (selectedBufferFilter === '' && selectedLaneFilters.length === 0) ? 5 : Infinity;
 
-        Object.entries(filteredSummary).forEach(([lane, buffers]) => {
-            // Prima mostra la riga della Lane con il totale
-            let laneTotal = 0;
-            Object.values(buffers).forEach(buffer => {
-                laneTotal += buffer.count;
-            });
-
-            const laneRow = $('<tr></tr>');
-            laneRow.append(`<td colspan="2" style="font-weight: bold; text-align: center;">Lane: ${lane} (Totale: ${laneTotal})</td>`);
-            laneRow.append('<td></td>'); // Lascia vuoto il campo del totale lane
-            tbody.append(laneRow);
-
-            // Poi mostra i buffer per quella lane
-            Object.entries(buffers).forEach(([location, data]) => {
-                const row = $('<tr></tr>');
-                row.append(`<td></td>`); // Lascia vuoto il campo lane
-                row.append(`<td>${location}</td>`);
-                row.append(`<td>${data.count}</td>`);
-                tbody.append(row);
-                rowCount++;
-                totalContainers += data.count;
-            });
+        // Mostra solo i buffer filtrati, ordinati numericamente prima e poi alfabeticamente
+        Object.entries(filteredSummary).forEach(([location, data]) => {
+            const row = $('<tr></tr>');
+            row.append(`<td>${location}</td>`);
+            row.append(`<td>${data.count}</td>`);
+            tbody.append(row);
+            rowCount++;
+            totalContainers += data.count;
         });
 
         const totalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale</td><td>' + totalContainers + '</td></tr>');
@@ -236,13 +218,6 @@
         filterContainer.append(bufferFilterInput);
         filterContainer.append(laneFilterInput);
         $('body').append(filterContainer);
-
-        GM_addStyle(`
-            #filterContainer input {
-                margin-top: 10px;
-                z-index: 10000;
-            }
-        `);
     }
 
     function addToggleButton() {
