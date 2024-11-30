@@ -217,10 +217,10 @@
                 right: 10px;
                 width: 400px;
                 background-color: white;
-                padding: 20px;
+                padding: 10px;
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
                 z-index: 1000;
-                overflow-y: auto; /* Enable vertical scrolling if content overflows */
+                
             }
 
             #filterContainer {
@@ -231,13 +231,14 @@
                 width: 100%;
                 border-collapse: collapse;
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                overflow-y: auto;
             }
 
             #bufferSummaryTable th, #bufferSummaryTable td {
                 border: 1px solid #ddd;
                 padding: 8px;
                 text-align: left;
-                overflow-y: auto;
+                
             }
 
             #bufferSummaryTable th {
