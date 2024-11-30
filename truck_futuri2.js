@@ -20,11 +20,11 @@
     function createButtonForPageLoadAndDataExtraction() {
         const button = document.createElement('button');
         button.innerHTML = 'Visualizza TRUCKS';
-        button.style.padding = '3px';
-        button.style.backgroundColor = '#4CAF50';
+        button.style.padding = '8px 15px';
+        button.style.backgroundColor = '#007bff';
         button.style.color = 'white';
         button.style.border = 'none';
-        button.style.borderRadius = '3px';
+        button.style.borderRadius = '5px';
         button.style.marginRight = '5px';
 
         button.addEventListener('click', function () {
@@ -244,87 +244,45 @@
         });
 
         dropdown.addEventListener('change', function () {
-            filterAndShowData(timeInputBox.value ? parseInt(timeInputBox.value, 10) : INITIAL_HOURS);
+            filterAndShowData(timeInputBox.value); // Rifiltra i dati in base al nuovo status
         });
+
+        buttonContainer.appendChild(dropdown);
 
         timeInputBox = document.createElement('input');
         timeInputBox.type = 'number';
-        timeInputBox.placeholder = 'Ore';
-        timeInputBox.style.padding = '3px';
+        timeInputBox.value = DEFAULT_HOURS;
+        timeInputBox.min = 1;
+        timeInputBox.max = MAX_HOURS;
         timeInputBox.style.marginRight = '5px';
-        timeInputBox.style.display = 'none';
+        timeInputBox.style.padding = '5px';
         timeInputBox.addEventListener('input', function () {
-            filterAndShowData(parseInt(timeInputBox.value, 10));
+            filterAndShowData(timeInputBox.value); // Rifiltra i dati in base al tempo
         });
+
+        buttonContainer.appendChild(timeInputBox);
 
         printButton = document.createElement('button');
-        printButton.innerHTML = 'Stampa';
-        printButton.style.padding = '3px';
-        printButton.style.backgroundColor = '#2196F3';
+        printButton.innerHTML = 'Print';
+        printButton.style.padding = '8px 15px';
+        printButton.style.backgroundColor = '#28a745';
         printButton.style.color = 'white';
         printButton.style.border = 'none';
-        printButton.style.borderRadius = '3px';
-        printButton.style.display = 'none';
-        printButton.style.marginRight = '5px';
-        printButton.addEventListener('click', function () {
-            printTable(tableContainer);
-        });
+        printButton.style.borderRadius = '5px';
+        printButton.style.marginLeft = '5px';
+        printButton.style.display = 'none'; // inizialmente nascosto
+        buttonContainer.appendChild(printButton);
 
         rowCountDisplay = document.createElement('div');
-        rowCountDisplay.style.display = 'none';
-        rowCountDisplay.style.marginLeft = '10px';
-        rowCountDisplay.style.padding = '3px';
-        rowCountDisplay.style.color = '#000';
+        rowCountDisplay.style.marginTop = '10px';
         rowCountDisplay.style.fontWeight = 'bold';
+        rowCountDisplay.style.fontSize = '14px';
+        rowCountDisplay.style.display = 'none'; // inizialmente nascosto
+        buttonContainer.appendChild(rowCountDisplay);
 
-        buttonContainer.appendChild(dropdown);
-        buttonContainer.appendChild(timeInputBox);
-        buttonContainer.appendChild(printButton);
-        buttonContainer.appendChild(rowCountDisplay); // Aggiungi il contatore
         document.body.appendChild(buttonContainer);
     }
 
-    // Funzione per stampare solo la tabella formattata per la pagina di stampa
-    function printTable(container) {
-        const printWindow = window.open('', '', 'height=600,width=800');
-        printWindow.document.write('<html><head><title>Stampa Dati</title>');
-
-        // Aggiungi stili per la pagina di stampa
-        printWindow.document.write(`
-            <style>
-                body {
-                    font-family: Arial, sans-serif;
-                    padding: 20px;
-                }
-                table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin-bottom: 20px;
-                }
-                th, td {
-                    border: 1px solid #ccc;
-                    padding: 8px;
-                    text-align: left;
-                }
-                th {
-                    background-color: #f2f2f2;
-                }
-                tr:nth-child(even) {
-                    background-color: #f9f9f9;
-                }
-                tr:nth-child(odd) {
-                    background-color: #ffffff;
-                }
-            </style>
-        `);
-
-        printWindow.document.write('</head><body>');
-        printWindow.document.write(container.innerHTML); // Scrivi solo il contenuto della tabella
-        printWindow.document.write('</body></html>');
-        printWindow.document.close();
-        printWindow.print();
-    }
-
-    createButtons(); // Crea i pulsanti all'avvio
-
+    // Carica pulsanti e avvia il processo
+    createButtons();
 })();
