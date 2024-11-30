@@ -75,38 +75,50 @@
         });
     }
 
-    // Process data and create the summary
-    function processAndDisplay(containers) {
-        const filteredSummary = {};
-        containers.forEach(container => {
-            const location = container.location || '';
-            const stackingFilter = container.stackingFilter || 'N/A';
-            const lane = stackingToLaneMap[stackingFilter] || 'N/A';
+  // Process data and create the summary
+function processAndDisplay(containers) {
+    const filteredSummary = {};
+    containers.forEach(container => {
+        const location = container.location || '';
+        const stackingFilter = container.stackingFilter || 'N/A';
+        const lane = stackingToLaneMap[stackingFilter] || 'N/A';
 
-            if (
-                location.toUpperCase().startsWith("BUFFER") &&
-                (selectedBufferFilter === '' || location.toUpperCase().includes(selectedBufferFilter.toUpperCase())) &&
-                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
-            ) {
-                if (!filteredSummary[location]) {
-                    filteredSummary[location] = {};
-                }
-                if (!filteredSummary[location][lane]) {
-                    filteredSummary[location][lane] = { count: 0 };
-                }
-                filteredSummary[location][lane].count++;
+        if (
+            location.toUpperCase().startsWith("BUFFER") &&
+            (selectedBufferFilter === '' || location.toUpperCase().includes(selectedBufferFilter.toUpperCase())) &&
+            (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
+        ) {
+            if (!filteredSummary[location]) {
+                filteredSummary[location] = {};
             }
-        });
+            if (!filteredSummary[location][lane]) {
+                filteredSummary[location][lane] = { count: 0 };
+            }
+            filteredSummary[location][lane].count++;
+        }
+    });
 
-        const sortedSummary = Object.keys(filteredSummary)
-            .sort((a, b) => naturalSort(a, b))
-            .reduce((acc, key) => {
-                acc[key] = filteredSummary[key];
-                return acc;
-            }, {});
+    // Sort buffers numerically based on the number part of the buffer name
+    const sortedSummary = Object.entries(filteredSummary)
+        .sort((a, b) => {
+            const aBufferNumber = extractBufferNumber(a[0]);
+            const bBufferNumber = extractBufferNumber(b[0]);
+            return aBufferNumber - bBufferNumber; // Sort numerically in ascending order
+        })
+        .reduce((acc, [location, lanes]) => {
+            acc[location] = lanes;
+            return acc;
+        }, {});
 
-        displayTable(sortedSummary);
-    }
+    displayTable(sortedSummary);
+}
+
+// Extract the numeric part from the buffer name
+function extractBufferNumber(bufferName) {
+    const match = bufferName.match(/\d+/); // Match the first sequence of digits in the buffer name
+    return match ? parseInt(match[0], 10) : 0; // Return the numeric part, or 0 if no number is found
+}
+
 
     // Natural sort function
     function naturalSort(a, b) {
