@@ -4,11 +4,10 @@
     const nodeId = 'MXP6';
     const stackingFilterMapUrl = 'https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/stacking_filter_map.json';
     let selectedBufferFilter = '';
-    let selectedLaneFilters = [];
+    let selectedLaneFilters = [];  // Ora permette un array di lane
     let stackingToLaneMap = {};
     let isVisible = false;
 
-    // Funzione per caricare i dati dalla mappa dei filtri
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
             method: "GET",
@@ -34,7 +33,6 @@
         });
     }
 
-    // Funzione per caricare i dati dei container
     function fetchBufferSummary() {
         const endTime = new Date().getTime();
         const startTime = endTime - 24 * 60 * 60 * 1000;
@@ -53,7 +51,7 @@
                 isClosed: [true],
                 isMissing: [false]
             },
-            containerTypes: ["PALLET", "GAYLORD", "CART"]
+            containerTypes: ["PALLET", "GAYLORD", "BAG", "CART"]
         };
 
         GM_xmlhttpRequest({
@@ -78,10 +76,8 @@
         });
     }
 
-    // Funzione per processare i dati dei container
     function processAndDisplay(containers) {
         const filteredSummary = {};
-
         containers.forEach(container => {
             const location = container.location || '';
             const stackingFilter = container.stackingFilter || 'N/A';
@@ -92,112 +88,68 @@
                 (selectedBufferFilter === '' || location.toUpperCase().includes(selectedBufferFilter.toUpperCase())) &&
                 (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
             ) {
-                if (!filteredSummary[lane]) {
-                    filteredSummary[lane] = {};
+                if (!filteredSummary[location]) {
+                    filteredSummary[location] = {};
                 }
-
-                if (!filteredSummary[lane][location]) {
-                    filteredSummary[lane][location] = { count: 0 };
+                if (!filteredSummary[location][lane]) {
+                    filteredSummary[location][lane] = { count: 0 };
                 }
-
-                filteredSummary[lane][location].count++;
+                filteredSummary[location][lane].count++;
             }
         });
 
-        // Ordinamento: prima per numero, poi per lettera
-        const sortedSummary = {};
-        Object.keys(filteredSummary).forEach(lane => {
-            const laneSummary = filteredSummary[lane];
-            sortedSummary[lane] = Object.keys(laneSummary)
-                .sort((a, b) => {
-                    const numA = parseBufferNumber(a); // Estrai numero da A
-                    const numB = parseBufferNumber(b); // Estrai numero da B
-
-                    // Se i numeri sono uguali, ordina per lettera
-                    if (numA === numB) {
-                        return a.localeCompare(b);  // Ordinamento alfabetico per le lettere
-                    }
-                    return numA - numB;  // Ordinamento numerico
-                })
-                .reduce((acc, location) => {
-                    acc[location] = laneSummary[location];
-                    return acc;
-                }, {});
-        });
+        // Ordina i buffer prima per numero, poi per lettera
+        const sortedSummary = Object.keys(filteredSummary)
+            .sort((a, b) => naturalSort(a, b))
+            .reduce((acc, key) => {
+                acc[key] = filteredSummary[key];
+                return acc;
+            }, {});
 
         displayTable(sortedSummary);
     }
 
-    // Funzione per estrarre il numero dal nome del buffer (ad esempio "B4", "E3")
-    function parseBufferNumber(bufferName) {
-        const match = bufferName.match(/(\d+)/); // Trova il numero nella stringa
-        return match ? parseInt(match[0], 10) : 0;  // Restituisce il numero trovato
+    function naturalSort(a, b) {
+        const numberA = parseInt(a.replace(/\D/g, '')) || 0;
+        const numberB = parseInt(b.replace(/\D/g, '')) || 0;
+        
+        if (numberA !== numberB) return numberA - numberB;
+        return a.localeCompare(b);
     }
 
-    // Funzione per visualizzare la tabella
-    function displayTable(sortedSummary) {
-        if (!isVisible) return;
-
+    function displayTable(filteredSummary) {
         $('#bufferSummaryTable').remove();
 
-        if (Object.keys(sortedSummary).length === 0) {
+        if (Object.keys(filteredSummary).length === 0) {
             return;
         }
 
         const table = $('<table id="bufferSummaryTable" class="performance"></table>');
-        table.append('<thead><tr><th>Buffer</th><th>Totale Container</th></tr></thead>');
+        table.append('<thead><tr><th>Buffer</th><th>Lane</th><th>Numero di Container</th></tr></thead>');
 
         const tbody = $('<tbody></tbody>');
+        let rowCount = 0;
         let totalContainers = 0;
 
-        Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
-            // Aggiungi una riga per la Lane con testo a sinistra e totale container nella stessa riga
-            let laneTotal = 0;
+        // Limita le righe a 5 se non ci sono filtri impostati
+        const rowsToShow = (selectedBufferFilter === '' && selectedLaneFilters.length === 0) ? 5 : Infinity;
 
-            // Calcolo del totale dei container
-            Object.entries(laneSummary).forEach(([location, data]) => {
-                laneTotal += data.count;
-            });
-
-            // Definizione del colore in base al totale dei container
-            let laneColor = '';
-            if (laneTotal <= 10) {
-                laneColor = 'green';
-            } else if (laneTotal <= 30) {
-                laneColor = 'orange';
-            } else {
-                laneColor = 'red';
-            }
-
-            // Aggiungi la riga con il totale dei container per la lane
-            tbody.append(`<tr><td colspan="2" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td></tr>`);
-
-            // Aggiungi le righe per i buffer specifici della lane
-            Object.entries(laneSummary).forEach(([location, data]) => {
-                const row = $('<tr></tr>');
-                const count = data.count;
-
-                // Colore per il numero di container
-                let color = '';
-                if (count <= 10) {
-                    color = 'green';
-                } else if (count <= 30) {
-                    color = 'orange';
-                } else {
-                    color = 'red';
+        Object.entries(filteredSummary).forEach(([location, lanes]) => {
+            Object.entries(lanes).forEach(([lane, data]) => {
+                if (rowCount < rowsToShow) {
+                    const row = $('<tr></tr>');
+                    row.append(`<td>${location}</td>`);
+                    row.append(`<td>${lane}</td>`);
+                    row.append(`<td>${data.count}</td>`);
+                    tbody.append(row);
+                    rowCount++;
+                    totalContainers += data.count;
                 }
-
-                row.append(`<td>${location}</td>`);
-                row.append(`<td style="color: ${color};">${count}</td>`);
-                tbody.append(row);
             });
-
-            totalContainers += laneTotal;
         });
 
-        // Aggiungi una riga con il totale globale
-        const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Globale</td><td>' + totalContainers + '</td></tr>');
-        tbody.append(globalTotalRow);
+        const totalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale</td><td>' + totalContainers + '</td></tr>');
+        tbody.append(totalRow);
 
         table.append(tbody);
         $('body').append(table);
@@ -232,61 +184,54 @@
         addFilters();
     }
 
-    // Funzione per aggiungere i filtri
     function addFilters() {
-        if (!isVisible) return;
-
         $('#filterContainer').remove();
 
-        const filterContainer = $('<div id="filterContainer" style="margin-bottom: 20px; text-align: center; position: fixed; top: 10px; right: 10px; z-index: 9999;"></div>');
+        const filterContainer = $('<div id="filterContainer" style="margin-bottom: 20px; text-align: center; position: absolute; right: 10px; top: 10px;"></div>');
 
-        // Crea il filtro per il buffer
-        const bufferFilterInput = $('<input type="text" placeholder="Filtro per buffer" style="padding: 10px; font-size: 16px; width: 200px; margin-top: 10px;">');
+        const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 8px 12px; margin-right: 10px; width: 250px; border-radius: 5px; border: 1px solid #ccc;"/>');
         bufferFilterInput.val(selectedBufferFilter);
-
         bufferFilterInput.on('keydown', function(event) {
             if (event.key === "Enter") {
-                selectedBufferFilter = bufferFilterInput.val();
+                selectedBufferFilter = this.value;
+                fetchBufferSummary();
+            }
+        });
+
+        const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per Lane (separati da virgola)" style="padding: 8px 12px; margin-right: 10px; width: 250px; border-radius: 5px; border: 1px solid #ccc;"/>');
+        laneFilterInput.val(selectedLaneFilters.join(', '));
+        laneFilterInput.on('keydown', function(event) {
+            if (event.key === "Enter") {
+                selectedLaneFilters = this.value.split(',').map(lane => lane.trim()).filter(lane => lane);
                 fetchBufferSummary();
             }
         });
 
         filterContainer.append(bufferFilterInput);
-
-        // Filtro per lane
-        const laneFilterInput = $('<input type="text" placeholder="Filtro per lane" style="padding: 10px; font-size: 16px; width: 200px; margin-top: 10px;">');
-        laneFilterInput.on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedLaneFilters = laneFilterInput.val().split(',').map(lane => lane.trim());
-                fetchBufferSummary();
-            }
-        });
-
         filterContainer.append(laneFilterInput);
-
-        // Aggiungi il pulsante per mostrare/nascondere
-        const toggleButton = $('<button id="toggleButton" style="background-color: : #007bff; ; color: white; padding: 10px 15px; margin-top: 10px; left:950px;">Mostra Recuperi</button>');
-        toggleButton.on('click', function() {
-            isVisible = !isVisible;
-            if (isVisible) {
-                fetchBufferSummary();
-                filterContainer.show();
-                $('#bufferSummaryTable').show();
-                toggleButton.text("Nascondi Recuperi");
-            } else {
-                filterContainer.hide();
-                $('#bufferSummaryTable').hide();
-                toggleButton.text("Mostra Recuperi");
-            }
-        });
-
-        filterContainer.append(toggleButton);
         $('body').append(filterContainer);
     }
 
-    // Esegui l'inizializzazione e il recupero dei dati
-    fetchStackingFilterMap(function() {
-        fetchBufferSummary();
-    });
+    function addToggleButton() {
+        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; right: 10px; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
+
+        toggleButton.on('click', function() {
+            isVisible = !isVisible;
+            if (isVisible) {
+                $('#filterContainer').show();
+                $('#bufferSummaryTable').show();
+                $(this).text("Nascondi Recuperi");
+            } else {
+                $('#filterContainer').hide();
+                $('#bufferSummaryTable').hide();
+                $(this).text("Mostra Recuperi");
+            }
+        });
+
+        $('body').append(toggleButton);
+    }
+
+    addToggleButton();
+    fetchStackingFilterMap(fetchBufferSummary);
 
 })();
