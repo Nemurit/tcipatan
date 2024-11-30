@@ -171,7 +171,7 @@
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
                 position: absolute;
                 right: 10px;
-                top: 70px;
+                top: 70px;  /* Spostato a 70px dal top */
             }
             #bufferSummaryTable th, #bufferSummaryTable td {
                 border: 1px solid #ddd;
@@ -198,7 +198,7 @@
 
         $('#filterContainer').remove();
 
-        const filterContainer = $('<div id="filterContainer" style="margin-bottom: 20px; text-align: center; position: absolute; right: 10px; top: 40px;"></div>');
+        const filterContainer = $('<div id="filterContainer" style="margin-bottom: 20px; text-align: center; position: absolute; right: 10px; top: 10px;"></div>');
 
         const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 8px 12px; margin-right: 10px; width: 250px; border-radius: 5px; border: 1px solid #ccc;"/>');
         bufferFilterInput.val(selectedBufferFilter);
@@ -217,11 +217,17 @@
         filterContainer.append(bufferFilterInput);
         filterContainer.append(laneFilterInput);
         $('body').append(filterContainer);
+
+        GM_addStyle(`
+            #filterContainer input {
+                position: absolute;
+                top: 10px;  /* Spostato a 10px dal top */
+            }
+        `);
     }
 
-    // Funzione per creare e gestire il pulsante Mostra/Nascondi
     function addToggleButton() {
-        const toggleButton = $('<button id="toggleButton" style="padding: 10px 20px; font-size: 16px; background-color: #4CAF50; color: white; border: none; cursor: pointer; position: absolute; left: 950px; top: 10px;">Mostra Recuperi</button>');
+        const toggleButton = $('<button id="toggleButton" style="padding: 10px 20px; font-size: 16px; background-color: #ADD8E6; color: white; border: none; cursor: pointer; position: absolute; right: 950px; top: 10px;">Mostra Recuperi</button>');
         
         toggleButton.on('click', function() {
             isVisible = !isVisible;  // Toggle della visibilità
