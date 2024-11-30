@@ -147,6 +147,7 @@
         table.append(tbody);
         $('#mainContainer').append(table);
 
+        // Using GM_addStyle to inject CSS
         GM_addStyle(`
             #bufferSummaryTable {
                 width: 60%;
