@@ -145,13 +145,15 @@
         const totalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale</td><td>' + totalContainers + '</td></tr>');
         tbody.append(totalRow);
         table.append(tbody);
-        $('body').append(table);
+        $('#mainContainer').append(table);
 
         GM_addStyle(`
             #bufferSummaryTable {
-                width: 70%;
-                margin: 20px auto;
+                width: 60%;
+                float: right;
                 border-collapse: collapse;
+                margin-right: 5%;
+                margin-top: 20px;
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             }
             #bufferSummaryTable th, #bufferSummaryTable td {
@@ -170,22 +172,22 @@
                 background-color: #f1f1f1;
             }
         `);
-        addFilters();
     }
 
     // Add filters
     function addFilters() {
-        $('#filterContainer').remove();
+        $('#mainContainer').remove();
 
-        const filterContainer = $('<div id="filterContainer" style="margin-bottom: 20px; text-align: center;"></div>');
+        const mainContainer = $('<div id="mainContainer" style="width: 100%;"></div>');
+        const filterContainer = $('<div id="filterContainer" style="width: 35%; float: left; margin: 20px;"></div>');
 
-        const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 8px 12px; margin-right: 10px; width: 250px;"/>');
+        const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 8px 12px; margin-right: 10px; width: 90%;"/>');
         bufferFilterInput.val(selectedBufferFilter);
         bufferFilterInput.on('input', function() {
             selectedBufferFilter = this.value;
         });
 
-        const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per Lane (separati da virgola)" style="padding: 8px 12px; width: 250px;"/>');
+        const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per Lane (separati da virgola)" style="padding: 8px 12px; margin-top: 10px; width: 90%;"/>');
         laneFilterInput.val(selectedLaneFilters.join(', '));
         laneFilterInput.on('keydown', function(event) {
             if (event.key === "Enter") {
@@ -194,14 +196,20 @@
             }
         });
 
-        const applyFiltersButton = $('<button style="padding: 8px 15px; margin-left: 10px; background-color: #007bff; color: #fff; border: none; border-radius: 5px;">Applica Filtri</button>');
+        const applyFiltersButton = $('<button style="padding: 8px 15px; margin-top: 10px; background-color: #007bff; color: #fff; border: none; border-radius: 5px;">Applica Filtri</button>');
         applyFiltersButton.on('click', fetchBufferSummary);
 
+        filterContainer.append('<h3>Filtri</h3>');
         filterContainer.append(bufferFilterInput);
         filterContainer.append(laneFilterInput);
         filterContainer.append(applyFiltersButton);
-        $('body').append(filterContainer);
+
+        mainContainer.append(filterContainer);
+        $('body').append(mainContainer);
     }
 
-    fetchStackingFilterMap(fetchBufferSummary);
+    fetchStackingFilterMap(() => {
+        addFilters();
+        fetchBufferSummary();
+    });
 })();
