@@ -10,7 +10,7 @@
     let timeInputBox = null;
     let printButton = null;
     let rowCountDisplay = null; // Contatore dei truck visibili
-    let containermain = null; // Main container to hold all UI elements
+    let containermain = null; // Main container to hold all UI elements (named containermain)
 
     // Costanti
     const DEFAULT_HOURS = 1; // Valore del filtro iniziale per Refresh
@@ -249,4 +249,87 @@
             dropdown.appendChild(opt);
         });
 
-       
+        dropdown.addEventListener('change', function () {
+            filterAndShowData(timeInputBox.value ? parseInt(timeInputBox.value, 10) : INITIAL_HOURS);
+        });
+
+        timeInputBox = document.createElement('input');
+        timeInputBox.type = 'number';
+        timeInputBox.placeholder = 'Ore';
+        timeInputBox.style.padding = '3px';
+        timeInputBox.style.marginRight = '5px';
+        timeInputBox.style.display = 'none';
+        timeInputBox.addEventListener('input', function () {
+            filterAndShowData(parseInt(timeInputBox.value, 10));
+        });
+
+        printButton = document.createElement('button');
+        printButton.innerHTML = 'Stampa';
+        printButton.style.padding = '3px';
+        printButton.style.backgroundColor = '#2196F3';
+        printButton.style.color = 'white';
+        printButton.style.border = 'none';
+        printButton.style.borderRadius = '3px';
+        printButton.style.display = 'none';
+        printButton.style.marginRight = '5px';
+        printButton.addEventListener('click', function () {
+            printTable(tableContainer);
+        });
+
+        rowCountDisplay = document.createElement('div');
+        rowCountDisplay.style.display = 'none';
+        rowCountDisplay.style.marginLeft = '10px';
+        rowCountDisplay.style.padding = '3px';
+        rowCountDisplay.style.color = '#000';
+        rowCountDisplay.style.fontWeight = 'bold';
+
+        containermain.appendChild(dropdown);
+        containermain.appendChild(timeInputBox);
+        containermain.appendChild(printButton);
+        containermain.appendChild(rowCountDisplay); // Aggiungi il contatore
+        document.body.appendChild(containermain);
+    }
+
+    // Funzione per stampare solo la tabella formattata per la pagina di stampa
+    function printTable(container) {
+        const printWindow = window.open('', '', 'height=600,width=800');
+        printWindow.document.write('<html><head><title>Stampa Dati</title>');
+
+        // Aggiungi stili per la pagina di stampa
+        printWindow.document.write(`
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    padding: 20px;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 20px;
+                }
+                th, td {
+                    border: 1px solid #ccc;
+                    padding: 8px;
+                    text-align: left;
+                }
+                th {
+                    background-color: #f2f2f2;
+                }
+                tr:nth-child(even) {
+                    background-color: #f9f9f9;
+                }
+                tr:nth-child(odd) {
+                    background-color: #ffffff;
+                }
+            </style>
+        `);
+
+        printWindow.document.write('</head><body>');
+        printWindow.document.write(container.innerHTML); // Scrivi solo il contenuto della tabella
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    createButtons(); // Crea i pulsanti all'avvio
+})();
