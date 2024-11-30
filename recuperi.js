@@ -50,7 +50,7 @@
                 isClosed: [true],
                 isMissing: [false]
             },
-            containerTypes: ["PALLET", "GAYLORD", "BAG", "CART"]
+            containerTypes: ["PALLET", "GAYLORD", "CART"]
         };
 
         GM_xmlhttpRequest({
