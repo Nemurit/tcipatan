@@ -324,6 +324,56 @@
         printWindow.document.close();
         printWindow.print();
     }
+    GM_addStyle(`
+    #bufferSummaryTable {
+        width: 60%;
+        float: right;
+        border-collapse: collapse;
+        margin-right: 5%;
+        margin-top: 20px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    #bufferSummaryTable th, #bufferSummaryTable td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+    #bufferSummaryTable th {
+        background-color: #f4f4f4;
+        font-weight: bold;
+    }
+    #bufferSummaryTable tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+    #bufferSummaryTable tr:hover {
+        background-color: #f1f1f1;
+    }
+    #mainContainer {
+        width: 100%;
+    }
+    #filterContainer {
+        width: 35%;
+        float: left;
+        margin: 20px;
+    }
+    #filterContainer input,
+    #filterContainer button {
+        width: 90%;
+        padding: 8px 12px;
+        margin-right: 10px;
+        margin-top: 10px;
+    }
+    #filterContainer button {
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+    }
+    #totalCount {
+        text-align: center;
+    }
+`);
+
 
     createButtons(); // Crea i pulsanti all'avvio
 
