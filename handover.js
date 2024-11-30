@@ -4,10 +4,10 @@
     // Cambia il titolo della pagina
     document.title = "CLERK HANDOVER";
 
-    let allRows = [];
     let tableContainer = null;
+    let allRows = [];
 
-    // Crea i pulsanti e li posiziona sulla pagina
+    // Funzione per creare i pulsanti e posizionarli
     function createButtons() {
         const buttonContainer = document.createElement('div');
         buttonContainer.style.position = 'fixed';
@@ -27,7 +27,7 @@
         trucksButton.style.marginRight = '10px';
         trucksButton.addEventListener('click', function () {
             console.log('Pulsante Visualizza TRUCKS cliccato.');
-            loadIframeAndExtractData();
+            loadIframeAndExtractData(); // Carica iframe e avvia estrazione dati
         });
 
         // Pulsante "Visualizza Recuperi"
@@ -72,11 +72,81 @@
                     return;
                 }
                 console.log('Documento dell\'iframe accessibile.');
-                // Qui puoi continuare con l'estrazione dati.
+                extractDataFromIframe(iframeDoc);
             } catch (error) {
                 console.error('Errore nell\'accesso all\'iframe:', error);
             }
         };
+    }
+
+    // Estrai dati dalla tabella dell'iframe
+    function extractDataFromIframe(iframeDoc) {
+        const table = iframeDoc.querySelector('table#dashboard.display.dataTable.floatL');
+        if (!table) {
+            console.error('Tabella non trovata nell\'iframe.');
+            return;
+        }
+
+        const rows = Array.from(table.querySelectorAll('tbody tr'));
+        allRows = rows.map(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length >= 15) {
+                return {
+                    lane: cells[5].textContent.trim(),
+                    sdt: cells[13].textContent.trim(),
+                    cpt: cells[14].textContent.trim(),
+                };
+            }
+            return null;
+        }).filter(Boolean);
+
+        console.log('Dati estratti:', allRows);
+        displayDataInTable(allRows);
+    }
+
+    // Visualizza i dati in una tabella
+    function displayDataInTable(data) {
+        if (tableContainer) {
+            tableContainer.remove();
+        }
+
+        tableContainer = document.createElement('div');
+        tableContainer.style.position = 'fixed';
+        tableContainer.style.top = '40px';
+        tableContainer.style.right = '10px';
+        tableContainer.style.zIndex = '10001';
+        tableContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+        tableContainer.style.padding = '15px';
+        tableContainer.style.maxHeight = '400px';
+        tableContainer.style.overflowY = 'scroll';
+        tableContainer.style.width = '30%';
+        tableContainer.style.border = '1px solid #ccc';
+        tableContainer.style.borderRadius = '5px';
+
+        const table = document.createElement('table');
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>LANE</th>
+                    <th>SDT</th>
+                    <th>CPT</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${data.map(row => `
+                    <tr>
+                        <td>${row.lane}</td>
+                        <td>${row.sdt}</td>
+                        <td>${row.cpt}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        `;
+
+        tableContainer.appendChild(table);
+        document.body.appendChild(tableContainer);
     }
 
     // Inizializza i pulsanti
