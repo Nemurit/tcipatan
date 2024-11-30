@@ -170,52 +170,6 @@
         }
 
         $('#mainContainer').append(table);
-
-        GM_addStyle(`
-            #bufferSummaryTable {
-                width: 60%;
-                float: right;
-                border-collapse: collapse;
-                margin-top: 20px;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            }
-            #bufferSummaryTable th, #bufferSummaryTable td {
-                border: 1px solid #ddd;
-                padding: 8px;
-                text-align: left;
-            }
-            #bufferSummaryTable th {
-                background-color: #f4f4f4;
-                font-weight: bold;
-            }
-            #bufferSummaryTable tr:nth-child(even) {
-                background-color: #f9f9f9;
-            }
-            #bufferSummaryTable tr:hover {
-                background-color: #f1f1f1;
-            }
-            #mainContainer {
-                width: 100%;
-                display: flex;
-                justify-content: flex-end;
-            }
-            #filterContainer {
-                width: 35%;
-                margin: 20px;
-                display: none; /* Initially hidden */
-            }
-            #showAllButton {
-                background-color: #007bff;
-                color: #fff;
-                border: none;
-                padding: 8px 15px;
-                border-radius: 5px;
-                cursor: pointer;
-            }
-            #showAllButton:hover {
-                background-color: #0056b3;
-            }
-        `);
     }
 
     // Add filters
@@ -223,7 +177,7 @@
         const mainContainer = $('<div id="mainContainer"></div>');
         const filterContainer = $('<div id="filterContainer"></div>');
 
-        const filterButton = $('<button style="padding: 8px 15px; background-color: #007bff; color: #fff; border: none; border-radius: 5px;">Visualizza Filtri</button>');
+        const filterButton = $('<button id="filterButton" style="padding: 8px 15px; background-color: #007bff; color: #fff; border: none; border-radius: 5px;">Visualizza Filtri</button>');
         filterButton.on('click', function() {
             $('#filterContainer').toggle(); // Toggle visibility of filters
         });
@@ -251,10 +205,51 @@
         filterContainer.append(laneFilterInput);
         filterContainer.append(viewDataButton);
 
-        mainContainer.append(filterButton);
         mainContainer.append(filterContainer);
-
         $('body').append(mainContainer);
+
+        GM_addStyle(`
+            #mainContainer {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 1000;
+                width: 300px;
+            }
+
+            #filterContainer {
+                display: none;
+            }
+
+            #bufferSummaryTable {
+                width: 100%;
+                border-collapse: collapse;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            }
+
+            #bufferSummaryTable th, #bufferSummaryTable td {
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }
+
+            #bufferSummaryTable th {
+                background-color: #f4f4f4;
+                font-weight: bold;
+            }
+
+            #bufferSummaryTable tr:nth-child(even) {
+                background-color: #f9f9f9;
+            }
+
+            #bufferSummaryTable tr:hover {
+                background-color: #f1f1f1;
+            }
+
+            button {
+                cursor: pointer;
+            }
+        `);
     }
 
     fetchStackingFilterMap(() => {
