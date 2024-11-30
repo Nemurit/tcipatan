@@ -198,7 +198,7 @@
 
         $('#filterContainer').remove();
 
-        const filterContainer = $('<div id="filterContainer" style="margin-bottom: 20px; text-align: center; position: absolute; right: 120px; top: 10px;"></div>');
+        const filterContainer = $('<div id="filterContainer" style="margin-bottom: 20px; text-align: center; position: fixed; top: 10px; right: 10px; z-index: 9999;"></div>');
 
         const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 8px 12px; margin-right: 10px; width: 250px; border-radius: 5px; border: 1px solid #ccc;"/>');
         bufferFilterInput.val(selectedBufferFilter);
@@ -210,8 +210,8 @@
         const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per Lane" style="padding: 8px 12px; width: 250px; border-radius: 5px; border: 1px solid #ccc;"/>');
         laneFilterInput.val(selectedLaneFilters.join(', '));
         laneFilterInput.on('input', function() {
-            selectedLaneFilters = this.value.split(',').map(lane => lane.trim()).filter(lane => lane);  // Aggiungi le lane selezionate
-            fetchBufferSummary();  // Carica i dati quando l'utente preme Invio
+            selectedLaneFilters = this.value.split(',').map(filter => filter.trim());
+            fetchBufferSummary();  // Ricarica i dati quando il filtro cambia
         });
 
         filterContainer.append(bufferFilterInput);
@@ -220,14 +220,16 @@
 
         GM_addStyle(`
             #filterContainer input {
-                position: absolute;
-                top: 10px;  /* Spostato a 10px dal top */
+                position: relative;
+                top: 0;  /* Non usare position absolute per non interferire con il layout */
+                margin-top: 10px;
+                z-index: 10000;
             }
         `);
     }
 
     function addToggleButton() {
-        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: 950px;z-index: 10001; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
+        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: 950px; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
         
         toggleButton.on('click', function() {
             isVisible = !isVisible;  // Toggle della visibilità
