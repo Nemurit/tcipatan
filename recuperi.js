@@ -220,7 +220,7 @@
     }
 
     function addToggleButton() {
-        const button = $('<button id="toggleButton" style="position: absolute; top: 10px; left: 10px; padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
+        const button = $('<button id="toggleButton" style="position: fixed; top: 10px; left: 10px; z-index: 10001; padding: 10px; background-color: rgba(255, 255, 255, 0.9); border-radius: 5px; display: flex; flex-direction: row;"><button style="padding: 3px; background-color: rgb(76, 175, 80); color: white; border: none; border-radius: 3px; margin-right: 5px;">Mostra Recuperi</button>');
         button.on('click', toggleRecovery);
         $('body').append(button);
     }
