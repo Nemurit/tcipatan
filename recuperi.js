@@ -215,12 +215,11 @@
                 position: fixed;
                 top: 10px;
                 right: 10px;
-                width: 300px;
+                width: 400px;
                 background-color: white;
                 padding: 20px;
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
                 z-index: 1000;
-                max-height: 90vh; /* Maximum height of 90% of the viewport height */
                 overflow-y: auto; /* Enable vertical scrolling if content overflows */
             }
 
@@ -238,6 +237,7 @@
                 border: 1px solid #ddd;
                 padding: 8px;
                 text-align: left;
+                overflow-y: auto;
             }
 
             #bufferSummaryTable th {
