@@ -147,32 +147,67 @@
         table.append(tbody);
         $('#mainContainer').append(table);
 
-        GM_addStyle(`
-            #bufferSummaryTable {
-                width: 60%;
-                float: right;
-                border-collapse: collapse;
-                margin-right: 5%;
-                margin-top: 20px;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            }
-            #bufferSummaryTable th, #bufferSummaryTable td {
-                border: 1px solid #ddd;
-                padding: 8px;
-                text-align: left;
-            }
-            #bufferSummaryTable th {
-                background-color: #f4f4f4;
-                font-weight: bold;
-            }
-            #bufferSummaryTable tr:nth-child(even) {
-                background-color: #f9f9f9;
-            }
-            #bufferSummaryTable tr:hover {
-                background-color: #f1f1f1;
-            }
-        `);
+    GM_addStyle(`
+    /* Stile per il container della tabella con righe */
+    #tableContainer {
+        position: fixed;
+        top: 40px;
+        left: 10px;
+        z-index: 10001;
+        background-color: rgba(255, 255, 255, 0.9);
+        padding: 15px;
+        max-height: 400px;
+        overflow-y: scroll;
+        width: 25%;
+        border: 1px solid #ccc;
+        border-radius: 5px;
     }
+    #tableContainer table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    #tableContainer th, #tableContainer td {
+        border: 1px solid #ccc;
+        padding: 8px;
+        text-align: left;
+    }
+    #tableContainer th {
+        background-color: #f2f2f2;
+    }
+    #tableContainer tr:nth-child(even) {
+        background-color: #f9f9f9;
+    }
+    #tableContainer tr:nth-child(odd) {
+        background-color: #ffffff;
+    }
+    #tableContainer tr:hover {
+        background-color: #f1f1f1;
+    }
+    #buttonContainer {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 10001;
+        display: flex;
+    }
+    #buttonContainer select,
+    #buttonContainer input,
+    #buttonContainer button {
+        margin-right: 5px;
+        padding: 3px;
+    }
+    #buttonContainer select {
+        display: none;
+    }
+    #rowCountDisplay {
+        display: none;
+        margin-left: 10px;
+        padding: 3px;
+        color: #000;
+        font-weight: bold;
+    }
+`);
+
 
     // Add filters
     function addFilters() {
