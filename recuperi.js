@@ -6,6 +6,7 @@
     let selectedBufferFilter = '';
     let selectedLaneFilters = [];  // Ora permette un array di lane
     let stackingToLaneMap = {};
+    let isVisible = false;  // Variabile per tenere traccia della visibilità della tabella
 
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
@@ -97,9 +98,15 @@
             }
         });
 
-        // Ordina i buffer in ordine numerico basato sui numeri nel nome (es. "BUFFER E3-F3", "BUFFER B4-C4")
+        // Ordina i buffer prima per lettera e poi per numero
         const sortedSummary = Object.keys(filteredSummary)
-            .sort((a, b) => parseBufferNumber(a) - parseBufferNumber(b))
+            .sort((a, b) => {
+                const letterComparison = a.localeCompare(b, undefined, { sensitivity: 'base' });
+                if (letterComparison === 0) {
+                    return parseBufferNumber(a) - parseBufferNumber(b);  // Ordinamento numerico all'interno dello stesso gruppo di lettere
+                }
+                return letterComparison;
+            })
             .reduce((acc, key) => {
                 acc[key] = filteredSummary[key];
                 return acc;
@@ -110,12 +117,13 @@
 
     // Funzione per estrarre i numeri dal nome del buffer
     function parseBufferNumber(bufferName) {
-        // Estrae il numero dal nome del buffer (es. "BUFFER E3-F3" -> "3")
         const match = bufferName.match(/(\d+)/);
         return match ? parseInt(match[0], 10) : 0;
     }
 
     function displayTable(filteredSummary) {
+        if (!isVisible) return;  // Se non è visibile, non fare nulla
+
         $('#bufferSummaryTable').remove();
 
         if (Object.keys(filteredSummary).length === 0) {
@@ -183,6 +191,8 @@
     }
 
     function addFilters() {
+        if (!isVisible) return;  // Non mostrare i filtri se la tabella è nascosta
+
         $('#filterContainer').remove();
 
         const filterContainer = $('<div id="filterContainer" style="margin-bottom: 20px; text-align: center; position: absolute; right: 10px; top: 40px;"></div>');
@@ -191,6 +201,7 @@
         bufferFilterInput.val(selectedBufferFilter);
         bufferFilterInput.on('input', function() {
             selectedBufferFilter = this.value;  // Non causa un aggiornamento automatico
+            fetchBufferSummary();  // Ricarica i dati con il nuovo filtro
         });
 
         const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per Lane (separati da virgola)" style="padding: 8px 12px; margin-right: 10px; width: 250px; border-radius: 5px; border: 1px solid #ccc;"/>');
@@ -209,5 +220,25 @@
         $('body').append(filterContainer);
     }
 
-    fetchStackingFilterMap(fetchBufferSummary);
+    // Funzione per creare e gestire il pulsante Mostra/Nascondi
+    function addToggleButton() {
+        const toggleButton = $('<button id="toggleButton" style="padding: 10px 20px; font-size: 16px; background-color: #4CAF50; color: white; border: none; cursor: pointer; position: absolute; left: 950px; top: 10px;">Mostra Recuperi</button>');
+        
+        toggleButton.on('click', function() {
+            isVisible = !isVisible;  // Toggle della visibilità
+            if (isVisible) {
+                fetchBufferSummary();  // Mostra la tabella e i filtri
+                $(this).text("Nascondi Recuperi");
+            } else {
+                $('#filterContainer').remove();  // Nasconde i filtri
+                $('#bufferSummaryTable').remove();  // Nasconde la tabella
+                $(this).text("Mostra Recuperi");
+            }
+        });
+
+        $('body').append(toggleButton);
+    }
+
+    addToggleButton();  // Aggiungi il pulsante per mostrare/nascondere
+    fetchStackingFilterMap(fetchBufferSummary);  // Carica i dati iniziali
 })();
