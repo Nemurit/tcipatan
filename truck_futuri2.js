@@ -10,6 +10,7 @@
     let timeInputBox = null;
     let printButton = null;
     let rowCountDisplay = null; // Contatore dei truck visibili
+    let mainContainer = null; // Main container to hold all UI elements
 
     // Costanti
     const DEFAULT_HOURS = 1; // Valore del filtro iniziale per Refresh
@@ -223,14 +224,16 @@
 
     // Funzione per creare pulsanti e input
     function createButtons() {
-        const buttonContainer = document.createElement('div');
-        buttonContainer.style.position = 'fixed';
-        buttonContainer.style.top = '10px';
-        buttonContainer.style.left = '10px';
-        buttonContainer.style.zIndex = '10001';
-        buttonContainer.style.display = 'flex';
+        // Create main container for UI elements
+        mainContainer = document.createElement('div');
+        mainContainer.style.position = 'fixed';
+        mainContainer.style.top = '10px';
+        mainContainer.style.left = '10px';
+        mainContainer.style.zIndex = '10001';
+        mainContainer.style.display = 'flex';
+        mainContainer.style.flexDirection = 'column'; // Stack elements vertically
 
-        buttonContainer.appendChild(createButtonForPageLoadAndDataExtraction());
+        mainContainer.appendChild(createButtonForPageLoadAndDataExtraction());
 
         dropdown = document.createElement('select');
         dropdown.style.display = 'none';
@@ -277,11 +280,11 @@
         rowCountDisplay.style.color = '#000';
         rowCountDisplay.style.fontWeight = 'bold';
 
-        buttonContainer.appendChild(dropdown);
-        buttonContainer.appendChild(timeInputBox);
-        buttonContainer.appendChild(printButton);
-        buttonContainer.appendChild(rowCountDisplay); // Aggiungi il contatore
-        document.body.appendChild(buttonContainer);
+        mainContainer.appendChild(dropdown);
+        mainContainer.appendChild(timeInputBox);
+        mainContainer.appendChild(printButton);
+        mainContainer.appendChild(rowCountDisplay); // Aggiungi il contatore
+        document.body.appendChild(mainContainer);
     }
 
     // Funzione per stampare solo la tabella formattata per la pagina di stampa
