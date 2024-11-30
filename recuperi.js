@@ -36,7 +36,7 @@
         const endTime = new Date().getTime();
         const startTime = endTime - 24 * 60 * 60 * 1000;
 
-        const apiUrl = `https://www.amazonlogistics.eu/sortcenter/vista/controller/getContainersDetailByCriteria`;
+        const apiUrl = https://www.amazonlogistics.eu/sortcenter/vista/controller/getContainersDetailByCriteria;
         const payload = {
             entity: "getContainersDetailByCriteria",
             nodeId: nodeId,
@@ -55,7 +55,7 @@
 
         GM_xmlhttpRequest({
             method: "GET",
-            url: `${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })}`,
+            url: ${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })},
             onload: function(response) {
                 try {
                     const data = JSON.parse(response.responseText);
@@ -133,9 +133,9 @@
         Object.entries(filteredSummary).forEach(([location, lanes]) => {
             Object.entries(lanes).forEach(([lane, data]) => {
                 const row = $('<tr></tr>');
-                row.append(`<td>${location}</td>`);
-                row.append(`<td>${lane}</td>`);
-                row.append(`<td>${data.count}</td>`);
+                row.append(<td>${location}</td>);
+                row.append(<td>${lane}</td>);
+                row.append(<td>${data.count}</td>);
                 tbody.append(row);
                 rowCount++;
                 totalContainers += data.count;
@@ -147,8 +147,7 @@
         table.append(tbody);
         $('#mainContainer').append(table);
 
-        // Using GM_addStyle to inject CSS
-        GM_addStyle(`
+        GM_addStyle(
             #bufferSummaryTable {
                 width: 60%;
                 float: right;
@@ -172,7 +171,7 @@
             #bufferSummaryTable tr:hover {
                 background-color: #f1f1f1;
             }
-        `);
+        );
     }
 
     // Add filters
