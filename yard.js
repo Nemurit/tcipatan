@@ -85,11 +85,11 @@
         // Intestazione
         const headerRow = thead.insertRow();
         const th1 = document.createElement('th');
-        th1.textContent = "Location";
+        th1.textContent = "Primo TD";
         headerRow.appendChild(th1);
 
         const th2 = document.createElement('th');
-        th2.textContent = "Content";
+        th2.textContent = "Ultimo TD";
         headerRow.appendChild(th2);
 
         [th1, th2].forEach(th => {
