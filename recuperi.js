@@ -37,7 +37,7 @@
         const endTime = new Date().getTime();
         const startTime = endTime - 24 * 60 * 60 * 1000;
 
-        const apiUrl = `https://www.amazonlogistics.eu/sortcenter/vista/controller/getContainersDetailByCriteria`;
+        const apiUrl = `https://trans-logistics-eu.amazon.com/sortcenter/vista/controller/getContainersDetailByCriteria`;
         const payload = {
             entity: "getContainersDetailByCriteria",
             nodeId: nodeId,
