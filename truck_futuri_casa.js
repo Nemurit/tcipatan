@@ -27,6 +27,7 @@
         button.style.border = 'none';
         button.style.borderRadius = '3px';
         button.style.marginRight = '5px';
+        button.style.cursor = 'pointer';
 
         let isTableVisible = false; // Stato toggle per la visibilità della tabella
 
