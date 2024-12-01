@@ -1,6 +1,11 @@
 (async function () {
     const URL = 'https://www.amazonlogistics.eu/ssp/dock/hrz/ob'; // URL della pagina da cui estrarre i dati
 
+    // Funzione per attendere un determinato tempo
+    function wait(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     try {
         const response = await fetch(URL, {
             method: 'GET',
@@ -15,6 +20,10 @@
         }
 
         const html = await response.text();
+
+        // Attendi 30 secondi
+        console.log('Attendo 30 secondi...');
+        await wait(30000); // 30 secondi
 
         // Crea un DOM parser
         const parser = new DOMParser();
