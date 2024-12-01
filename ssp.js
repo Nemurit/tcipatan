@@ -1,10 +1,5 @@
 (async function () {
-    const URL = 'https://www.amazonlogistics.eu/ssp/dock/hrz/ob'; // URL della pagina da cui estrarre i dati
-
-    // Funzione per attendere un determinato tempo
-    function wait(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
+    const URL = 'https://www.amazonlogistics.eu/ssp/dock/hrz/ob'; // URL della pagina da analizzare
 
     try {
         const response = await fetch(URL, {
@@ -21,23 +16,17 @@
 
         const html = await response.text();
 
-        // Attendi 30 secondi
-        console.log('Attendo 30 secondi...');
-        await wait(3000); // 30 secondi
-
         // Crea un DOM parser
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
 
-        // Naviga nel DOM per trovare la tabella dentro i div
-        const dashboardWrapper = doc.querySelector('#dashboard_wrapper'); // Trova il contenitore
-        if (!dashboardWrapper) {
-            throw new Error('Contenitore con id "dashboard_wrapper" non trovato.');
-        }
+        // Attendere 5 secondi prima di cercare la tabella
+        await new Promise(resolve => setTimeout(resolve, 5000));
 
-        const targetTable = dashboardWrapper.querySelector('table#dashboard.display.dataTable.floatL'); // Cerca la tabella dentro al contenitore
+        // Cerca direttamente la tabella con id="dashboard"
+        const targetTable = doc.querySelector('table#dashboard');
         if (!targetTable) {
-            throw new Error('Tabella non trovata nel contenitore "dashboard_wrapper".');
+            throw new Error('Tabella con id="dashboard" non trovata nella pagina.');
         }
 
         // Estrarre righe dalla tabella
