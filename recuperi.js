@@ -190,92 +190,72 @@
 
         GM_addStyle(`
             #bufferSummaryTable {
-                width: auto;
-                margin: 20px 0;
-                border-collapse: collapse;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
                 position: absolute;
+                top: 90px;
                 right: 10px;
-                top: 70px;
+                border-collapse: collapse;
+                background: #fff;
             }
-            #bufferSummaryTable th, #bufferSummaryTable td {
-                border: 1px solid #ddd;
-                padding: 10px 15px;
-                text-align: left;
-            }
-            #bufferSummaryTable th {
-                background-color: #f4f4f4;
-                font-weight: bold;
-            }
-            #bufferSummaryTable tr:nth-child(even) {
-                background-color: #f9f9f9;
-            }
-            #bufferSummaryTable tr:hover {
-                background-color: #f1f1f1;
+            #bufferSummaryTable td, th {
+                padding: 10px;
             }
         `);
-
-        addFilters();
+        addFiltersAndButton();
     }
 
-    function addFilters() {
-        if (!isVisible) return;
-
+    function addFiltersAndButton() {
         $('#filterContainer').remove();
+        $('#toggleButton').remove();
 
-        const filterContainer = $('<div id="filterContainer" style="position: fixed; top: 10px; right: 10px; z-index: 9999; display: flex; flex-direction: column;"></div>');
+        const tableOffset = $('#bufferSummaryTable').offset();
+        const tableWidth = $('#bufferSummaryTable').outerWidth();
 
-        // Filtro per BUFFER
-        const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 10px; font-size: 16px; width: auto; min-width: 200px; margin-top: 10px;">');
-        bufferFilterInput.val(selectedBufferFilter);
+        const bufferFilterInput = $(
+            `<input type="text" id="bufferFilterInput" placeholder="Filtro per BUFFER" style="
+                position: fixed;
+                top: 10px;
+                left: ${tableOffset.left}px;
+                padding: 10px;
+                font-size: 16px;
+                width: 200px;">
+            `
+        );
 
-        bufferFilterInput.on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedBufferFilter = bufferFilterInput.val();
-                fetchBufferSummary();
-            }
-        });
+        const laneFilterInput = $(
+            `<input type="text" id="laneFilterInput" placeholder="Filtro per LANE" style="
+                position: fixed;
+                top: 10px;
+                left: ${tableOffset.left + tableWidth - 200}px;
+                padding: 10px;
+                font-size: 16px;
+                width: 200px;">
+            `
+        );
 
-        // Filtro per LANE
-        const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="padding: 10px; font-size: 16px; width: auto; min-width: 200px; margin-top: 10px;">');
-        laneFilterInput.val(selectedLaneFilters.join(', '));
-
-        laneFilterInput.on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedLaneFilters = laneFilterInput.val().split(',').map(filter => filter.trim());
-                fetchBufferSummary();
-            }
-        });
-
-        filterContainer.append(bufferFilterInput);
-        filterContainer.append(laneFilterInput);
-        $('body').append(filterContainer);
-
-        const tableHeight = $('#bufferSummaryTable').outerHeight();
-        laneFilterInput.css('top', `calc(10px + ${tableHeight}px)`);
-    }
-
-    function addToggleButton() {
-        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
+        const toggleButton = $(
+            `<button id="toggleButton" style="
+                position: fixed;
+                top: 10px;
+                left: ${tableOffset.left - 220}px;
+                padding: 10px;
+                background-color: #007bff;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;">
+                Mostra Recuperi
+            </button>`
+        );
 
         toggleButton.on('click', function() {
             isVisible = !isVisible;
-            if (isVisible) {
-                fetchBufferSummary();
-                $(this).text("Nascondi Recuperi");
-            } else {
-                $('#filterContainer').remove();
-                $('#bufferSummaryTable').remove();
-                $(this).text("Mostra Recuperi");
-            }
+            $(this).text(isVisible ? 'Nascondi Recuperi' : 'Mostra Recuperi');
+            if (isVisible) fetchBufferSummary();
+            else $('#bufferSummaryTable').remove();
         });
 
-        $('body').append(toggleButton);
+        $('body').append(bufferFilterInput, laneFilterInput, toggleButton);
     }
 
-    fetchStackingFilterMap(function() {
-        addToggleButton();
-        fetchBufferSummary();
-    });
-
+    fetchStackingFilterMap(() => fetchBufferSummary());
 })();
