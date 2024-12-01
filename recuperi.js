@@ -1,4 +1,4 @@
-(function() {
+(function () {
     'use strict';
 
     const nodeId = 'MXP6';
@@ -12,7 +12,7 @@
         GM_xmlhttpRequest({
             method: "GET",
             url: stackingFilterMapUrl,
-            onload: function(response) {
+            onload: function (response) {
                 try {
                     const laneData = JSON.parse(response.responseText);
 
@@ -27,7 +27,7 @@
                     console.error("Errore nel parsing della mappa JSON:", error);
                 }
             },
-            onerror: function(error) {
+            onerror: function (error) {
                 console.error("Errore nel caricamento del file JSON:", error);
             }
         });
@@ -57,7 +57,7 @@
         GM_xmlhttpRequest({
             method: "GET",
             url: `${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })}`,
-            onload: function(response) {
+            onload: function (response) {
                 try {
                     const data = JSON.parse(response.responseText);
                     if (data.ret && data.ret.getContainersDetailByCriteriaOutput) {
@@ -70,7 +70,7 @@
                     console.error("Errore nella risposta API:", error);
                 }
             },
-            onerror: function(error) {
+            onerror: function (error) {
                 console.error("Errore nella chiamata API:", error);
             }
         });
@@ -196,7 +196,7 @@
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
                 position: absolute;
                 right: 10px;
-                top: 70px;
+                top: 90px;
             }
             #bufferSummaryTable th, #bufferSummaryTable td {
                 border: 1px solid #ddd;
@@ -223,13 +223,13 @@
 
         $('#filterContainer').remove();
 
-        const filterContainer = $('<div id="filterContainer" style="position: fixed; top: 10px; right: 10px; z-index: 9999; display: flex; flex-direction: column;"></div>');
+        const filterContainer = $('<div id="filterContainer" style="position: fixed; top: 10px; left: 10px; z-index: 9999; display: flex; gap: 10px; align-items: center;"></div>');
 
         // Filtro per BUFFER
-        const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 10px; font-size: 16px; width: auto; min-width: 200px; margin-top: 10px;">');
+        const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 10px; font-size: 16px; min-width: 200px;">');
         bufferFilterInput.val(selectedBufferFilter);
 
-        bufferFilterInput.on('keydown', function(event) {
+        bufferFilterInput.on('keydown', function (event) {
             if (event.key === "Enter") {
                 selectedBufferFilter = bufferFilterInput.val();
                 fetchBufferSummary();
@@ -237,10 +237,10 @@
         });
 
         // Filtro per LANE
-        const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="padding: 10px; font-size: 16px; width: auto; min-width: 200px; margin-top: 10px;">');
+        const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="padding: 10px; font-size: 16px; min-width: 200px;">');
         laneFilterInput.val(selectedLaneFilters.join(', '));
 
-        laneFilterInput.on('keydown', function(event) {
+        laneFilterInput.on('keydown', function (event) {
             if (event.key === "Enter") {
                 selectedLaneFilters = laneFilterInput.val().split(',').map(filter => filter.trim());
                 fetchBufferSummary();
@@ -250,15 +250,12 @@
         filterContainer.append(bufferFilterInput);
         filterContainer.append(laneFilterInput);
         $('body').append(filterContainer);
-
-        const tableHeight = $('#bufferSummaryTable').outerHeight();
-        laneFilterInput.css('top', `calc(10px + ${tableHeight}px)`);
     }
 
     function addToggleButton() {
-        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
+        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; right: 10px; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
 
-        toggleButton.on('click', function() {
+        toggleButton.on('click', function () {
             isVisible = !isVisible;
             if (isVisible) {
                 fetchBufferSummary();
@@ -273,7 +270,7 @@
         $('body').append(toggleButton);
     }
 
-    fetchStackingFilterMap(function() {
+    fetchStackingFilterMap(function () {
         addToggleButton();
         fetchBufferSummary();
     });
