@@ -1,104 +1,179 @@
 (function () {
     'use strict';
 
-    let isVisible = false;
+    let tableVisible = false; // Stato della tabella
+    let dataContainer; // Variabile per il container
+    let isDataLoaded = false; // Flag per sapere se i dati sono stati caricati
 
-    function fetchYardVehicles() {
-        const apiUrl = `https://www.amazonlogistics.eu/yms/shipclerk/#/yard?yardAssetStatus=FULL`;
+    // Funzione per caricare la pagina di yard in un iframe nascosto con attesa di 5 secondi
+    function loadYardPageAndExtractData(callback) {
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none'; // Nasconde l'iframe
+        iframe.src = "https://trans-logistics-eu.amazon.com/yms/shipclerk/#/yard";
 
-        GM_xmlhttpRequest({
-            method: "GET",
-            url: apiUrl,
-            onload: function (response) {
-                try {
-                    const data = JSON.parse(response.responseText);
-                    if (data && data.yardAssets) {
-                        const yardAssets = data.yardAssets;
-                        processAndDisplay(yardAssets);
-                    } else {
-                        console.warn("Nessun dato trovato nella risposta API.");
-                    }
-                } catch (error) {
-                    console.error("Errore nella risposta API:", error);
+        iframe.onload = function () {
+            setTimeout(() => {
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+
+                if (!iframeDoc) {
+                    console.error("Impossibile accedere al contenuto dell'iframe.");
+                    callback([]);
+                    return;
                 }
-            },
-            onerror: function (error) {
-                console.error("Errore nella chiamata API:", error);
-            },
-        });
+
+                // Seleziona tutte le righe
+                const rows = iframeDoc.querySelectorAll('tr');
+                const data = [];
+
+                rows.forEach(row => {
+                    const hasCol1 = row.querySelector('td.col1') !== null; // Verifica se esiste "col1"
+                    const noteContainer = row.querySelector('#noteContainer'); // Verifica se esiste "noteContainer"
+
+                    if (hasCol1 && noteContainer) {
+                        const noteText = noteContainer.innerText.trim();
+
+                        // Verifica se "noteContainer" contiene "JP" o "Ricarica" (case-insensitive)
+                        if (/jp|ricarica/i.test(noteText)) {
+                            const cells = row.querySelectorAll('td');
+                            if (cells.length > 0) {
+                                const firstCell = cells[0].innerText.trim(); // Primo <td>
+                                const lastCell = cells[cells.length - 1].innerText.trim(); // Ultimo <td>
+                                data.push([firstCell, lastCell]); // Salva solo primo e ultimo
+                            }
+                        }
+                    }
+                });
+
+                console.log("Dati filtrati:", data);
+                callback(data);
+
+                // Rimuove l'iframe dopo l'elaborazione
+                iframe.remove();
+            }, 1500); // Aspetta 5 secondi
+        };
+
+        document.body.appendChild(iframe);
     }
 
-    function processAndDisplay(yardAssets) {
-        if (!isVisible) return;
+    // Funzione per visualizzare i dati in una tabella HTML all'interno del container
+    function displayData(data) {
+        // Pulisci il contenuto del container
+        dataContainer.innerHTML = "";
 
-        $('#yardTable').remove();
-
-        if (!yardAssets || yardAssets.length === 0) {
-            console.warn("Nessun veicolo da visualizzare.");
+        if (data.length === 0) {
+            const noDataMessage = document.createElement('p');
+            noDataMessage.textContent = "Nessun dato disponibile!";
+            noDataMessage.style.color = '#333';
+            noDataMessage.style.fontFamily = 'Arial, sans-serif';
+            dataContainer.appendChild(noDataMessage);
+            isDataLoaded = false;
             return;
         }
 
-        const table = $('<table id="yardTable" class="performance"></table>');
-        table.append('<thead><tr><th>Location</th><th>Vehicle</th><th>Load Identifier(s)</th><th>Notes</th></tr></thead>');
+        // Crea una tabella per visualizzare i dati
+        const dataTable = document.createElement('table');
+        dataTable.style.borderCollapse = 'collapse';
+        dataTable.style.fontSize = '14px';
+        dataTable.style.fontFamily = 'Arial, sans-serif';
+        dataTable.style.textAlign = 'left';
+        dataTable.style.border = '1px solid #ddd';
+        dataTable.style.width = 'auto'; // Adattamento alla lunghezza del contenuto
 
-        const tbody = $('<tbody></tbody>');
+        const thead = dataTable.createTHead();
+        const tbody = dataTable.createTBody();
 
-        yardAssets.forEach(asset => {
-            const row = $('<tr></tr>');
+        // Intestazione
+        const headerRow = thead.insertRow();
+        const th1 = document.createElement('th');
+        th1.textContent = "Primo TD";
+        headerRow.appendChild(th1);
 
-            row.append(`<td>${asset.location || 'N/A'}</td>`);
-            row.append(`<td>${asset.vehicle || 'N/A'}</td>`);
-            row.append(`<td>${(asset.loadIdentifiers || []).join(', ') || 'N/A'}</td>`);
-            row.append(`<td>${asset.notes || 'N/A'}</td>`);
+        const th2 = document.createElement('th');
+        th2.textContent = "Ultimo TD";
+        headerRow.appendChild(th2);
 
-            tbody.append(row);
+        [th1, th2].forEach(th => {
+            th.style.padding = '8px';
+            th.style.border = '1px solid #ddd';
+            th.style.backgroundColor = '#f4f4f4';
+            th.style.color = '#333';
         });
 
-        table.append(tbody);
-        $('body').append(table);
+        // Aggiungi le righe dei dati
+        data.forEach(rowData => {
+            const row = tbody.insertRow();
 
-        GM_addStyle(`
-            #yardTable {
-                width: 80%;
-                margin: 20px auto;
-                border-collapse: collapse;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            }
-            #yardTable th, #yardTable td {
-                border: 1px solid #ddd;
-                padding: 8px;
-                text-align: left;
-            }
-            #yardTable th {
-                background-color: #f4f4f4;
-                font-weight: bold;
-            }
-            #yardTable tr:nth-child(even) {
-                background-color: #f9f9f9;
-            }
-            #yardTable tr:hover {
-                background-color: #f1f1f1;
-            }
-        `);
+            const firstTd = row.insertCell();
+            firstTd.textContent = rowData[0];
+
+            const lastTd = row.insertCell();
+            lastTd.textContent = rowData[1];
+
+            [firstTd, lastTd].forEach(td => {
+                td.style.padding = '8px';
+                td.style.border = '1px solid #ddd';
+                td.style.whiteSpace = 'nowrap'; // Impedisce il wrapping per rispettare la lunghezza della stringa
+            });
+        });
+
+        dataContainer.appendChild(dataTable); // Aggiungi la tabella al container
+
+        // Impostiamo il flag che i dati sono stati caricati
+        isDataLoaded = true;
+
+        // Mostra il container dopo che i dati sono stati caricati
+        dataContainer.style.display = 'block';
     }
 
-    function addToggleButton() {
-        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 550px; left: 10px; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Dati Veicoli</button>');
-
-        toggleButton.on('click', function () {
-            isVisible = !isVisible;
-            if (isVisible) {
-                fetchYardVehicles();
-                $(this).text("Nascondi Dati Veicoli");
+    // Funzione per mostrare/nascondere i dati al clic del pulsante
+    function toggleDataDisplay() {
+        if (tableVisible) {
+            dataContainer.style.display = 'none';
+        } else {
+            // Carica e mostra i dati solo se i dati non sono ancora stati caricati
+            if (!isDataLoaded) {
+                loadYardPageAndExtractData(function (data) {
+                    displayData(data);
+                });
             } else {
-                $('#yardTable').remove();
-                $(this).text("Mostra Dati Veicoli");
+                // Se i dati sono già stati caricati, mostra semplicemente la tabella
+                dataContainer.style.display = 'block';
             }
-        });
-
-        $('body').append(toggleButton);
+        }
+        tableVisible = !tableVisible; // Inverti lo stato della visibilità
     }
 
-    // Aggiunge il pulsante per attivare/disattivare la tabella
-    addToggleButton();
+    // Crea il pulsante "Mostra dati veicoli"
+    const button = document.createElement('button');
+    button.textContent = "Mostra dati veicoli";
+    button.style.position = 'fixed';
+    button.style.top = '550px';
+    button.style.left = '10px';
+    button.style.padding = '10px';
+    button.style.backgroundColor = '#007bff';
+    button.style.color = 'white';
+    button.style.border = 'none';
+    button.style.borderRadius = '5px';
+    button.style.cursor = 'pointer';
+    button.style.zIndex = '1000';
+
+    // Crea il container per i dati
+    dataContainer = document.createElement('div');
+    dataContainer.style.position = 'fixed';
+    dataContainer.style.top = '600px';
+    dataContainer.style.left = '10px';
+    dataContainer.style.backgroundColor = 'white';
+    dataContainer.style.border = '1px solid #ddd';
+    dataContainer.style.borderRadius = '5px';
+    dataContainer.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
+    dataContainer.style.padding = '10px';
+    dataContainer.style.display = 'none'; // Nascondi inizialmente
+    dataContainer.style.zIndex = '999';
+
+    // Aggiungi evento click al pulsante
+    button.addEventListener('click', toggleDataDisplay);
+
+    // Aggiungi il pulsante e il container alla pagina
+    document.body.appendChild(button);
+    document.body.appendChild(dataContainer);
 })();
