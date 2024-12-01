@@ -223,7 +223,7 @@
 
         $('#filterContainer').remove();
 
-        const filterContainer = $('<div id="filterContainer" style="position: fixed; top: 50px; left: 10px; z-index: 9999; display: flex; gap: 20px; align-items: center; justify-content: center; width: 100%;"></div>');
+        const filterContainer = $('<div id="filterContainer" style="position: fixed; top: 10px; left: 950px; z-index: 9999; display: flex; gap: 20px; align-items: center; justify-content: center; width: 100%;"></div>');
 
         // Filtro per BUFFER
         const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 10px; font-size: 16px; min-width: 200px;">');
