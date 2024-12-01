@@ -26,29 +26,11 @@
                 const data = [];
 
                 rows.forEach(row => {
-                    const hasCol1 = row.querySelector('td.col1') !== null; // Verifica se esiste "col1"
-                    const noteContainer = row.querySelector('#noteContainer'); // Verifica se esiste "noteContainer"
-                    const col9 = row.querySelector('td.col9'); // Verifica se esiste "col9"
+                    const col9 = row.querySelector('td.col9'); // Seleziona "col9" della riga
 
-                    // Condizione per includere la riga
-                    if ((hasCol1 && noteContainer) || (col9 && /TransfersCarts/i.test(col9.innerText))) {
-                        let firstCell = "";
-                        let lastCell = "";
-
-                        // Filtra i dati specifici
-                        if (noteContainer && /jp|ricarica/i.test(noteContainer.innerText.trim())) {
-                            firstCell = row.querySelector('td.col1').innerText.trim();
-                            lastCell = row.querySelector('td:last-child').innerText.trim();
-                        }
-
-                        if (col9 && /TransfersCarts/i.test(col9.innerText)) {
-                            firstCell = row.querySelector('td.col1').innerText.trim();
-                            lastCell = "TransfersCarts"; // Mostra solo la stringa specifica
-                        }
-
-                        if (firstCell && lastCell) {
-                            data.push([firstCell, lastCell]); // Aggiungi i dati filtrati
-                        }
+                    // Verifica se col9 contiene "TransfersCarts" (case-insensitive)
+                    if (col9 && /TransfersCarts/i.test(col9.innerText)) {
+                        data.push("TransfersCarts"); // Aggiunge solo la nota
                     }
                 });
 
@@ -93,35 +75,24 @@
         // Intestazione
         const headerRow = thead.insertRow();
         const th1 = document.createElement('th');
-        th1.textContent = "Location";
+        th1.textContent = "Note";
         headerRow.appendChild(th1);
 
-        const th2 = document.createElement('th');
-        th2.textContent = "Content";
-        headerRow.appendChild(th2);
-
-        [th1, th2].forEach(th => {
-            th.style.padding = '8px';
-            th.style.border = '1px solid #ddd';
-            th.style.backgroundColor = '#f4f4f4';
-            th.style.color = '#333';
-        });
+        th1.style.padding = '8px';
+        th1.style.border = '1px solid #ddd';
+        th1.style.backgroundColor = '#f4f4f4';
+        th1.style.color = '#333';
 
         // Aggiungi le righe dei dati
-        data.forEach(rowData => {
+        data.forEach(note => {
             const row = tbody.insertRow();
 
-            const firstTd = row.insertCell();
-            firstTd.textContent = rowData[0];
+            const noteTd = row.insertCell();
+            noteTd.textContent = note;
 
-            const lastTd = row.insertCell();
-            lastTd.textContent = rowData[1];
-
-            [firstTd, lastTd].forEach(td => {
-                td.style.padding = '8px';
-                td.style.border = '1px solid #ddd';
-                td.style.whiteSpace = 'nowrap'; // Impedisce il wrapping per rispettare la lunghezza della stringa
-            });
+            noteTd.style.padding = '8px';
+            noteTd.style.border = '1px solid #ddd';
+            noteTd.style.whiteSpace = 'nowrap'; // Impedisce il wrapping per rispettare la lunghezza della stringa
         });
 
         dataContainer.appendChild(dataTable); // Aggiungi la tabella al container
