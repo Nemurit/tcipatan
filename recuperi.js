@@ -223,7 +223,7 @@
 
         $('#filterContainer').remove();
 
-        const filterContainer = $('<div id="filterContainer" style="position: fixed; top: 10px; left: 10px; z-index: 9999; display: flex; gap: 10px; align-items: center;"></div>');
+        const filterContainer = $('<div id="filterContainer" style="position: fixed; top: 10px; left: 10px; z-index: 9999; display: flex; gap: 20px; align-items: center;"></div>');
 
         // Filtro per BUFFER
         const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 10px; font-size: 16px; min-width: 200px;">');
@@ -253,7 +253,7 @@
     }
 
     function addToggleButton() {
-        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; right: 10px; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
+        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: 220px; padding: 4px 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
 
         toggleButton.on('click', function () {
             isVisible = !isVisible;
