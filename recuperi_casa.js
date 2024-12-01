@@ -131,7 +131,9 @@
     function displayTable(sortedSummary) {
         if (!isVisible) return;
 
-        $('#bufferSummaryTable').remove();
+        $('#contentContainer').remove();
+
+        const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 70px; right: 10px; display: flex; flex-direction: column; gap: 20px;"></div>');
 
         if (Object.keys(sortedSummary).length === 0) {
             return;
@@ -186,17 +188,16 @@
         tbody.append(globalTotalRow);
 
         table.append(tbody);
-        $('body').append(table);
+        contentContainer.append(table);
+
+        $('body').append(contentContainer);
 
         GM_addStyle(`
             #bufferSummaryTable {
-                width: auto;
+                table-layout: auto;
                 margin: 20px 0;
                 border-collapse: collapse;
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                position: absolute;
-                right: 10px;
-                top: 70px;
             }
             #bufferSummaryTable th, #bufferSummaryTable td {
                 border: 1px solid #ddd;
@@ -215,19 +216,15 @@
             }
         `);
 
-        addFilters();
+        addFilters(contentContainer);
     }
 
-    function addFilters() {
-        if (!isVisible) return;
-
+    function addFilters(container) {
         $('#filterContainer').remove();
 
-        const filterContainer = $('<div id="filterContainer" style="position: fixed; top: 10px; right: 10px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>');
+        const filterContainer = $('<div id="filterContainer" style="display: flex; flex-direction: column; gap: 10px;"></div>');
 
-
-        // Filtro per BUFFER
-        const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 10px; font-size: 16px; width: auto; min-width: 200px; margin-top: 10px;">');
+        const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 10px; font-size: 16px; width: auto; min-width: 200px;">');
         bufferFilterInput.val(selectedBufferFilter);
 
         bufferFilterInput.on('keydown', function(event) {
@@ -237,8 +234,7 @@
             }
         });
 
-        // Filtro per LANE
-        const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="padding: 10px; font-size: 16px; width: auto; min-width: 200px; margin-top: 10px;">');
+        const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="padding: 10px; font-size: 16px; width: auto; min-width: 200px;">');
         laneFilterInput.val(selectedLaneFilters.join(', '));
 
         laneFilterInput.on('keydown', function(event) {
@@ -250,10 +246,7 @@
 
         filterContainer.append(bufferFilterInput);
         filterContainer.append(laneFilterInput);
-        $('body').append(filterContainer);
-
-        const tableHeight = $('#bufferSummaryTable').outerHeight();
-        laneFilterInput.css('top', `calc(10px + ${tableHeight}px)`);
+        container.append(filterContainer);
     }
 
     function addToggleButton() {
@@ -265,8 +258,7 @@
                 fetchBufferSummary();
                 $(this).text("Nascondi Recuperi");
             } else {
-                $('#filterContainer').remove();
-                $('#bufferSummaryTable').remove();
+                $('#contentContainer').remove();
                 $(this).text("Mostra Recuperi");
             }
         });
