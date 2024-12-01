@@ -223,8 +223,9 @@
 
         $('#filterContainer').remove();
 
-        const filterContainer = $('<div id="filterContainer" style="margin-bottom: 20px; text-align: center; position: fixed; top: 10px; right: 10px; z-index: 9999;"></div>');
+        const filterContainer = $('<div id="filterContainer" style="position: fixed; top: 10px; right: 10px; z-index: 9999; display: flex; flex-direction: column;"></div>');
 
+        // Filtro per BUFFER
         const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 10px; font-size: 16px; width: auto; min-width: 200px; margin-top: 10px;">');
         bufferFilterInput.val(selectedBufferFilter);
 
@@ -235,6 +236,7 @@
             }
         });
 
+        // Filtro per LANE
         const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="padding: 10px; font-size: 16px; width: auto; min-width: 200px; margin-top: 10px;">');
         laneFilterInput.val(selectedLaneFilters.join(', '));
 
@@ -248,10 +250,13 @@
         filterContainer.append(bufferFilterInput);
         filterContainer.append(laneFilterInput);
         $('body').append(filterContainer);
+
+        const tableHeight = $('#bufferSummaryTable').outerHeight();
+        laneFilterInput.css('top', `calc(10px + ${tableHeight}px)`);
     }
 
     function addToggleButton() {
-        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 18px; left: 950px; padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
+        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
 
         toggleButton.on('click', function() {
             isVisible = !isVisible;
