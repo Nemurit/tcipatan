@@ -275,7 +275,50 @@
         printButton.style.marginRight = '5px';
         printButton.style.display = 'none';
         printButton.addEventListener('click', function () {
-            window.print();
+            if (tableContainer) {
+                const printWindow = window.open('', '_blank');
+                const printDocument = printWindow.document;
+
+                // Crea un contenuto minimale per la stampa
+                printDocument.open();
+                printDocument.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Stampa Tabella</title>
+                        <style>
+                            table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin-bottom: 20px;
+                            }
+                            th, td {
+                                border: 1px solid #000;
+                                padding: 8px;
+                                text-align: left;
+                            }
+                            th {
+                                background-color: #f2f2f2;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${tableContainer.innerHTML}
+                    </body>
+                    </html>
+                `);
+                printDocument.close();
+
+                // Avvia il processo di stampa
+                printWindow.print();
+
+                // Chiudi la finestra di stampa dopo l'uso
+                printWindow.onafterprint = function () {
+                    printWindow.close();
+                };
+            } else {
+                alert('Nessuna tabella disponibile per la stampa.');
+            }
         });
 
         rowCountDisplay = document.createElement('span');
