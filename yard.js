@@ -26,11 +26,14 @@
                 const data = [];
 
                 rows.forEach(row => {
-                    const col9 = row.querySelector('td.col9'); // Seleziona "col9" della riga
+                    const col1 = row.querySelector('td.col1'); // Location
+                    const col9 = row.querySelector('td.col9'); // Note
 
                     // Verifica se col9 contiene "TransfersCarts" (case-insensitive)
-                    if (col9 && /TransfersCarts/i.test(col9.innerText)) {
-                        data.push("TransfersCarts"); // Aggiunge solo la nota
+                    if (col1 && col9 && /TransfersCarts/i.test(col9.innerText)) {
+                        const location = col1.innerText.trim(); // Testo della colonna Location
+                        const note = col9.innerText.trim(); // Testo della colonna Note
+                        data.push([location, note]); // Aggiunge Location e Note
                     }
                 });
 
@@ -75,24 +78,35 @@
         // Intestazione
         const headerRow = thead.insertRow();
         const th1 = document.createElement('th');
-        th1.textContent = "Note";
+        th1.textContent = "Location";
         headerRow.appendChild(th1);
 
-        th1.style.padding = '8px';
-        th1.style.border = '1px solid #ddd';
-        th1.style.backgroundColor = '#f4f4f4';
-        th1.style.color = '#333';
+        const th2 = document.createElement('th');
+        th2.textContent = "Note";
+        headerRow.appendChild(th2);
+
+        [th1, th2].forEach(th => {
+            th.style.padding = '8px';
+            th.style.border = '1px solid #ddd';
+            th.style.backgroundColor = '#f4f4f4';
+            th.style.color = '#333';
+        });
 
         // Aggiungi le righe dei dati
-        data.forEach(note => {
+        data.forEach(rowData => {
             const row = tbody.insertRow();
 
-            const noteTd = row.insertCell();
-            noteTd.textContent = note;
+            const firstTd = row.insertCell();
+            firstTd.textContent = rowData[0]; // Location
 
-            noteTd.style.padding = '8px';
-            noteTd.style.border = '1px solid #ddd';
-            noteTd.style.whiteSpace = 'nowrap'; // Impedisce il wrapping per rispettare la lunghezza della stringa
+            const lastTd = row.insertCell();
+            lastTd.textContent = rowData[1]; // Note
+
+            [firstTd, lastTd].forEach(td => {
+                td.style.padding = '8px';
+                td.style.border = '1px solid #ddd';
+                td.style.whiteSpace = 'nowrap'; // Impedisce il wrapping per rispettare la lunghezza della stringa
+            });
         });
 
         dataContainer.appendChild(dataTable); // Aggiungi la tabella al container
