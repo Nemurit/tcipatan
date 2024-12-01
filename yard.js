@@ -2,13 +2,14 @@
     'use strict';
 
     let tableVisible = false; // Stato della tabella
+    let dataContainer; // Variabile per il container
     let isDataLoaded = false; // Flag per sapere se i dati sono stati caricati
 
     // Funzione per caricare la pagina di yard in un iframe nascosto con attesa di 5 secondi
     function loadYardPageAndExtractData(callback) {
         const iframe = document.createElement('iframe');
         iframe.style.display = 'none'; // Nasconde l'iframe
-        iframe.src = "https://trans-logistics-eu.amazon.com/yms/shipclerk/#/yard";
+        iframe.src = "https://trans-logistics-eu.amazon.com/yms/shipclerk/#/yard;
 
         iframe.onload = function () {
             setTimeout(() => {
@@ -54,12 +55,18 @@
         document.body.appendChild(iframe);
     }
 
-    // Funzione per visualizzare i dati in una tabella HTML direttamente nel body
+    // Funzione per visualizzare i dati in una tabella HTML all'interno del container
     function displayData(data) {
-        console.log("Displaying data:", data); // Log dei dati caricati
-        // Verifica se ci sono dati
+        // Pulisci il contenuto del container
+        dataContainer.innerHTML = "";
+
         if (data.length === 0) {
-            alert("Nessun dato disponibile!");
+            const noDataMessage = document.createElement('p');
+            noDataMessage.textContent = "Nessun dato disponibile!";
+            noDataMessage.style.color = '#333';
+            noDataMessage.style.fontFamily = 'Arial, sans-serif';
+            dataContainer.appendChild(noDataMessage);
+            isDataLoaded = false;
             return;
         }
 
@@ -78,11 +85,11 @@
         // Intestazione
         const headerRow = thead.insertRow();
         const th1 = document.createElement('th');
-        th1.textContent = "Primo TD";
+        th1.textContent = "Location";
         headerRow.appendChild(th1);
 
         const th2 = document.createElement('th');
-        th2.textContent = "Ultimo TD";
+        th2.textContent = "Content";
         headerRow.appendChild(th2);
 
         [th1, th2].forEach(th => {
@@ -109,27 +116,28 @@
             });
         });
 
-        // Aggiungi la tabella direttamente al body della pagina
-        document.body.appendChild(dataTable); // Invece di aggiungerla al container
+        dataContainer.appendChild(dataTable); // Aggiungi la tabella al container
+
+        // Impostiamo il flag che i dati sono stati caricati
+        isDataLoaded = true;
+
+        // Mostra il container dopo che i dati sono stati caricati
+        dataContainer.style.display = 'block';
     }
 
     // Funzione per mostrare/nascondere i dati al clic del pulsante
     function toggleDataDisplay() {
         if (tableVisible) {
-            // Se la tabella è visibile, nascondi
-            const tables = document.querySelectorAll('table');
-            tables.forEach(table => table.style.display = 'none');
+            dataContainer.style.display = 'none';
         } else {
             // Carica e mostra i dati solo se i dati non sono ancora stati caricati
             if (!isDataLoaded) {
                 loadYardPageAndExtractData(function (data) {
-                    console.log("Dati caricati per la tabella:", data);
                     displayData(data);
                 });
             } else {
                 // Se i dati sono già stati caricati, mostra semplicemente la tabella
-                const tables = document.querySelectorAll('table');
-                tables.forEach(table => table.style.display = 'block');
+                dataContainer.style.display = 'block';
             }
         }
         tableVisible = !tableVisible; // Inverti lo stato della visibilità
@@ -149,9 +157,23 @@
     button.style.cursor = 'pointer';
     button.style.zIndex = '1000';
 
+    // Crea il container per i dati
+    dataContainer = document.createElement('div');
+    dataContainer.style.position = 'fixed';
+    dataContainer.style.top = '600px';
+    dataContainer.style.left = '10px';
+    dataContainer.style.backgroundColor = 'white';
+    dataContainer.style.border = '1px solid #ddd';
+    dataContainer.style.borderRadius = '5px';
+    dataContainer.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
+    dataContainer.style.padding = '10px';
+    dataContainer.style.display = 'none'; // Nascondi inizialmente
+    dataContainer.style.zIndex = '999';
+
     // Aggiungi evento click al pulsante
     button.addEventListener('click', toggleDataDisplay);
 
-    // Aggiungi il pulsante alla pagina
+    // Aggiungi il pulsante e il container alla pagina
     document.body.appendChild(button);
+    document.body.appendChild(dataContainer);
 })();
