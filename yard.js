@@ -27,13 +27,14 @@
 
                 rows.forEach(row => {
                     const col1 = row.querySelector('td.col1'); // Location
-                    const col9 = row.querySelector('td.col9'); // Note
+                    const col9 = row.querySelector('td.col9'); // Controlla per TransfersCarts
+                    const col11 = row.querySelector('td.col11'); // Note da mostrare
 
-                    // Verifica se col9 contiene "TransfersCarts" (case-insensitive)
-                    if (col1 && col9 && /TransfersCarts/i.test(col9.innerText)) {
+                    // Verifica che col9 contenga "TransfersCarts" (case-insensitive)
+                    if (col1 && col9 && col11 && /TransfersCarts/i.test(col9.innerText)) {
                         const location = col1.innerText.trim(); // Testo della colonna Location
-                        const note = col9.innerText.trim(); // Testo della colonna Note
-                        data.push([location, note]); // Aggiunge Location e Note
+                        const note = col11.innerText.trim(); // Testo della colonna Note (col11)
+                        data.push([location, note]); // Aggiungi Location e Note
                     }
                 });
 
@@ -100,7 +101,7 @@
             firstTd.textContent = rowData[0]; // Location
 
             const lastTd = row.insertCell();
-            lastTd.textContent = rowData[1]; // Note
+            lastTd.textContent = rowData[1]; // Note (col11)
 
             [firstTd, lastTd].forEach(td => {
                 td.style.padding = '8px';
