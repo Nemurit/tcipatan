@@ -1,3 +1,4 @@
+
 (function () {
     'use strict';
 
@@ -194,22 +195,25 @@
         const table = document.createElement('table');
         table.style.width = '100%';
         table.style.borderCollapse = 'collapse';
+        table.style.fontFamily = 'Arial, sans-serif';
+        table.style.fontSize = '14px';
+        table.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
         table.innerHTML = `
-            <thead>
+            <thead style="background-color: #f4f4f4; border-bottom: 2px solid #ccc;">
                 <tr>
-                    <th>LANE</th>
-                    <th>SDT</th>
-                    <th>CPT</th>
-                    <th>Status</th>
+                    <th style="padding: 10px; text-align: left;">LANE</th>
+                    <th style="padding: 10px; text-align: left;">SDT</th>
+                    <th style="padding: 10px; text-align: left;">CPT</th>
+                    <th style="padding: 10px; text-align: left;">Status</th>
                 </tr>
             </thead>
             <tbody>
                 ${filteredRows.map(row => `
-                    <tr style="background-color: ${row.highlightColor};">
-                        <td>${row.lane}</td>
-                        <td>${row.sdt}</td>
-                        <td>${row.cpt}</td>
-                        <td>${row.extraText}</td>
+                    <tr style="background-color: ${row.highlightColor}; color: white; text-align: left;">
+                        <td style="padding: 10px;">${row.lane}</td>
+                        <td style="padding: 10px;">${row.sdt}</td>
+                        <td style="padding: 10px;">${row.cpt}</td>
+                        <td style="padding: 10px;">${row.extraText}</td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -275,7 +279,53 @@
         printButton.style.marginRight = '5px';
         printButton.style.display = 'none';
         printButton.addEventListener('click', function () {
-            window.print();
+            if (tableContainer) {
+                const printWindow = window.open('', '_blank');
+                const printDocument = printWindow.document;
+
+                // Crea un contenuto minimale per la stampa
+                printDocument.open();
+                printDocument.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Stampa Tabella</title>
+                        <style>
+                            table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin-bottom: 20px;
+                                font-family: Arial, sans-serif;
+                                font-size: 14px;
+                                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                            }
+                            th, td {
+                                border: 1px solid #ccc;
+                                padding: 8px;
+                                text-align: left;
+                            }
+                            th {
+                                background-color: #f4f4f4;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${tableContainer.innerHTML}
+                    </body>
+                    </html>
+                `);
+                printDocument.close();
+
+                // Avvia il processo di stampa
+                printWindow.print();
+
+                // Chiudi la finestra di stampa dopo l'uso
+                printWindow.onafterprint = function () {
+                    printWindow.close();
+                };
+            } else {
+                alert('Nessuna tabella disponibile per la stampa.');
+            }
         });
 
         rowCountDisplay = document.createElement('span');
