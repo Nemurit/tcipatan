@@ -140,7 +140,24 @@
         }
 
         const table = $('<table id="bufferSummaryTable" class="performance"></table>');
-        table.append('<thead><tr><th>Buffer</th><th>Totale Container</th></tr></thead>');
+
+        // Aggiungere filtri come parte dell'intestazione della tabella
+        const thead = $(`
+            <thead>
+                <tr>
+                    <th>
+                        <input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="width: 100%; box-sizing: border-box; padding: 5px;">
+                    </th>
+                    <th>
+                        <input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="width: 100%; box-sizing: border-box; padding: 5px;">
+                    </th>
+                </tr>
+                <tr>
+                    <th>Buffer</th>
+                    <th>Totale Container</th>
+                </tr>
+            </thead>
+        `);
 
         const tbody = $('<tbody></tbody>');
         let totalContainers = 0;
@@ -187,10 +204,26 @@
         const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Globale</td><td>' + totalContainers + '</td></tr>');
         tbody.append(globalTotalRow);
 
+        table.append(thead);
         table.append(tbody);
         contentContainer.append(table);
 
         $('body').append(contentContainer);
+
+        // Gestione degli eventi sui filtri
+        $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function(event) {
+            if (event.key === "Enter") {
+                selectedBufferFilter = $(this).val();
+                fetchBufferSummary();
+            }
+        });
+
+        $('#laneFilterInput').val(selectedLaneFilters.join(', ')).on('keydown', function(event) {
+            if (event.key === "Enter") {
+                selectedLaneFilters = $(this).val().split(',').map(filter => filter.trim());
+                fetchBufferSummary();
+            }
+        });
 
         GM_addStyle(`
             #bufferSummaryTable {
@@ -201,7 +234,7 @@
             }
             #bufferSummaryTable th, #bufferSummaryTable td {
                 border: 1px solid #ddd;
-                padding: 10px 15px;
+                padding: 10px;
                 text-align: left;
             }
             #bufferSummaryTable th {
@@ -214,39 +247,11 @@
             #bufferSummaryTable tr:hover {
                 background-color: #f1f1f1;
             }
+            #bufferSummaryTable input {
+                font-size: 14px;
+                padding: 5px;
+            }
         `);
-
-        addFilters(contentContainer);
-    }
-
-    function addFilters(container) {
-        $('#filterContainer').remove();
-
-        const filterContainer = $('<div id="filterContainer" style="display: flex; flex-direction: column; gap: 10px;"></div>');
-
-        const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="padding: 10px; font-size: 16px; width: auto; min-width: 200px;">');
-        bufferFilterInput.val(selectedBufferFilter);
-
-        bufferFilterInput.on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedBufferFilter = bufferFilterInput.val();
-                fetchBufferSummary();
-            }
-        });
-
-        const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="padding: 10px; font-size: 16px; width: auto; min-width: 200px;">');
-        laneFilterInput.val(selectedLaneFilters.join(', '));
-
-        laneFilterInput.on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedLaneFilters = laneFilterInput.val().split(',').map(filter => filter.trim());
-                fetchBufferSummary();
-            }
-        });
-
-        filterContainer.append(bufferFilterInput);
-        filterContainer.append(laneFilterInput);
-        container.append(filterContainer);
     }
 
     function addToggleButton() {
