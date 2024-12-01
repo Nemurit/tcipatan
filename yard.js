@@ -30,17 +30,24 @@
                     const noteContainer = row.querySelector('#noteContainer'); // Verifica se esiste "noteContainer"
                     const col9 = row.querySelector('td.col9'); // Verifica se esiste "col9"
 
+                    // Condizione per includere la riga
                     if ((hasCol1 && noteContainer) || (col9 && /TransfersCarts/i.test(col9.innerText))) {
-                        const noteText = noteContainer?.innerText.trim() || "";
+                        let firstCell = "";
+                        let lastCell = "";
 
-                        // Verifica se "noteContainer" contiene "JP" o "Ricarica" (case-insensitive)
-                        if (/jp|ricarica/i.test(noteText) || (col9 && /TransfersCarts/i.test(col9.innerText))) {
-                            const cells = row.querySelectorAll('td');
-                            if (cells.length > 0) {
-                                const firstCell = cells[0].innerText.trim(); // Primo <td>
-                                const lastCell = cells[cells.length - 1].innerText.trim(); // Ultimo <td>
-                                data.push([firstCell, lastCell]); // Salva solo primo e ultimo
-                            }
+                        // Filtra i dati specifici
+                        if (noteContainer && /jp|ricarica/i.test(noteContainer.innerText.trim())) {
+                            firstCell = row.querySelector('td.col1').innerText.trim();
+                            lastCell = row.querySelector('td:last-child').innerText.trim();
+                        }
+
+                        if (col9 && /TransfersCarts/i.test(col9.innerText)) {
+                            firstCell = row.querySelector('td.col1').innerText.trim();
+                            lastCell = "TransfersCarts"; // Mostra solo la stringa specifica
+                        }
+
+                        if (firstCell && lastCell) {
+                            data.push([firstCell, lastCell]); // Aggiungi i dati filtrati
                         }
                     }
                 });
