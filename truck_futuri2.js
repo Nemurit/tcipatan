@@ -49,7 +49,7 @@
             iframe = document.createElement('iframe');
             iframe.id = 'pageIframe';
             iframe.style.display = 'none';
-            iframe.src = 'https://www.amazonlogistics.eu/ssp/dock/hrz/ob?';
+            iframe.src = 'https://trans-logistics-eu.amazon.com/ssp/dock/hrz/ob?';
             document.body.appendChild(iframe);
         }
 
