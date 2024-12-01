@@ -28,6 +28,7 @@
                 rows.forEach(row => {
                     const hasCol1 = row.querySelector('td.col1') !== null; // Verifica se esiste "col1"
                     const noteContainer = row.querySelector('#noteContainer'); // Verifica se esiste "noteContainer"
+                    const col9 = row.querySelector('td.col9'); // Seleziona la colonna 9
 
                     if (hasCol1 && noteContainer) {
                         const noteText = noteContainer.innerText.trim();
@@ -38,7 +39,15 @@
                             if (cells.length > 0) {
                                 const firstCell = cells[0].innerText.trim(); // Primo <td>
                                 const lastCell = cells[cells.length - 1].innerText.trim(); // Ultimo <td>
-                                data.push([firstCell, lastCell]); // Salva solo primo e ultimo
+                                const transfersCarts = col9 && /TransfersCarts/i.test(col9.innerText.trim()); // Verifica se col9 contiene "TransfersCarts"
+
+                                // Aggiungi solo la colonna 9 se contiene "TransfersCarts"
+                                const rowData = [firstCell, lastCell];
+                                if (transfersCarts) {
+                                    rowData.push(col9.innerText.trim()); // Aggiungi col9
+                                }
+
+                                data.push(rowData); // Salva i dati
                             }
                         }
                     }
@@ -92,7 +101,11 @@
         th2.textContent = "Content";
         headerRow.appendChild(th2);
 
-        [th1, th2].forEach(th => {
+        const th3 = document.createElement('th');
+        th3.textContent = "TransfersCarts"; // Aggiungi intestazione per TransfersCarts
+        headerRow.appendChild(th3);
+
+        [th1, th2, th3].forEach(th => {
             th.style.padding = '8px';
             th.style.border = '1px solid #ddd';
             th.style.backgroundColor = '#f4f4f4';
@@ -109,7 +122,10 @@
             const lastTd = row.insertCell();
             lastTd.textContent = rowData[1];
 
-            [firstTd, lastTd].forEach(td => {
+            const transfersTd = row.insertCell();
+            transfersTd.textContent = rowData[2] || ''; // Colonna per TransfersCarts, se presente
+
+            [firstTd, lastTd, transfersTd].forEach(td => {
                 td.style.padding = '8px';
                 td.style.border = '1px solid #ddd';
                 td.style.whiteSpace = 'nowrap'; // Impedisce il wrapping per rispettare la lunghezza della stringa
