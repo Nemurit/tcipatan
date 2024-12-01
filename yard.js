@@ -9,7 +9,7 @@
     function loadYardPageAndExtractData(callback) {
         const iframe = document.createElement('iframe');
         iframe.style.display = 'none'; // Nasconde l'iframe
-        iframe.src = "https://trans-logistics-eu.amazon.com/yms/shipclerk/#/yard;
+        iframe.src = "https://trans-logistics-eu.amazon.com/yms/shipclerk/#/yard";
 
         iframe.onload = function () {
             setTimeout(() => {
