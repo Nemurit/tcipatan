@@ -9,7 +9,7 @@
     function loadYardPageAndExtractData(callback) {
         const iframe = document.createElement('iframe');
         iframe.style.display = 'none'; // Nasconde l'iframe
-        iframe.src = "https://www.amazonlogistics.eu/yms/shipclerk/#/yard";
+        iframe.src = "https://www.amazonlogistics.eu/yms/shipclerk";
 
         iframe.onload = function () {
             setTimeout(() => {
@@ -26,21 +26,15 @@
                 const data = [];
 
                 rows.forEach(row => {
-                    const hasCol1 = row.querySelector('td.col1') !== null; // Verifica se esiste "col1"
-                    const noteContainer = row.querySelector('#noteContainer'); // Verifica se esiste "noteContainer"
+                    const col1 = row.querySelector('td.col1'); // Location
+                    const col9 = row.querySelector('td.col9'); // Controlla per TransfersCarts
+                    const col11 = row.querySelector('td.col11'); // Note da mostrare
 
-                    if (hasCol1 && noteContainer) {
-                        const noteText = noteContainer.innerText.trim();
-
-                        // Verifica se "noteContainer" contiene "JP" o "Ricarica" (case-insensitive)
-                        if (/jp|ricarica/i.test(noteText)) {
-                            const cells = row.querySelectorAll('td');
-                            if (cells.length > 0) {
-                                const firstCell = cells[0].innerText.trim(); // Primo <td>
-                                const lastCell = cells[cells.length - 1].innerText.trim(); // Ultimo <td>
-                                data.push([firstCell, lastCell]); // Salva solo primo e ultimo
-                            }
-                        }
+                    // Verifica che col9 contenga "TransfersCarts" (case-insensitive)
+                    if (col1 && col9 && col11 && /TransfersCarts/i.test(col9.innerText)) {
+                        const location = col1.innerText.trim(); // Testo della colonna Location
+                        const note = col11.innerText.trim(); // Testo della colonna Note (col11)
+                        data.push([location, note]); // Aggiungi Location e Note
                     }
                 });
 
@@ -49,7 +43,7 @@
 
                 // Rimuove l'iframe dopo l'elaborazione
                 iframe.remove();
-            }, 1500); // Aspetta 5 secondi
+            }, 3000); // Aspetta 5 secondi
         };
 
         document.body.appendChild(iframe);
@@ -89,7 +83,7 @@
         headerRow.appendChild(th1);
 
         const th2 = document.createElement('th');
-        th2.textContent = "Content";
+        th2.textContent = "Note";
         headerRow.appendChild(th2);
 
         [th1, th2].forEach(th => {
@@ -104,10 +98,10 @@
             const row = tbody.insertRow();
 
             const firstTd = row.insertCell();
-            firstTd.textContent = rowData[0];
+            firstTd.textContent = rowData[0]; // Location
 
             const lastTd = row.insertCell();
-            lastTd.textContent = rowData[1];
+            lastTd.textContent = rowData[1]; // Note (col11)
 
             [firstTd, lastTd].forEach(td => {
                 td.style.padding = '8px';
