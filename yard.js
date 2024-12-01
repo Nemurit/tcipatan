@@ -49,50 +49,52 @@
         document.body.appendChild(iframe);
     }
 
-    // Funzione per visualizzare i dati in una tabella HTML all'interno del container
-    function displayData(data) {
-        // Pulisci il contenuto del container
-        dataContainer.innerHTML = "";
+   // Funzione per visualizzare i dati in una tabella HTML all'interno del container
+function displayData(data) {
+    // Pulisci il contenuto del container
+    dataContainer.innerHTML = "";
 
-        if (data.length === 0) {
-            const noDataMessage = document.createElement('p');
-            noDataMessage.textContent = "Nessun dato disponibile!";
-            noDataMessage.style.color = '#333';
-            noDataMessage.style.fontFamily = 'Arial, sans-serif';
-            dataContainer.appendChild(noDataMessage);
-            isDataLoaded = false;
-            return;
-        }
+    // Crea una tabella per visualizzare i dati
+    const dataTable = document.createElement('table');
+    dataTable.style.borderCollapse = 'collapse';
+    dataTable.style.fontSize = '14px';
+    dataTable.style.fontFamily = 'Arial, sans-serif';
+    dataTable.style.textAlign = 'left';
+    dataTable.style.border = '1px solid #ddd';
+    dataTable.style.width = 'auto'; // Adattamento alla lunghezza del contenuto
 
-        // Crea una tabella per visualizzare i dati
-        const dataTable = document.createElement('table');
-        dataTable.style.borderCollapse = 'collapse';
-        dataTable.style.fontSize = '14px';
-        dataTable.style.fontFamily = 'Arial, sans-serif';
-        dataTable.style.textAlign = 'left';
-        dataTable.style.border = '1px solid #ddd';
-        dataTable.style.width = 'auto'; // Adattamento alla lunghezza del contenuto
+    const thead = dataTable.createTHead();
+    const tbody = dataTable.createTBody();
 
-        const thead = dataTable.createTHead();
-        const tbody = dataTable.createTBody();
+    // Intestazione
+    const headerRow = thead.insertRow();
+    const th1 = document.createElement('th');
+    th1.textContent = "Location";
+    headerRow.appendChild(th1);
 
-        // Intestazione
-        const headerRow = thead.insertRow();
-        const th1 = document.createElement('th');
-        th1.textContent = "Location";
-        headerRow.appendChild(th1);
+    const th2 = document.createElement('th');
+    th2.textContent = "Note";
+    headerRow.appendChild(th2);
 
-        const th2 = document.createElement('th');
-        th2.textContent = "Note";
-        headerRow.appendChild(th2);
+    [th1, th2].forEach(th => {
+        th.style.padding = '8px';
+        th.style.border = '1px solid #ddd';
+        th.style.backgroundColor = '#f4f4f4';
+        th.style.color = '#333';
+    });
 
-        [th1, th2].forEach(th => {
-            th.style.padding = '8px';
-            th.style.border = '1px solid #ddd';
-            th.style.backgroundColor = '#f4f4f4';
-            th.style.color = '#333';
-        });
-
+    if (data.length === 0) {
+        // Aggiungi una riga con il messaggio di avviso
+        const row = tbody.insertRow();
+        const cell = row.insertCell();
+        cell.colSpan = 2; // Span su entrambe le colonne
+        cell.textContent = "ATTENZIONE, NON CI SONO JP CARTS SUL FLOOR E NEMMENO NELLO YARD!!!";
+        cell.style.color = 'red';
+        cell.style.fontWeight = 'bold';
+        cell.style.textAlign = 'center';
+        cell.style.padding = '8px';
+        cell.style.border = '1px solid #ddd';
+    } else {
         // Aggiungi le righe dei dati
         data.forEach(rowData => {
             const row = tbody.insertRow();
@@ -109,15 +111,17 @@
                 td.style.whiteSpace = 'nowrap'; // Impedisce il wrapping per rispettare la lunghezza della stringa
             });
         });
-
-        dataContainer.appendChild(dataTable); // Aggiungi la tabella al container
-
-        // Impostiamo il flag che i dati sono stati caricati
-        isDataLoaded = true;
-
-        // Mostra il container dopo che i dati sono stati caricati
-        dataContainer.style.display = 'block';
     }
+
+    dataContainer.appendChild(dataTable); // Aggiungi la tabella al container
+
+    // Impostiamo il flag che i dati sono stati caricati
+    isDataLoaded = true;
+
+    // Mostra il container dopo che i dati sono stati caricati
+    dataContainer.style.display = 'block';
+}
+
 
     // Funzione per mostrare/nascondere i dati al clic del pulsante
     function toggleDataDisplay() {
