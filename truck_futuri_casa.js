@@ -9,16 +9,15 @@
     let dropdown = null;
     let timeInputBox = null;
     let printButton = null;
-    let rowCountDisplay = null;
-    let containermain = null;
-    let mainContainer = null; // Container principale
+    let rowCountDisplay = null; // Contatore dei truck visibili
+    let containermain = null; // Main container to hold all UI elements (named containermain)
 
     // Costanti
-    const DEFAULT_HOURS = 1;
-    const INITIAL_HOURS = 1;
-    const MAX_HOURS = 24;
+    const DEFAULT_HOURS = 1; // Valore del filtro iniziale per Refresh
+    const INITIAL_HOURS = 1; // Valore del filtro iniziale per Visualizza Trucks
+    const MAX_HOURS = 24; // Filtro massimo: 24 ore
 
-    // Funzione per creare il pulsante di caricamento dati con funzione toggle
+    // Funzione per creare il pulsante di caricamento dati
     function createButtonForPageLoadAndDataExtraction() {
         const button = document.createElement('button');
         button.innerHTML = 'Visualizza TRUCKS';
@@ -29,37 +28,21 @@
         button.style.borderRadius = '3px';
         button.style.marginRight = '5px';
 
-        let isTableVisible = false; // Stato toggle per la visibilità della tabella
-
         button.addEventListener('click', function () {
-            if (isTableVisible) {
-                // Nascondi la tabella e resetta lo stato
-                if (tableContainer) {
-                    tableContainer.style.display = 'none';
-                }
-                button.innerHTML = 'Visualizza TRUCKS';
-                isTableVisible = false;
-            } else {
-                // Mostra la tabella e carica i dati
-                if (tableContainer) {
-                    tableContainer.style.display = 'block';
-                } else {
-                    loadIframeAndWait(INITIAL_HOURS); // Carica dati per il massimo di 1 ora
-                }
-                button.innerHTML = 'Nascondi TRUCKS';
-                isTableVisible = true;
-            }
+            loadIframeAndWait(INITIAL_HOURS); // Carica dati per il massimo di 1 ora
         });
 
         return button;
     }
 
+    // Funzione per aggiornare i dati come il pulsante Visualizza Trucks
     function refreshData() {
         dropdown.value = 'Tutti';
-        timeInputBox.value = DEFAULT_HOURS;
-        loadIframeAndWait(DEFAULT_HOURS);
+        timeInputBox.value = DEFAULT_HOURS; // Ripristina l'ora a 1h
+        loadIframeAndWait(DEFAULT_HOURS); // Ricarica i dati con i filtri iniziali
     }
 
+    // Carica iframe e posizionalo visibilmente a destra della pagina
     function loadIframeAndWait(hours) {
         let iframe = document.getElementById('pageIframe');
         if (!iframe) {
@@ -72,12 +55,13 @@
 
         iframe.onload = function () {
             setTimeout(() => {
-                adjustTableRowSelection(iframe);
+                adjustTableRowSelection(iframe); // Imposta la selezione su 100
                 extractDataFromIframe(iframe, hours);
             }, 1000);
         };
     }
 
+    // Imposta la selezione su "100" righe nella tabella dell'iframe
     function adjustTableRowSelection(iframe) {
         const iframeDoc = iframe.contentWindow.document;
         const dropdown = iframeDoc.querySelector('#dashboard_length select');
@@ -85,13 +69,14 @@
         if (dropdown) {
             dropdown.value = '100';
             const event = new Event('change', { bubbles: true });
-            dropdown.dispatchEvent(event);
+            dropdown.dispatchEvent(event); // Simula l'evento di modifica
             console.log('Selezione righe impostata a 100.');
         } else {
             console.log('Dropdown per la selezione righe non trovato.');
         }
     }
 
+    // Estrai dati dalla tabella nell'iframe
     function extractDataFromIframe(iframe, hours) {
         const iframeDoc = iframe.contentWindow.document;
         const targetTable = iframeDoc.querySelector('table#dashboard.display.dataTable.floatL');
@@ -104,17 +89,19 @@
                 allRows = rows.map((row, index) => {
                     const tds = row.querySelectorAll('td');
                     if (tds.length >= 15) {
-                        const sdt = tds[13].textContent.trim();
-                        const cpt = tds[14].textContent.trim();
+                        const sdt = tds[13].textContent.trim(); // SDT
+                        const cpt = tds[14].textContent.trim(); // CPT
                         const lane = tds[5].textContent.trim();
 
+                        // Parsing delle date
                         const rowDate = parseDate(sdt);
 
                         if (!rowDate) {
                             console.error(`Errore nel parsing della data: ${sdt}`);
-                            return null;
+                            return null; // Salta la riga se la data è invalida
                         }
 
+                        // Determinazione dello stato e colore
                         let extraText = 'SWEEPER';
                         let highlightColor = 'orange';
                         if (sdt === cpt) {
@@ -139,7 +126,7 @@
                 }).filter(Boolean);
 
                 showButtonsAndInputs();
-                filterAndShowData(hours);
+                filterAndShowData(hours); // Filtro iniziale
             } else {
                 console.log('Il <tbody> non è stato trovato nella tabella.');
             }
@@ -148,6 +135,7 @@
         }
     }
 
+    // Funzione per il parsing della data
     function parseDate(dateString) {
         const parsedDate = new Date(dateString);
         if (!isNaN(parsedDate.getTime())) {
@@ -157,6 +145,7 @@
         return null;
     }
 
+    // Filtro e visualizzazione dati
     function filterAndShowData(hours) {
         const now = new Date();
         const effectiveHours = Math.min(hours, MAX_HOURS);
@@ -170,21 +159,25 @@
         }
 
         showDataInTable(filteredRows);
-        updateRowCount(filteredRows.length);
+        updateRowCount(filteredRows.length); // Aggiorna il contatore
     }
 
+    // Mostra i dati filtrati in una tabella
     function showDataInTable(filteredRows) {
         if (tableContainer) {
             tableContainer.remove();
         }
 
         tableContainer = document.createElement('div');
-        tableContainer.style.position = 'relative';
+        tableContainer.style.position = 'fixed';
+        tableContainer.style.top = '90px';
+        tableContainer.style.left = '10px';
+        tableContainer.style.zIndex = '10001';
         tableContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
         tableContainer.style.padding = '15px';
         tableContainer.style.maxHeight = '400px';
         tableContainer.style.overflowY = 'scroll';
-        tableContainer.style.width = '100%';
+        tableContainer.style.width = '25%';
         tableContainer.style.border = '1px solid #ccc';
         tableContainer.style.borderRadius = '5px';
 
@@ -212,31 +205,38 @@
             </tbody>
         `;
         tableContainer.appendChild(table);
-        mainContainer.appendChild(tableContainer); // Aggiungi la tabella al mainContainer
+        document.body.appendChild(tableContainer);
     }
 
+    // Aggiorna il contatore di righe visibili
     function updateRowCount(count) {
         if (!rowCountDisplay) return;
         rowCountDisplay.innerHTML = `NUMERO TRUCKS: ${count}`;
     }
 
+    // Funzione per mostrare pulsanti e input
     function showButtonsAndInputs() {
         dropdown.style.display = 'inline-block';
         timeInputBox.style.display = 'inline-block';
         printButton.style.display = 'inline-block';
-        rowCountDisplay.style.display = 'inline-block';
+        rowCountDisplay.style.display = 'inline-block'; // Mostra il contatore
     }
 
+    // Funzione per creare pulsanti e input
     function createButtons() {
+        // Create main container for UI elements
         containermain = document.createElement('div');
-        containermain.style.position = 'relative';
+        containermain.style.position = 'fixed';
+        containermain.style.top = '10px';
+        containermain.style.left = '10px';
         containermain.style.zIndex = '10001';
         containermain.style.padding = '10px';
         containermain.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
         containermain.style.borderRadius = '5px';
         containermain.style.display = 'flex';
-        containermain.style.flexDirection = 'column';
+        containermain.style.flexDirection = 'row'; // Pulsanti orizzontali
 
+        // Aggiungi il pulsante "Visualizza TRUCKS"
         containermain.appendChild(createButtonForPageLoadAndDataExtraction());
 
         dropdown = document.createElement('select');
@@ -260,33 +260,77 @@
         timeInputBox.style.padding = '3px';
         timeInputBox.style.marginRight = '5px';
         timeInputBox.style.display = 'none';
-        timeInputBox.value = INITIAL_HOURS;
-        timeInputBox.min = 1;
-        timeInputBox.max = MAX_HOURS;
-        timeInputBox.addEventListener('change', function () {
-            filterAndShowData(timeInputBox.value ? parseInt(timeInputBox.value, 10) : INITIAL_HOURS);
+        timeInputBox.addEventListener('input', function () {
+            filterAndShowData(parseInt(timeInputBox.value, 10));
         });
 
         printButton = document.createElement('button');
         printButton.innerHTML = 'Stampa';
         printButton.style.padding = '3px';
-        printButton.style.marginRight = '5px';
+        printButton.style.backgroundColor = '#2196F3';
+        printButton.style.color = 'white';
+        printButton.style.border = 'none';
+        printButton.style.borderRadius = '3px';
         printButton.style.display = 'none';
+        printButton.style.marginRight = '5px';
         printButton.addEventListener('click', function () {
-            window.print();
+            printTable(tableContainer);
         });
 
-        rowCountDisplay = document.createElement('span');
-        rowCountDisplay.style.marginLeft = '5px';
+        rowCountDisplay = document.createElement('div');
         rowCountDisplay.style.display = 'none';
+        rowCountDisplay.style.marginLeft = '10px';
+        rowCountDisplay.style.padding = '3px';
+        rowCountDisplay.style.color = '#000';
+        rowCountDisplay.style.fontWeight = 'bold';
 
-        // Aggiungi il container principale
-        mainContainer = document.createElement('div');
-        mainContainer.style.position = 'relative';
-        document.body.appendChild(mainContainer);
-
-        mainContainer.appendChild(containermain);
+        containermain.appendChild(dropdown);
+        containermain.appendChild(timeInputBox);
+        containermain.appendChild(printButton);
+        containermain.appendChild(rowCountDisplay); // Aggiungi il contatore
+        document.body.appendChild(containermain);
     }
 
-    createButtons();
+    // Funzione per stampare solo la tabella formattata per la pagina di stampa
+    function printTable(container) {
+        const printWindow = window.open('', '', 'height=600,width=800');
+        printWindow.document.write('<html><head><title>Stampa Dati</title>');
+
+        // Aggiungi stili per la pagina di stampa
+        printWindow.document.write(`
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    padding: 20px;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 20px;
+                }
+                th, td {
+                    border: 1px solid #ccc;
+                    padding: 8px;
+                    text-align: left;
+                }
+                th {
+                    background-color: #f2f2f2;
+                }
+                tr:nth-child(even) {
+                    background-color: #f9f9f9;
+                }
+                tr:nth-child(odd) {
+                    background-color: #ffffff;
+                }
+            </style>
+        `);
+
+        printWindow.document.write('</head><body>');
+        printWindow.document.write(container.innerHTML); // Scrivi solo il contenuto della tabella
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    createButtons(); // Crea i pulsanti all'avvio
 })();
