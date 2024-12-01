@@ -56,92 +56,96 @@
     }
 
     // Funzione per visualizzare i dati in una tabella HTML all'interno del container
-    function displayData(data) {
-        // Pulisci il contenuto del container
-        dataContainer.innerHTML = "";
+  function displayData(data) {
+    console.log("Displaying data:", data); // Log dei dati caricati
+    // Pulisci il contenuto del container
+    dataContainer.innerHTML = "";
 
-        if (data.length === 0) {
-            const noDataMessage = document.createElement('p');
-            noDataMessage.textContent = "Nessun dato disponibile!";
-            noDataMessage.style.color = '#333';
-            noDataMessage.style.fontFamily = 'Arial, sans-serif';
-            dataContainer.appendChild(noDataMessage);
-            isDataLoaded = false;
-            return;
-        }
+    if (data.length === 0) {
+        const noDataMessage = document.createElement('p');
+        noDataMessage.textContent = "Nessun dato disponibile!";
+        noDataMessage.style.color = '#333';
+        noDataMessage.style.fontFamily = 'Arial, sans-serif';
+        dataContainer.appendChild(noDataMessage);
+        isDataLoaded = false;
+        return;
+    }
 
-        // Crea una tabella per visualizzare i dati
-        const dataTable = document.createElement('table');
-        dataTable.style.borderCollapse = 'collapse';
-        dataTable.style.fontSize = '14px';
-        dataTable.style.fontFamily = 'Arial, sans-serif';
-        dataTable.style.textAlign = 'left';
-        dataTable.style.border = '1px solid #ddd';
-        dataTable.style.width = 'auto'; // Adattamento alla lunghezza del contenuto
+    // Crea una tabella per visualizzare i dati
+    const dataTable = document.createElement('table');
+    dataTable.style.borderCollapse = 'collapse';
+    dataTable.style.fontSize = '14px';
+    dataTable.style.fontFamily = 'Arial, sans-serif';
+    dataTable.style.textAlign = 'left';
+    dataTable.style.border = '1px solid #ddd';
+    dataTable.style.width = 'auto'; // Adattamento alla lunghezza del contenuto
 
-        const thead = dataTable.createTHead();
-        const tbody = dataTable.createTBody();
+    const thead = dataTable.createTHead();
+    const tbody = dataTable.createTBody();
 
-        // Intestazione
-        const headerRow = thead.insertRow();
-        const th1 = document.createElement('th');
-        th1.textContent = "Primo TD";
-        headerRow.appendChild(th1);
+    // Intestazione
+    const headerRow = thead.insertRow();
+    const th1 = document.createElement('th');
+    th1.textContent = "Primo TD";
+    headerRow.appendChild(th1);
 
-        const th2 = document.createElement('th');
-        th2.textContent = "Ultimo TD";
-        headerRow.appendChild(th2);
+    const th2 = document.createElement('th');
+    th2.textContent = "Ultimo TD";
+    headerRow.appendChild(th2);
 
-        [th1, th2].forEach(th => {
-            th.style.padding = '8px';
-            th.style.border = '1px solid #ddd';
-            th.style.backgroundColor = '#f4f4f4';
-            th.style.color = '#333';
+    [th1, th2].forEach(th => {
+        th.style.padding = '8px';
+        th.style.border = '1px solid #ddd';
+        th.style.backgroundColor = '#f4f4f4';
+        th.style.color = '#333';
+    });
+
+    // Aggiungi le righe dei dati
+    data.forEach(rowData => {
+        const row = tbody.insertRow();
+
+        const firstTd = row.insertCell();
+        firstTd.textContent = rowData[0];
+
+        const lastTd = row.insertCell();
+        lastTd.textContent = rowData[1];
+
+        [firstTd, lastTd].forEach(td => {
+            td.style.padding = '8px';
+            td.style.border = '1px solid #ddd';
+            td.style.whiteSpace = 'nowrap'; // Impedisce il wrapping per rispettare la lunghezza della stringa
         });
+    });
 
-        // Aggiungi le righe dei dati
-        data.forEach(rowData => {
-            const row = tbody.insertRow();
+    dataContainer.appendChild(dataTable); // Aggiungi la tabella al container
 
-            const firstTd = row.insertCell();
-            firstTd.textContent = rowData[0];
+    // Impostiamo il flag che i dati sono stati caricati
+    isDataLoaded = true;
 
-            const lastTd = row.insertCell();
-            lastTd.textContent = rowData[1];
+    // Mostra il container dopo che i dati sono stati caricati
+    dataContainer.style.display = 'block';
+}
 
-            [firstTd, lastTd].forEach(td => {
-                td.style.padding = '8px';
-                td.style.border = '1px solid #ddd';
-                td.style.whiteSpace = 'nowrap'; // Impedisce il wrapping per rispettare la lunghezza della stringa
+
+   function toggleDataDisplay() {
+    console.log("Toggle button clicked. Table visible:", tableVisible);
+    if (tableVisible) {
+        dataContainer.style.display = 'none';
+    } else {
+        // Carica e mostra i dati solo se i dati non sono ancora stati caricati
+        if (!isDataLoaded) {
+            loadYardPageAndExtractData(function (data) {
+                console.log("Dati caricati per la tabella:", data);
+                displayData(data);
             });
-        });
-
-        dataContainer.appendChild(dataTable); // Aggiungi la tabella al container
-
-        // Impostiamo il flag che i dati sono stati caricati
-        isDataLoaded = true;
-
-        // Mostra il container dopo che i dati sono stati caricati
-        dataContainer.style.display = 'block';
-    }
-
-    // Funzione per mostrare/nascondere i dati al clic del pulsante
-    function toggleDataDisplay() {
-        if (tableVisible) {
-            dataContainer.style.display = 'none';
         } else {
-            // Carica e mostra i dati solo se i dati non sono ancora stati caricati
-            if (!isDataLoaded) {
-                loadYardPageAndExtractData(function (data) {
-                    displayData(data);
-                });
-            } else {
-                // Se i dati sono già stati caricati, mostra semplicemente la tabella
-                dataContainer.style.display = 'block';
-            }
+            // Se i dati sono già stati caricati, mostra semplicemente la tabella
+            dataContainer.style.display = 'block';
         }
-        tableVisible = !tableVisible; // Inverti lo stato della visibilità
     }
+    tableVisible = !tableVisible; // Inverti lo stato della visibilità
+}
+
 
     // Crea il pulsante "Mostra dati veicoli"
     const button = document.createElement('button');
