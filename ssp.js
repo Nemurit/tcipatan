@@ -23,18 +23,24 @@
 
         // Attendi 30 secondi
         console.log('Attendo 30 secondi...');
-        await wait(30000); // 30 secondi
+        await wait(3000); // 30 secondi
 
         // Crea un DOM parser
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
 
-        // Trova la tabella
-        const targetTable = doc.querySelector('table#dashboard.display.dataTable.floatL');
-        if (!targetTable) {
-            throw new Error('Tabella non trovata');
+        // Naviga nel DOM per trovare la tabella dentro i div
+        const dashboardWrapper = doc.querySelector('#dashboard_wrapper'); // Trova il contenitore
+        if (!dashboardWrapper) {
+            throw new Error('Contenitore con id "dashboard_wrapper" non trovato.');
         }
 
+        const targetTable = dashboardWrapper.querySelector('table#dashboard.display.dataTable.floatL'); // Cerca la tabella dentro al contenitore
+        if (!targetTable) {
+            throw new Error('Tabella non trovata nel contenitore "dashboard_wrapper".');
+        }
+
+        // Estrarre righe dalla tabella
         const rows = Array.from(targetTable.querySelectorAll('tbody tr')).map((row, index) => {
             const cells = row.querySelectorAll('td');
             return {
@@ -50,6 +56,7 @@
         console.error('Errore:', error);
     }
 
+    // Mostra i dati in una tabella HTML
     function displayDataAsTable(rows) {
         const container = document.createElement('div');
         container.style.padding = '20px';
