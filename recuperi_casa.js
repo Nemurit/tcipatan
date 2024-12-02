@@ -133,7 +133,7 @@
 
         $('#contentContainer').remove();
 
-        const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 70px; right: 10px; display: flex; flex-direction: column; gap: 20px;"></div>');
+        const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; display: flex; flex-direction: column; gap: 20px;"></div>');
 
         if (Object.keys(sortedSummary).length === 0) {
             return;
