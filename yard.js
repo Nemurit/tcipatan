@@ -6,48 +6,56 @@
     let isDataLoaded = false; // Flag per sapere se i dati sono stati caricati
 
     // Funzione per caricare la pagina di yard in un iframe nascosto con attesa di 5 secondi
-    function loadYardPageAndExtractData(callback) {
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none'; // Nasconde l'iframe
-        iframe.src = "https://trans-logistics-eu.amazon.com/yms/shipclerk";
+   function loadYardPageAndExtractData(callback) {
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none'; // Nasconde l'iframe
+    iframe.src = "https://www.trans-logistics-eu.amazon.com/yms/shipclerk";
 
-        iframe.onload = function () {
-            setTimeout(() => {
-                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+    iframe.onload = function () {
+        setTimeout(() => {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
 
-                if (!iframeDoc) {
-                    console.error("Impossibile accedere al contenuto dell'iframe.");
-                    callback([]);
-                    return;
-                }
+            if (!iframeDoc) {
+                console.error("Impossibile accedere al contenuto dell'iframe.");
+                callback([]);
+                return;
+            }
 
-                // Seleziona tutte le righe
-                const rows = iframeDoc.querySelectorAll('tr');
-                const data = [];
+            // Seleziona tutte le righe
+            const rows = iframeDoc.querySelectorAll('tr');
+            const data = [];
 
-                rows.forEach(row => {
-                    const col1 = row.querySelector('td.col1'); // Location
-                    const col9 = row.querySelector('td.col9'); // Controlla per TransfersCarts
-                    const col11 = row.querySelector('td.col11'); // Note da mostrare
+            rows.forEach(row => {
+                const col1 = row.querySelector('td.col1'); // Location
+                const col9 = row.querySelector('td.col9'); // Tipo di Transfer
+                const col11 = row.querySelector('td.col11'); // Note da mostrare
 
-                    // Verifica che col9 contenga "TransfersCarts" (case-insensitive)
-                    if (col1 && col9 && col11 && /TransfersCarts/i.test(col9.innerText)) {
-                        const location = col1.innerText.trim(); // Testo della colonna Location
-                        const note = col11.innerText.trim(); // Testo della colonna Note (col11)
+                // Se col1, col9 e col11 esistono
+                if (col1 && col9 && col11) {
+                    const location = col1.innerText.trim(); // Testo della colonna Location
+                    const note = col11.innerText.trim(); // Testo della colonna Note (col11)
+
+                    // Caso 1: Se col9 contiene "TransfersCarts", aggiungi la riga con la location e la nota
+                    if (/TransfersCarts/i.test(col9.innerText)) {
+                        data.push([location, note]); // Aggiungi Location e Note
+
+                    // Caso 2: Se col9 contiene "Transfer" ma non "TransfersCarts", aggiungi la riga solo se "Ricarica" è nelle note
+                    } else if (/Transfers/i.test(col9.innerText) && /Ricarica/i.test(note)) {
                         data.push([location, note]); // Aggiungi Location e Note
                     }
-                });
+                }
+            });
 
-                console.log("Dati filtrati:", data);
-                callback(data);
+            console.log("Dati filtrati:", data);
+            callback(data);
 
-                // Rimuove l'iframe dopo l'elaborazione
-                iframe.remove();
-            }, 3000); // Aspetta 5 secondi
-        };
+            // Rimuove l'iframe dopo l'elaborazione
+            iframe.remove();
+        }, 3000); // Aspetta 3 secondi
+    };
 
-        document.body.appendChild(iframe);
-    }
+    document.body.appendChild(iframe);
+}
 
    // Funzione per visualizzare i dati in una tabella HTML all'interno del container
 function displayData(data) {
@@ -125,25 +133,28 @@ function displayData(data) {
 
     // Funzione per mostrare/nascondere i dati al clic del pulsante
     function toggleDataDisplay() {
-        if (tableVisible) {
-            dataContainer.style.display = 'none';
+    if (tableVisible) {
+        dataContainer.style.display = 'none';
+        button.textContent = "Mostra Scarichi"; // Cambia testo del pulsante
+    } else {
+        // Carica e mostra i dati solo se i dati non sono ancora stati caricati
+        if (!isDataLoaded) {
+            loadYardPageAndExtractData(function (data) {
+                displayData(data);
+            });
         } else {
-            // Carica e mostra i dati solo se i dati non sono ancora stati caricati
-            if (!isDataLoaded) {
-                loadYardPageAndExtractData(function (data) {
-                    displayData(data);
-                });
-            } else {
-                // Se i dati sono già stati caricati, mostra semplicemente la tabella
-                dataContainer.style.display = 'block';
-            }
+            // Se i dati sono già stati caricati, mostra semplicemente la tabella
+            dataContainer.style.display = 'block';
         }
-        tableVisible = !tableVisible; // Inverti lo stato della visibilità
+        button.textContent = "Nascondi Scarichi"; // Cambia testo del pulsante
     }
+    tableVisible = !tableVisible; // Inverti lo stato della visibilità
+}
+
 
     // Crea il pulsante "Mostra dati veicoli"
     const button = document.createElement('button');
-    button.textContent = "Mostra dati veicoli";
+    button.textContent = "Mostra Scarichi";
     button.style.position = 'fixed';
     button.style.top = '550px';
     button.style.left = '10px';
