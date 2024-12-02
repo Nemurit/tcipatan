@@ -48,6 +48,7 @@
                 } else {
                     loadIframeAndWait(INITIAL_HOURS); // Carica dati per il massimo di 1 ora
                 }
+                refreshData(); // Ricarica i dati anche quando si visualizza la tabella
                 button.innerHTML = 'Nascondi TRUCKS';
                 isTableVisible = true;
             }
