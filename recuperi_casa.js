@@ -141,22 +141,25 @@
 
         const table = $('<table id="bufferSummaryTable" class="performance"></table>');
 
-        // Aggiungere filtri come parte dell'intestazione della tabella
-        const thead = $(`
-            <thead>
-                <tr>
-                    <th>
-                        <input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="width: 100%; box-sizing: border-box; padding: 5px;">
-                    </th>
-                    <th>
-                        <input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="width: 100%; box-sizing: border-box; padding: 5px;">
-                    </th>
-                </tr>
-                <tr>
-                    <th>Buffer</th>
-                    <th>Totale Container</th>
-                </tr>
-            </thead>
+        // Creare il thead con filtri
+        const thead = $('<thead></thead>');
+        thead.append(`
+            <tr>
+                <th>
+                    <input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                </th>
+                <th>
+                    <input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                </th>
+            </tr>
+        `);
+
+        // Aggiungere l'intestazione delle colonne
+        thead.append(`
+            <tr>
+                <th>Buffer</th>
+                <th>Totale Container</th>
+            </tr>
         `);
 
         const tbody = $('<tbody></tbody>');
@@ -210,7 +213,7 @@
 
         $('body').append(contentContainer);
 
-        // Gestione degli eventi sui filtri
+        // Aggiungere gli eventi per i filtri
         $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function(event) {
             if (event.key === "Enter") {
                 selectedBufferFilter = $(this).val();
@@ -241,15 +244,10 @@
                 background-color: #f4f4f4;
                 font-weight: bold;
             }
-            #bufferSummaryTable tr:nth-child(even) {
-                background-color: #f9f9f9;
-            }
-            #bufferSummaryTable tr:hover {
-                background-color: #f1f1f1;
-            }
             #bufferSummaryTable input {
                 font-size: 14px;
                 padding: 5px;
+                margin: 0;
             }
         `);
     }
@@ -275,5 +273,4 @@
         addToggleButton();
         fetchBufferSummary();
     });
-
 })();
