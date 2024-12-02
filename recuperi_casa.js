@@ -120,7 +120,9 @@
                 }, {});
         });
 
-        displayTable(sortedSummary);
+        if (isVisible) {
+            displayTable(sortedSummary);
+        }
     }
 
     function parseBufferNumber(bufferName) {
@@ -129,8 +131,6 @@
     }
 
     function displayTable(sortedSummary) {
-        if (!isVisible) return;
-
         $('#contentContainer').remove();
 
         const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
@@ -141,7 +141,6 @@
 
         const table = $('<table id="bufferSummaryTable" class="performance"></table>');
 
-        // Creare il thead con filtri
         const thead = $('<thead></thead>');
         thead.append(`
             <tr>
@@ -290,10 +289,6 @@
     });
 
     // Aggiorna i dati ogni 5 minuti
-    setInterval(function() {
-        if (isVisible) {
-            fetchBufferSummary();
-        }
-    }, 300000); // 300,000 ms = 5 minuti
+    setInterval(fetchBufferSummary, 300000); // 300,000 ms = 5 minuti
 
 })();
