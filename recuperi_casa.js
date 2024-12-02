@@ -216,8 +216,11 @@
             totalContainers += laneTotal;
         });
 
+        // Aggiungere la riga separata del Totale Globale
         const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Globale</td><td>' + totalContainers + '</td></tr>');
-        tbody.append(globalTotalRow);
+        const globalTotalRowContainer = $('<tr><td colspan="3" style="padding: 10px;"></td></tr>'); // Riga vuota per separare
+        tbody.append(globalTotalRowContainer);  // Separare visivamente
+        tbody.append(globalTotalRow);  // Riga del totale globale
 
         table.append(thead);
         table.append(tbody);
