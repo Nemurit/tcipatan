@@ -17,23 +17,19 @@
     const DEFAULT_HOURS = 1;
     const INITIAL_HOURS = 1;
     const MAX_HOURS = 24;
-    const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minuti in millisecondi
+    const REFRESH_INTERVAL = 3 * 60 * 1000 // 3 minuti in millisecondi
 
     // Funzione per creare il pulsante di caricamento dati con funzione toggle
     function createButtonForPageLoadAndDataExtraction() {
-        console.log('Creazione del pulsante...'); // Debug
         const button = document.createElement('button');
         button.innerHTML = 'Visualizza TRUCKS';
-        button.style.padding = '10px';
+        button.style.padding = '3px';
         button.style.backgroundColor = '#4CAF50';
         button.style.color = 'white';
         button.style.border = 'none';
         button.style.borderRadius = '3px';
+        button.style.marginRight = '5px';
         button.style.cursor = 'pointer';
-        button.style.position = 'fixed'; // Aggiunto per assicurare visibilità
-        button.style.top = '10px';
-        button.style.left = '10px';
-        button.style.zIndex = '10000';
 
         let isTableVisible = false; // Stato toggle per la visibilità della tabella
 
@@ -59,15 +55,13 @@
 
         return button;
     }
-
-    // Funzione per il refresh automatico dei dati
-    function autoRefresh() {
+      // Funzione per il refresh automatico dei dati
+      function autoRefresh() {
         setInterval(() => {
             console.log('Eseguendo refresh automatico...');
             refreshData();
-        }, REFRESH_INTERVAL); // Intervallo di 10 minuti
+        }, REFRESH_INTERVAL); // Intervallo di 3 minuti
     }
-
     function refreshData() {
         dropdown.value = 'Tutti';
         timeInputBox.value = DEFAULT_HOURS;
@@ -175,125 +169,213 @@
     }
 
     function filterAndShowData(hours) {
-        const now = new Date();
-        const effectiveHours = Math.min(hours, MAX_HOURS);
-        const maxDate = new Date(now.getTime() + effectiveHours * 60 * 60 * 1000);
+    const now = new Date();
+    const effectiveHours = Math.min(hours, MAX_HOURS);
+    const maxDate = new Date(now.getTime() + effectiveHours * 60 * 60 * 1000);
 
-        const status = dropdown ? dropdown.value : 'Tutti';
-        const vrIdFilter = vrIdInputBox.value.trim().toLowerCase();
+    const status = dropdown ? dropdown.value : 'Tutti';
+    const vrIdFilter = vrIdInputBox.value.trim().toLowerCase();
 
-        let filteredRows;
+    let filteredRows;
 
-        if (vrIdFilter) {
-            // Se c'è un filtro VR ID, ignora il filtro delle ore
-            filteredRows = allRows.filter(row => 
-                row.vrId.toLowerCase().includes(vrIdFilter)
-            );
-        } else {
-            // Applica il filtro delle ore e dello stato
-            filteredRows = allRows.filter(row => 
-                row.date >= now && row.date <= maxDate
-            );
+    if (vrIdFilter) {
+        // Se c'è un filtro VR ID, ignora il filtro delle ore
+        filteredRows = allRows.filter(row => 
+            row.vrId.toLowerCase().includes(vrIdFilter)
+        );
+    } else {
+        // Applica il filtro delle ore e dello stato
+        filteredRows = allRows.filter(row => 
+            row.date >= now && row.date <= maxDate
+        );
 
-            if (status !== 'Tutti') {
-                filteredRows = filteredRows.filter(row => row.extraText === status);
-            }
+        if (status !== 'Tutti') {
+            filteredRows = filteredRows.filter(row => row.extraText === status);
         }
-
-        showDataInTable(filteredRows);
-        updateRowCount(filteredRows.length);
     }
 
-    function showDataInTable(filteredRows) {
-    console.log("Filtrando e mostrando i dati:", filteredRows);
-
-    if (tableContainer) {
-        tableContainer.remove();
-    }
-
-    tableContainer = document.createElement('div');
-    tableContainer.style.position = 'fixed';
-    tableContainer.style.top = '90px';
-    tableContainer.style.left = '10px';
-    tableContainer.style.zIndex = '10001';
-    tableContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-    tableContainer.style.padding = '15px';
-    tableContainer.style.maxHeight = '400px';
-    tableContainer.style.overflowY = 'scroll';
-    tableContainer.style.width = '25%';
-    tableContainer.style.border = '1px solid #ccc';
-    tableContainer.style.borderRadius = '5px';
-
-    const table = document.createElement('table');
-    table.style.width = '100%';
-    table.style.borderCollapse = 'collapse';
-    table.style.fontFamily = 'Arial, sans-serif';
-    table.style.fontSize = '14px';
-    table.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
-    table.innerHTML = `
-        <thead style="background-color: #f4f4f4; border-bottom: 2px solid #ccc;">
-            <tr>
-                <th style="padding: 10px; text-align: left;">LANE</th>
-                <th style="padding: 10px; text-align: left;">SDT</th>
-                <th style="padding: 10px; text-align: left;">CPT</th>
-                <th style="padding: 10px; text-align: left;">Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${filteredRows.map(row => `
-                <tr style="background-color: ${row.highlightColor};">
-                    <td style="padding: 8px;">${row.lane}</td>
-                    <td style="padding: 8px;">${row.sdt}</td>
-                    <td style="padding: 8px;">${row.cpt}</td>
-                    <td style="padding: 8px;">${row.extraText}</td>
-                </tr>`).join('')}
-        </tbody>
-    `;
-
-    console.log("Tabella creata:", table);
-    tableContainer.appendChild(table);
-    document.body.appendChild(tableContainer);
+    showDataInTable(filteredRows);
+    updateRowCount(filteredRows.length);
 }
 
 
-    function updateRowCount(count) {
-        if (rowCountDisplay) {
-            rowCountDisplay.textContent = `Rows displayed: ${count}`;
+    function showDataInTable(filteredRows) {
+        if (tableContainer) {
+            tableContainer.remove();
         }
+
+        tableContainer = document.createElement('div');
+        tableContainer.style.position = 'fixed';
+        tableContainer.style.top = '90px';
+        tableContainer.style.left = '10px';
+        tableContainer.style.zIndex = '10001';
+        tableContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+        tableContainer.style.padding = '15px';
+        tableContainer.style.maxHeight = '400px';
+        tableContainer.style.overflowY = 'scroll';
+        tableContainer.style.width = '25%';
+        tableContainer.style.border = '1px solid #ccc';
+        tableContainer.style.borderRadius = '5px';
+
+        const table = document.createElement('table');
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.style.fontFamily = 'Arial, sans-serif';
+        table.style.fontSize = '14px';
+        table.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
+        table.innerHTML = `
+            <thead style="background-color: #f4f4f4; border-bottom: 2px solid #ccc;">
+                <tr>
+                    <th style="padding: 10px; text-align: left;">LANE</th>
+                    <th style="padding: 10px; text-align: left;">SDT</th>
+                    <th style="padding: 10px; text-align: left;">CPT</th>
+                    <th style="padding: 10px; text-align: left;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${filteredRows.map(row => `
+                    <tr style="background-color: ${row.highlightColor}; color: white; text-align: left;">
+                        <td style="padding: 10px;">${row.lane}</td>
+                        <td style="padding: 10px;">${row.sdt}</td>
+                        <td style="padding: 10px;">${row.cpt}</td>
+                        <td style="padding: 10px;">${row.extraText}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        `;
+        tableContainer.appendChild(table);
+        document.body.appendChild(tableContainer);
+    }
+
+    function updateRowCount(count) {
+        if (!rowCountDisplay) return;
+        rowCountDisplay.innerHTML = `NUMERO TRUCKS: ${count}`;
     }
 
     function showButtonsAndInputs() {
-        if (!dropdown) {
-            dropdown = createDropdown();
-            document.body.appendChild(dropdown);
-        }
-        if (!timeInputBox) {
-            timeInputBox = createTimeInputBox();
-            document.body.appendChild(timeInputBox);
-        }
-        if (!vrIdInputBox) {
-            vrIdInputBox = createVrIdInputBox();
-            document.body.appendChild(vrIdInputBox);
-        }
-        if (!printButton) {
-            printButton = createPrintButton();
-            document.body.appendChild(printButton);
-        }
-        if (!rowCountDisplay) {
-            rowCountDisplay = createRowCountDisplay();
-            document.body.appendChild(rowCountDisplay);
-        }
+        dropdown.style.display = 'inline-block';
+        timeInputBox.style.display = 'inline-block';
+        vrIdInputBox.style.display = 'inline-block';
+        printButton.style.display = 'inline-block';
+        rowCountDisplay.style.display = 'inline-block';
     }
 
-    // Aggiungi il pulsante al DOM
-    const button = createButtonForPageLoadAndDataExtraction();
-    if (button) {
-        console.log('Aggiungo il pulsante al DOM...'); // Debug
-        document.body.appendChild(button);
-    } else {
-        console.error('Errore: il pulsante non è stato creato.');
+    function createButtons() {
+        containermain = document.createElement('div');
+        containermain.style.position = 'fixed';
+        containermain.style.top = '10px';
+        containermain.style.left = '10px';
+        containermain.style.zIndex = '10001';
+        containermain.style.padding = '10px';
+        containermain.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+        containermain.style.borderRadius = '5px';
+        containermain.style.display = 'flex';
+        containermain.style.flexDirection = 'row';
+
+        containermain.appendChild(createButtonForPageLoadAndDataExtraction());
+
+        dropdown = document.createElement('select');
+        dropdown.style.display = 'none';
+        dropdown.style.marginRight = '5px';
+        dropdown.style.padding = '3px';
+        ['Tutti', 'CPT', 'COLLECTION', 'TRANSFER'].forEach(option => {
+            const opt = document.createElement('option');
+            opt.value = option;
+            opt.innerHTML = option;
+            dropdown.appendChild(opt);
+        });
+
+        dropdown.addEventListener('change', function () {
+            filterAndShowData(timeInputBox.value ? parseInt(timeInputBox.value, 10) : INITIAL_HOURS);
+        });
+
+        timeInputBox = document.createElement('input');
+        timeInputBox.type = 'number';
+        timeInputBox.placeholder = 'Ore';
+        timeInputBox.style.padding = '3px';
+        timeInputBox.style.marginRight = '5px';
+        timeInputBox.style.display = 'none';
+        timeInputBox.addEventListener('input', function () {
+            filterAndShowData(parseInt(timeInputBox.value, 10));
+        });
+
+        vrIdInputBox = document.createElement('input');
+        vrIdInputBox.type = 'text';
+        vrIdInputBox.placeholder = 'Filtro VR ID';
+        vrIdInputBox.style.padding = '3px';
+        vrIdInputBox.style.marginRight = '5px';
+        vrIdInputBox.style.display = 'none';
+        vrIdInputBox.addEventListener('input', function () {
+            filterAndShowData(timeInputBox.value ? parseInt(timeInputBox.value, 10) : INITIAL_HOURS);
+        });
+
+        printButton = document.createElement('button');
+        printButton.innerHTML = 'Stampa';
+        printButton.style.padding = '3px';
+        printButton.style.marginRight = '5px';
+        printButton.style.display = 'none';
+        printButton.addEventListener('click', function () {
+            if (tableContainer) {
+                const printWindow = window.open('', '_blank');
+                const printDocument = printWindow.document;
+
+                // Crea un contenuto minimale per la stampa
+                printDocument.open();
+                printDocument.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Stampa Tabella</title>
+                        <style>
+                            table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin-bottom: 20px;
+                                font-family: Arial, sans-serif;
+                                font-size: 14px;
+                                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                            }
+                            th, td {
+                                border: 1px solid #ccc;
+                                padding: 8px;
+                                text-align: left;
+                            }
+                            th {
+                                background-color: #f4f4f4;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${tableContainer.innerHTML}
+                    </body>
+                    </html>
+                `);
+                printDocument.close();
+
+                // Avvia il processo di stampa
+                printWindow.print();
+
+                // Chiudi la finestra di stampa dopo l'uso
+                printWindow.onafterprint = function () {
+                    printWindow.close();
+                };
+            } else {
+                alert('Nessuna tabella disponibile per la stampa.');
+            }
+        });
+
+        rowCountDisplay = document.createElement('span');
+        rowCountDisplay.style.marginLeft = '5px';
+        rowCountDisplay.style.display = 'none';
+
+        containermain.appendChild(dropdown);
+        containermain.appendChild(timeInputBox);
+        containermain.appendChild(vrIdInputBox);
+        containermain.appendChild(printButton);
+        containermain.appendChild(rowCountDisplay);
+
+        document.body.appendChild(containermain);
     }
 
-    // Esegui il refresh automatico all'avvio
-    autoRefresh();
+    createButtons();
 })();
