@@ -120,7 +120,9 @@
                 }, {});
         });
 
-        displayTable(sortedSummary);
+        if (isVisible) {
+            displayTable(sortedSummary);
+        }
     }
 
     function parseBufferNumber(bufferName) {
@@ -129,8 +131,6 @@
     }
 
     function displayTable(sortedSummary) {
-        if (!isVisible) return;
-
         $('#contentContainer').remove();
 
         const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
@@ -141,7 +141,6 @@
 
         const table = $('<table id="bufferSummaryTable" class="performance"></table>');
 
-        // Creare il thead con filtri
         const thead = $('<thead></thead>');
         thead.append(`
             <tr>
@@ -154,7 +153,6 @@
             </tr>
         `);
 
-        // Aggiungere l'intestazione delle colonne
         thead.append(`
             <tr>
                 <th>Buffer</th>
@@ -181,12 +179,10 @@
                 laneColor = 'red';
             }
 
-            // Aggiungere la riga della lane
             const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
                 <td colspan="2" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
             </tr>`);
 
-            // Gestire l'espansione/contrazione delle righe
             laneRow.on('click', function() {
                 const nextRows = $(this).nextUntil('.laneRow');
                 nextRows.toggle();
@@ -194,7 +190,6 @@
 
             tbody.append(laneRow);
 
-            // Aggiungere le righe dei buffer sotto la lane
             Object.entries(laneSummary).forEach(([location, data]) => {
                 const row = $('<tr class="locationRow"></tr>');
                 const count = data.count;
@@ -216,17 +211,17 @@
             totalContainers += laneTotal;
         });
 
-        // Aggiungere la riga del Totale Globale separata e sempre visibile
-        const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Globale</td><td>' + totalContainers + '</td></tr>');
-        tbody.append(globalTotalRow); // La riga "Totale Globale" rimane sempre visibile
+        const tfoot = $('<tfoot></tfoot>');
+        const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
+        tfoot.append(globalTotalRow);
 
         table.append(thead);
         table.append(tbody);
+        table.append(tfoot);
         contentContainer.append(table);
 
         $('body').append(contentContainer);
 
-        // Aggiungere gli eventi per i filtri
         $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function(event) {
             if (event.key === "Enter") {
                 selectedBufferFilter = $(this).val();
@@ -256,6 +251,9 @@
             #bufferSummaryTable th {
                 background-color: #f4f4f4;
                 font-weight: bold;
+            }
+            #bufferSummaryTable tfoot {
+                background-color: #f4f4f4;
             }
             #bufferSummaryTable input {
                 font-size: 14px;
@@ -289,5 +287,8 @@
         addToggleButton();
         fetchBufferSummary();
     });
+
+    // Aggiorna i dati ogni 5 minuti
+    setInterval(fetchBufferSummary, 300000); // 300,000 ms = 5 minuti
 
 })();
