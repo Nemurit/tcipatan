@@ -1,7 +1,9 @@
 (function () {
     'use strict';
 
-    // Variabili globali
+    // Change the title of the page
+    document.title = "CLERK HANDOVER";
+
     let tableContainer = null;
     let allRows = [];
     let dropdown = null;
@@ -10,39 +12,45 @@
     let rowCountDisplay = null;
     let vrIdInputBox = null;
     let containermain = null;
-    let autoRefreshInterval = null; // Variabile per gestire l'intervallo di autorefresh
 
     // Costanti
     const DEFAULT_HOURS = 1;
     const INITIAL_HOURS = 1;
     const MAX_HOURS = 24;
+    const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minuti in millisecondi
 
     // Funzione per creare il pulsante di caricamento dati con funzione toggle
     function createButtonForPageLoadAndDataExtraction() {
+        console.log('Creazione del pulsante...'); // Debug
         const button = document.createElement('button');
         button.innerHTML = 'Visualizza TRUCKS';
-        button.style.padding = '3px';
+        button.style.padding = '10px';
         button.style.backgroundColor = '#4CAF50';
         button.style.color = 'white';
         button.style.border = 'none';
         button.style.borderRadius = '3px';
-        button.style.marginRight = '5px';
         button.style.cursor = 'pointer';
+        button.style.position = 'fixed'; // Aggiunto per assicurare visibilità
+        button.style.top = '10px';
+        button.style.left = '10px';
+        button.style.zIndex = '10000';
 
         let isTableVisible = false; // Stato toggle per la visibilità della tabella
 
         button.addEventListener('click', function () {
             if (isTableVisible) {
+                // Nascondi la tabella e resetta lo stato
                 if (tableContainer) {
                     tableContainer.style.display = 'none';
                 }
                 button.innerHTML = 'Visualizza TRUCKS';
                 isTableVisible = false;
             } else {
+                // Mostra la tabella e carica i dati
                 if (tableContainer) {
                     tableContainer.style.display = 'block';
                 } else {
-                    loadIframeAndWait(INITIAL_HOURS);
+                    loadIframeAndWait(INITIAL_HOURS); // Carica dati per il massimo di 1 ora
                 }
                 button.innerHTML = 'Nascondi TRUCKS';
                 isTableVisible = true;
@@ -50,6 +58,14 @@
         });
 
         return button;
+    }
+
+    // Funzione per il refresh automatico dei dati
+    function autoRefresh() {
+        setInterval(() => {
+            console.log('Eseguendo refresh automatico...');
+            refreshData();
+        }, REFRESH_INTERVAL); // Intervallo di 10 minuti
     }
 
     function refreshData() {
@@ -85,6 +101,9 @@
             dropdown.value = '100';
             const event = new Event('change', { bubbles: true });
             dropdown.dispatchEvent(event);
+            console.log('Selezione righe impostata a 100.');
+        } else {
+            console.log('Dropdown per la selezione righe non trovato.');
         }
     }
 
@@ -103,11 +122,12 @@
                         const sdt = tds[13].textContent.trim();
                         const cpt = tds[14].textContent.trim();
                         const lane = tds[5].textContent.trim();
-                        const vrId = tds[7].textContent.trim();
+                        const vrId = tds[7].textContent.trim(); // Ottieni VR ID
 
                         const rowDate = parseDate(sdt);
 
                         if (!rowDate) {
+                            console.error(`Errore nel parsing della data: ${sdt}`);
                             return null;
                         }
 
@@ -137,13 +157,21 @@
 
                 showButtonsAndInputs();
                 filterAndShowData(hours);
+            } else {
+                console.log('Il <tbody> non è stato trovato nella tabella.');
             }
+        } else {
+            console.log('La tabella non è stata trovata.');
         }
     }
 
     function parseDate(dateString) {
         const parsedDate = new Date(dateString);
-        return !isNaN(parsedDate.getTime()) ? parsedDate : null;
+        if (!isNaN(parsedDate.getTime())) {
+            return parsedDate;
+        }
+        console.error(`Impossibile convertire la data: ${dateString}`);
+        return null;
     }
 
     function filterAndShowData(hours) {
@@ -157,11 +185,13 @@
         let filteredRows;
 
         if (vrIdFilter) {
-            filteredRows = allRows.filter(row =>
+            // Se c'è un filtro VR ID, ignora il filtro delle ore
+            filteredRows = allRows.filter(row => 
                 row.vrId.toLowerCase().includes(vrIdFilter)
             );
         } else {
-            filteredRows = allRows.filter(row =>
+            // Applica il filtro delle ore e dello stato
+            filteredRows = allRows.filter(row => 
                 row.date >= now && row.date <= maxDate
             );
 
@@ -197,22 +227,23 @@
         table.style.borderCollapse = 'collapse';
         table.style.fontFamily = 'Arial, sans-serif';
         table.style.fontSize = '14px';
+        table.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
         table.innerHTML = `
-            <thead>
+            <thead style="background-color: #f4f4f4; border-bottom: 2px solid #ccc;">
                 <tr>
-                    <th>LANE</th>
-                    <th>SDT</th>
-                    <th>CPT</th>
-                    <th>Status</th>
+                    <th style="padding: 10px; text-align: left;">LANE</th>
+                    <th style="padding: 10px; text-align: left;">SDT</th>
+                    <th style="padding: 10px; text-align: left;">CPT</th>
+                    <th style="padding: 10px; text-align: left;">Status</th>
                 </tr>
             </thead>
             <tbody>
                 ${filteredRows.map(row => `
-                    <tr style="background-color: ${row.highlightColor}; color: white;">
-                        <td>${row.lane}</td>
-                        <td>${row.sdt}</td>
-                        <td>${row.cpt}</td>
-                        <td>${row.extraText}</td>
+                    <tr style="background-color: ${row.highlightColor};">
+                        <td style="padding: 8px;">${row.lane}</td>
+                        <td style="padding: 8px;">${row.sdt}</td>
+                        <td style="padding: 8px;">${row.cpt}</td>
+                        <td style="padding: 8px;">${row.extraText}</td>
                     </tr>
                 `).join('')}
             </tbody>
@@ -223,95 +254,42 @@
 
     function updateRowCount(count) {
         if (rowCountDisplay) {
-            rowCountDisplay.innerHTML = `NUMERO TRUCKS: ${count}`;
+            rowCountDisplay.textContent = `Rows displayed: ${count}`;
         }
     }
 
     function showButtonsAndInputs() {
-        dropdown.style.display = 'inline-block';
-        timeInputBox.style.display = 'inline-block';
-        vrIdInputBox.style.display = 'inline-block';
-        printButton.style.display = 'inline-block';
-        rowCountDisplay.style.display = 'inline-block';
-    }
-
-    function createButtons() {
-        containermain = document.createElement('div');
-        containermain.style.position = 'fixed';
-        containermain.style.top = '10px';
-        containermain.style.left = '10px';
-        containermain.style.zIndex = '10001';
-        containermain.style.display = 'flex';
-
-        containermain.appendChild(createButtonForPageLoadAndDataExtraction());
-
-        dropdown = document.createElement('select');
-        dropdown.style.marginRight = '5px';
-        dropdown.style.display = 'none';
-        ['Tutti', 'CPT', 'COLLECTION', 'TRANSFER'].forEach(option => {
-            const opt = document.createElement('option');
-            opt.value = option;
-            opt.innerHTML = option;
-            dropdown.appendChild(opt);
-        });
-
-        dropdown.addEventListener('change', () => filterAndShowData(parseInt(timeInputBox.value, 10) || INITIAL_HOURS));
-
-        timeInputBox = document.createElement('input');
-        timeInputBox.type = 'number';
-        timeInputBox.placeholder = 'Ore';
-        timeInputBox.style.marginRight = '5px';
-        timeInputBox.style.display = 'none';
-        timeInputBox.addEventListener('input', () => filterAndShowData(parseInt(timeInputBox.value, 10)));
-
-        vrIdInputBox = document.createElement('input');
-        vrIdInputBox.type = 'text';
-        vrIdInputBox.placeholder = 'Filtro VR ID';
-        vrIdInputBox.style.marginRight = '5px';
-        vrIdInputBox.style.display = 'none';
-        vrIdInputBox.addEventListener('input', () => filterAndShowData(parseInt(timeInputBox.value, 10) || INITIAL_HOURS));
-
-        printButton = document.createElement('button');
-        printButton.innerHTML = 'Stampa';
-        printButton.style.display = 'none';
-        printButton.addEventListener('click', () => window.print());
-
-        rowCountDisplay = document.createElement('span');
-        rowCountDisplay.style.marginLeft = '10px';
-        rowCountDisplay.style.fontSize = '16px';
-        rowCountDisplay.style.display = 'none';
-
-        containermain.appendChild(dropdown);
-        containermain.appendChild(timeInputBox);
-        containermain.appendChild(vrIdInputBox);
-        containermain.appendChild(printButton);
-        containermain.appendChild(rowCountDisplay);
-
-        document.body.appendChild(containermain);
-    }
-
-    // Funzione per avviare l'autorefresh
-    function startAutoRefresh() {
-        stopAutoRefresh();
-
-        autoRefreshInterval = setInterval(() => {
-            if (tableContainer && tableContainer.style.display !== 'none') {
-                refreshData();
-            }
-        }, 600000); // Ogni 10 minuti
-    }
-
-    // Funzione per fermare l'autorefresh
-    function stopAutoRefresh() {
-        if (autoRefreshInterval) {
-            clearInterval(autoRefreshInterval);
-            autoRefreshInterval = null;
+        if (!dropdown) {
+            dropdown = createDropdown();
+            document.body.appendChild(dropdown);
+        }
+        if (!timeInputBox) {
+            timeInputBox = createTimeInputBox();
+            document.body.appendChild(timeInputBox);
+        }
+        if (!vrIdInputBox) {
+            vrIdInputBox = createVrIdInputBox();
+            document.body.appendChild(vrIdInputBox);
+        }
+        if (!printButton) {
+            printButton = createPrintButton();
+            document.body.appendChild(printButton);
+        }
+        if (!rowCountDisplay) {
+            rowCountDisplay = createRowCountDisplay();
+            document.body.appendChild(rowCountDisplay);
         }
     }
 
-    // Inizializzazione
-    document.addEventListener('DOMContentLoaded', () => {
-        createButtons();
-        startAutoRefresh();
-    });
+    // Aggiungi il pulsante al DOM
+    const button = createButtonForPageLoadAndDataExtraction();
+    if (button) {
+        console.log('Aggiungo il pulsante al DOM...'); // Debug
+        document.body.appendChild(button);
+    } else {
+        console.error('Errore: il pulsante non è stato creato.');
+    }
+
+    // Esegui il refresh automatico all'avvio
+    autoRefresh();
 })();
