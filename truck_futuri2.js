@@ -118,7 +118,7 @@
                             return null;
                         }
 
-                        let extraText = 'SWEEPER';
+                        let extraText = 'COLLECTION';
                         let highlightColor = 'orange';
                         if (sdt === cpt) {
                             extraText = 'CPT';
@@ -271,7 +271,7 @@
         dropdown.style.display = 'none';
         dropdown.style.marginRight = '5px';
         dropdown.style.padding = '3px';
-        ['Tutti', 'CPT', 'SWEEPER', 'TRANSFER'].forEach(option => {
+        ['Tutti', 'CPT', 'COLLECTION', 'TRANSFER'].forEach(option => {
             const opt = document.createElement('option');
             opt.value = option;
             opt.innerHTML = option;
