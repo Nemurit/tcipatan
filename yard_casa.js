@@ -40,7 +40,7 @@
                         data.push([location, note]); // Aggiungi Location e Note
 
                     // Caso 2: Se col9 contiene "Transfer" ma non "TransfersCarts", aggiungi la riga solo se "Ricarica" è nelle note
-                    } else if (/Transfer/i.test(col9.innerText) && /Ricarica/i.test(note)) {
+                    } else if (/Transfers/i.test(col9.innerText) && /Ricarica/i.test(note)) {
                         data.push([location, note]); // Aggiungi Location e Note
                     }
                 }
