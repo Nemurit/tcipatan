@@ -10,6 +10,7 @@
     let timeInputBox = null;
     let printButton = null;
     let rowCountDisplay = null;
+    let vrIdInputBox = null;
     let containermain = null;
 
     // Costanti
@@ -57,6 +58,7 @@
     function refreshData() {
         dropdown.value = 'Tutti';
         timeInputBox.value = DEFAULT_HOURS;
+        vrIdInputBox.value = '';
         loadIframeAndWait(DEFAULT_HOURS);
     }
 
@@ -107,6 +109,7 @@
                         const sdt = tds[13].textContent.trim();
                         const cpt = tds[14].textContent.trim();
                         const lane = tds[5].textContent.trim();
+                        const vrId = tds[7].textContent.trim(); // Ottieni VR ID
 
                         const rowDate = parseDate(sdt);
 
@@ -131,6 +134,7 @@
                             lane: lane,
                             sdt: sdt,
                             cpt: cpt,
+                            vrId: vrId,
                             date: rowDate,
                             extraText: extraText,
                             highlightColor: highlightColor,
@@ -158,20 +162,35 @@
     }
 
     function filterAndShowData(hours) {
-        const now = new Date();
-        const effectiveHours = Math.min(hours, MAX_HOURS);
-        const maxDate = new Date(now.getTime() + effectiveHours * 60 * 60 * 1000);
+    const now = new Date();
+    const effectiveHours = Math.min(hours, MAX_HOURS);
+    const maxDate = new Date(now.getTime() + effectiveHours * 60 * 60 * 1000);
 
-        const status = dropdown ? dropdown.value : 'Tutti';
-        let filteredRows = allRows.filter(row => row.date >= now && row.date <= maxDate);
+    const status = dropdown ? dropdown.value : 'Tutti';
+    const vrIdFilter = vrIdInputBox.value.trim().toLowerCase();
+
+    let filteredRows;
+
+    if (vrIdFilter) {
+        // Se c'è un filtro VR ID, ignora il filtro delle ore
+        filteredRows = allRows.filter(row => 
+            row.vrId.toLowerCase().includes(vrIdFilter)
+        );
+    } else {
+        // Applica il filtro delle ore e dello stato
+        filteredRows = allRows.filter(row => 
+            row.date >= now && row.date <= maxDate
+        );
 
         if (status !== 'Tutti') {
             filteredRows = filteredRows.filter(row => row.extraText === status);
         }
-
-        showDataInTable(filteredRows);
-        updateRowCount(filteredRows.length);
     }
+
+    showDataInTable(filteredRows);
+    updateRowCount(filteredRows.length);
+}
+
 
     function showDataInTable(filteredRows) {
         if (tableContainer) {
@@ -229,6 +248,7 @@
     function showButtonsAndInputs() {
         dropdown.style.display = 'inline-block';
         timeInputBox.style.display = 'inline-block';
+        vrIdInputBox.style.display = 'inline-block';
         printButton.style.display = 'inline-block';
         rowCountDisplay.style.display = 'inline-block';
     }
@@ -270,6 +290,16 @@
         timeInputBox.style.display = 'none';
         timeInputBox.addEventListener('input', function () {
             filterAndShowData(parseInt(timeInputBox.value, 10));
+        });
+
+        vrIdInputBox = document.createElement('input');
+        vrIdInputBox.type = 'text';
+        vrIdInputBox.placeholder = 'Filtro VR ID';
+        vrIdInputBox.style.padding = '3px';
+        vrIdInputBox.style.marginRight = '5px';
+        vrIdInputBox.style.display = 'none';
+        vrIdInputBox.addEventListener('input', function () {
+            filterAndShowData(timeInputBox.value ? parseInt(timeInputBox.value, 10) : INITIAL_HOURS);
         });
 
         printButton = document.createElement('button');
@@ -333,6 +363,7 @@
 
         containermain.appendChild(dropdown);
         containermain.appendChild(timeInputBox);
+        containermain.appendChild(vrIdInputBox);
         containermain.appendChild(printButton);
         containermain.appendChild(rowCountDisplay);
 
