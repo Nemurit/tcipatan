@@ -283,6 +283,10 @@
         return input;
     }
 
+    // Aggiungi il pulsante al DOM
+    const button = createButtonForPageLoadAndDataExtraction();
+    document.body.appendChild(button);
+
     // Esegui il refresh automatico all'avvio
     autoRefresh();
 
