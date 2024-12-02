@@ -17,7 +17,7 @@
     const DEFAULT_HOURS = 1;
     const INITIAL_HOURS = 1;
     const MAX_HOURS = 24;
-    const REFRESH_INTERVAL = 3 * 60 * 1000; // 3 minuti in millisecondi
+    const REFRESH_INTERVAL = 3 * 60 * 1000 // 3 minuti in millisecondi
 
     // Funzione per creare il pulsante di caricamento dati con funzione toggle
     function createButtonForPageLoadAndDataExtraction() {
@@ -51,19 +51,18 @@
                 button.innerHTML = 'Nascondi TRUCKS';
                 isTableVisible = true;
             }
+            tableVisible = !tableVisible;
         });
 
         return button;
     }
-
-    // Funzione per il refresh automatico dei dati
-    function autoRefresh() {
+      // Funzione per il refresh automatico dei dati
+      function autoRefresh() {
         setInterval(() => {
             console.log('Eseguendo refresh automatico...');
             refreshData();
         }, REFRESH_INTERVAL); // Intervallo di 3 minuti
     }
-
     function refreshData() {
         dropdown.value = 'Tutti';
         timeInputBox.value = DEFAULT_HOURS;
@@ -171,34 +170,35 @@
     }
 
     function filterAndShowData(hours) {
-        const now = new Date();
-        const effectiveHours = Math.min(hours, MAX_HOURS);
-        const maxDate = new Date(now.getTime() + effectiveHours * 60 * 60 * 1000);
+    const now = new Date();
+    const effectiveHours = Math.min(hours, MAX_HOURS);
+    const maxDate = new Date(now.getTime() + effectiveHours * 60 * 60 * 1000);
 
-        const status = dropdown ? dropdown.value : 'Tutti';
-        const vrIdFilter = vrIdInputBox.value.trim().toLowerCase();
+    const status = dropdown ? dropdown.value : 'Tutti';
+    const vrIdFilter = vrIdInputBox.value.trim().toLowerCase();
 
-        let filteredRows;
+    let filteredRows;
 
-        if (vrIdFilter) {
-            // Se c'è un filtro VR ID, ignora il filtro delle ore
-            filteredRows = allRows.filter(row =>
-                row.vrId.toLowerCase().includes(vrIdFilter)
-            );
-        } else {
-            // Applica il filtro delle ore e dello stato
-            filteredRows = allRows.filter(row =>
-                row.date >= now && row.date <= maxDate
-            );
+    if (vrIdFilter) {
+        // Se c'è un filtro VR ID, ignora il filtro delle ore
+        filteredRows = allRows.filter(row => 
+            row.vrId.toLowerCase().includes(vrIdFilter)
+        );
+    } else {
+        // Applica il filtro delle ore e dello stato
+        filteredRows = allRows.filter(row => 
+            row.date >= now && row.date <= maxDate
+        );
 
-            if (status !== 'Tutti') {
-                filteredRows = filteredRows.filter(row => row.extraText === status);
-            }
+        if (status !== 'Tutti') {
+            filteredRows = filteredRows.filter(row => row.extraText === status);
         }
-
-        showDataInTable(filteredRows);
-        updateRowCount(filteredRows.length);
     }
+
+    showDataInTable(filteredRows);
+    updateRowCount(filteredRows.length);
+}
+
 
     function showDataInTable(filteredRows) {
         if (tableContainer) {
@@ -249,69 +249,137 @@
     }
 
     function updateRowCount(count) {
-        if (!rowCountDisplay) {
-            rowCountDisplay = document.createElement('div');
-            rowCountDisplay.style.position = 'fixed';
-            rowCountDisplay.style.top = '50px';
-            rowCountDisplay.style.left = '10px';
-            rowCountDisplay.style.zIndex = '10001';
-            rowCountDisplay.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-            rowCountDisplay.style.padding = '5px 10px';
-            rowCountDisplay.style.border = '1px solid #ccc';
-            rowCountDisplay.style.borderRadius = '5px';
-            rowCountDisplay.style.fontSize = '16px';
-            rowCountDisplay.style.fontWeight = 'bold';
-            document.body.appendChild(rowCountDisplay);
-        }
-        rowCountDisplay.innerHTML = `${count} righe trovate`;
+        if (!rowCountDisplay) return;
+        rowCountDisplay.innerHTML = `NUMERO TRUCKS: ${count}`;
     }
 
     function showButtonsAndInputs() {
-        if (!dropdown) {
-            dropdown = document.createElement('select');
-            dropdown.innerHTML = `
-                <option value="Tutti">Tutti</option>
-                <option value="COLLECTION">COLLECTION</option>
-                <option value="CPT">CPT</option>
-                <option value="TRANSFER">TRANSFER</option>
-            `;
-            dropdown.style.marginBottom = '10px';
-        }
+        dropdown.style.display = 'inline-block';
+        timeInputBox.style.display = 'inline-block';
+        vrIdInputBox.style.display = 'inline-block';
+        printButton.style.display = 'inline-block';
+        rowCountDisplay.style.display = 'inline-block';
+    }
 
-        if (!timeInputBox) {
-            timeInputBox = document.createElement('input');
-            timeInputBox.type = 'number';
-            timeInputBox.value = DEFAULT_HOURS;
-            timeInputBox.min = 1;
-            timeInputBox.max = MAX_HOURS;
-            timeInputBox.style.marginBottom = '10px';
-        }
-
-        if (!vrIdInputBox) {
-            vrIdInputBox = document.createElement('input');
-            vrIdInputBox.type = 'text';
-            vrIdInputBox.placeholder = 'Filtra per VR ID';
-            vrIdInputBox.style.marginBottom = '10px';
-        }
-
+    function createButtons() {
         containermain = document.createElement('div');
         containermain.style.position = 'fixed';
-        containermain.style.top = '20px';
+        containermain.style.top = '10px';
         containermain.style.left = '10px';
         containermain.style.zIndex = '10001';
-        containermain.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
         containermain.style.padding = '10px';
-        containermain.style.border = '1px solid #ccc';
+        containermain.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
         containermain.style.borderRadius = '5px';
+        containermain.style.display = 'flex';
+        containermain.style.flexDirection = 'row';
+
+        containermain.appendChild(createButtonForPageLoadAndDataExtraction());
+
+        dropdown = document.createElement('select');
+        dropdown.style.display = 'none';
+        dropdown.style.marginRight = '5px';
+        dropdown.style.padding = '3px';
+        ['Tutti', 'CPT', 'COLLECTION', 'TRANSFER'].forEach(option => {
+            const opt = document.createElement('option');
+            opt.value = option;
+            opt.innerHTML = option;
+            dropdown.appendChild(opt);
+        });
+
+        dropdown.addEventListener('change', function () {
+            filterAndShowData(timeInputBox.value ? parseInt(timeInputBox.value, 10) : INITIAL_HOURS);
+        });
+
+        timeInputBox = document.createElement('input');
+        timeInputBox.type = 'number';
+        timeInputBox.placeholder = 'Ore';
+        timeInputBox.style.padding = '3px';
+        timeInputBox.style.marginRight = '5px';
+        timeInputBox.style.display = 'none';
+        timeInputBox.addEventListener('input', function () {
+            filterAndShowData(parseInt(timeInputBox.value, 10));
+        });
+
+        vrIdInputBox = document.createElement('input');
+        vrIdInputBox.type = 'text';
+        vrIdInputBox.placeholder = 'Filtro VR ID';
+        vrIdInputBox.style.padding = '3px';
+        vrIdInputBox.style.marginRight = '5px';
+        vrIdInputBox.style.display = 'none';
+        vrIdInputBox.addEventListener('input', function () {
+            filterAndShowData(timeInputBox.value ? parseInt(timeInputBox.value, 10) : INITIAL_HOURS);
+        });
+
+        printButton = document.createElement('button');
+        printButton.innerHTML = 'Stampa';
+        printButton.style.padding = '3px';
+        printButton.style.marginRight = '5px';
+        printButton.style.display = 'none';
+        printButton.addEventListener('click', function () {
+            if (tableContainer) {
+                const printWindow = window.open('', '_blank');
+                const printDocument = printWindow.document;
+
+                // Crea un contenuto minimale per la stampa
+                printDocument.open();
+                printDocument.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Stampa Tabella</title>
+                        <style>
+                            table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin-bottom: 20px;
+                                font-family: Arial, sans-serif;
+                                font-size: 14px;
+                                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                            }
+                            th, td {
+                                border: 1px solid #ccc;
+                                padding: 8px;
+                                text-align: left;
+                            }
+                            th {
+                                background-color: #f4f4f4;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${tableContainer.innerHTML}
+                    </body>
+                    </html>
+                `);
+                printDocument.close();
+
+                // Avvia il processo di stampa
+                printWindow.print();
+
+                // Chiudi la finestra di stampa dopo l'uso
+                printWindow.onafterprint = function () {
+                    printWindow.close();
+                };
+            } else {
+                alert('Nessuna tabella disponibile per la stampa.');
+            }
+        });
+
+        rowCountDisplay = document.createElement('span');
+        rowCountDisplay.style.marginLeft = '5px';
+        rowCountDisplay.style.display = 'none';
 
         containermain.appendChild(dropdown);
         containermain.appendChild(timeInputBox);
         containermain.appendChild(vrIdInputBox);
+        containermain.appendChild(printButton);
+        containermain.appendChild(rowCountDisplay);
+
         document.body.appendChild(containermain);
     }
 
-    // Funzione per monitorare modifiche nell'iframe
-    function monitorIframeChanges() {
+     // Funzione per monitorare modifiche nell'iframe
+     function monitorIframeChanges() {
         const iframe = document.getElementById('pageIframe');
         if (!iframe) return;
 
@@ -334,9 +402,5 @@
     // Monitoraggio iframe per cambiamenti
     monitorIframeChanges();
 
-    // Carica i dati iniziali quando la pagina è pronta
-    window.onload = function () {
-        createButtonForPageLoadAndDataExtraction();
-        autoRefresh();
-    };
+    createButtons();
 })();
