@@ -11,6 +11,8 @@
     let printButton = null;
     let rowCountDisplay = null;
     let containermain = null;
+    let isTableVisible = false; // Stato della visibilità della tabella
+    const REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minuti
 
     // Constants
     const DEFAULT_HOURS = 1;
@@ -22,8 +24,6 @@
         const button = document.createElement('button');
         button.innerHTML = 'Visualizza TRUCKS';
         button.className = 'custom-button';
-
-        let isTableVisible = false;
 
         button.addEventListener('click', function () {
             if (isTableVisible) {
@@ -288,13 +288,21 @@
             border-collapse: collapse;
         }
         .custom-table th, .custom-table td {
-            padding: 10px;
+            padding: 8px;
             border: 1px solid #ddd;
+            text-align: left;
         }
         .custom-table th {
-            background-color: #f4f4f4;
-            text-align: left;
+            background-color: #f2f2f2;
         }
     `;
     document.head.appendChild(style);
+
+    // Automatic refresh every 10 minutes
+    setInterval(() => {
+        if (isTableVisible) {
+            console.log('Refresh automatico eseguito.');
+            refreshData();
+        }
+    }, REFRESH_INTERVAL);
 })();
