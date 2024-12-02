@@ -216,9 +216,9 @@
             totalContainers += laneTotal;
         });
 
-        // Aggiungere la riga separata del Totale Globale
+        // Aggiungere la riga separata del Totale Globale senza visibilità
         const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Globale</td><td>' + totalContainers + '</td></tr>');
-        const globalTotalRowContainer = $('<tr><td colspan="3" style="padding: 10px;"></td></tr>'); // Riga vuota per separare
+        const globalTotalRowContainer = $('<tr class="hidden-separator"><td colspan="3" style="padding: 10px;"></td></tr>'); // Riga vuota, nascosta con CSS
         tbody.append(globalTotalRowContainer);  // Separare visivamente
         tbody.append(globalTotalRow);  // Riga del totale globale
 
@@ -263,6 +263,9 @@
                 font-size: 14px;
                 padding: 5px;
                 margin: 0;
+            }
+            .hidden-separator {
+                display: none; /* Nascondi la riga separatrice */
             }
         `);
     }
