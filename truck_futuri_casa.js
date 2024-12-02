@@ -10,41 +10,33 @@
     let timeInputBox = null;
     let printButton = null;
     let rowCountDisplay = null;
-    let vrIdInputBox = null;
+    let containermain = null;
 
     // Constants
     const DEFAULT_HOURS = 1;
     const INITIAL_HOURS = 1;
     const MAX_HOURS = 24;
 
-    // Function to create the button to toggle the visibility of the data table
+    // Function to create the data load button with toggle functionality
     function createButtonForPageLoadAndDataExtraction() {
         const button = document.createElement('button');
         button.innerHTML = 'Visualizza TRUCKS';
-        button.style.padding = '3px';
-        button.style.backgroundColor = '#4CAF50';
-        button.style.color = 'white';
-        button.style.border = 'none';
-        button.style.borderRadius = '3px';
-        button.style.marginRight = '5px';
-        button.style.cursor = 'pointer';
+        button.className = 'custom-button';
 
-        let isTableVisible = false; // Toggle state for table visibility
+        let isTableVisible = false;
 
         button.addEventListener('click', function () {
             if (isTableVisible) {
-                // Hide the table and reset state
                 if (tableContainer) {
                     tableContainer.style.display = 'none';
                 }
                 button.innerHTML = 'Visualizza TRUCKS';
                 isTableVisible = false;
             } else {
-                // Show the table and load data
                 if (tableContainer) {
                     tableContainer.style.display = 'block';
                 } else {
-                    loadIframeAndWait(INITIAL_HOURS); // Load data for a maximum of 1 hour
+                    loadIframeAndWait(INITIAL_HOURS);
                 }
                 button.innerHTML = 'Nascondi TRUCKS';
                 isTableVisible = true;
@@ -54,43 +46,39 @@
         return button;
     }
 
+    function refreshData() {
+        dropdown.value = 'Tutti';
+        timeInputBox.value = DEFAULT_HOURS;
+        loadIframeAndWait(DEFAULT_HOURS);
+    }
+
     function loadIframeAndWait(hours) {
         let iframe = document.getElementById('pageIframe');
         if (!iframe) {
             iframe = document.createElement('iframe');
             iframe.id = 'pageIframe';
             iframe.style.display = 'none';
-            iframe.src = 'https://www.amazonlogistics.eu/ssp/dock/hrz/ob?'; // Update the URL as needed
+            iframe.src = 'https://www.amazonlogistics.eu/ssp/dock/hrz/ob?';
             document.body.appendChild(iframe);
         }
 
         iframe.onload = function () {
             setTimeout(() => {
+                adjustTableRowSelection(iframe);
                 extractDataFromIframe(iframe, hours);
-                observeIframeChanges(iframe);
             }, 1000);
         };
     }
 
-    // Auto-Update using MutationObserver
-    function observeIframeChanges(iframe) {
+    function adjustTableRowSelection(iframe) {
         const iframeDoc = iframe.contentWindow.document;
-        const targetTable = iframeDoc.querySelector('table#dashboard.display.dataTable.floatL');
+        const dropdown = iframeDoc.querySelector('#dashboard_length select');
 
-        if (!targetTable) {
-            console.log("Tabella non trovata nell'iframe.");
-            return;
+        if (dropdown) {
+            dropdown.value = '100';
+            const event = new Event('change', { bubbles: true });
+            dropdown.dispatchEvent(event);
         }
-
-        // Create MutationObserver to detect changes in the table
-        const observer = new MutationObserver(() => {
-            console.log("Modifica rilevata nella tabella dell'iframe.");
-            extractDataFromIframe(iframe, parseInt(timeInputBox.value || DEFAULT_HOURS, 10));
-        });
-
-        // Monitor changes in the table's children (e.g., rows added or removed)
-        observer.observe(targetTable, { childList: true, subtree: true });
-        console.log("Osservatore configurato per la tabella dell'iframe.");
     }
 
     function extractDataFromIframe(iframe, hours) {
@@ -108,7 +96,6 @@
                         const sdt = tds[13].textContent.trim();
                         const cpt = tds[14].textContent.trim();
                         const lane = tds[5].textContent.trim();
-                        const vrId = tds[7].textContent.trim();
 
                         const rowDate = parseDate(sdt);
 
@@ -117,7 +104,7 @@
                             return null;
                         }
 
-                        let extraText = 'SWEEPER';
+                        let extraText = 'COLLECTION';
                         let highlightColor = 'orange';
                         if (sdt === cpt) {
                             extraText = 'CPT';
@@ -133,7 +120,6 @@
                             lane: lane,
                             sdt: sdt,
                             cpt: cpt,
-                            vrId: vrId,
                             date: rowDate,
                             extraText: extraText,
                             highlightColor: highlightColor,
@@ -143,11 +129,7 @@
 
                 showButtonsAndInputs();
                 filterAndShowData(hours);
-            } else {
-                console.log('Il <tbody> non è stato trovato nella tabella.');
             }
-        } else {
-            console.log('La tabella non è stata trovata.');
         }
     }
 
@@ -166,22 +148,10 @@
         const maxDate = new Date(now.getTime() + effectiveHours * 60 * 60 * 1000);
 
         const status = dropdown ? dropdown.value : 'Tutti';
-        const vrIdFilter = vrIdInputBox.value.trim().toLowerCase();
+        let filteredRows = allRows.filter(row => row.date >= now && row.date <= maxDate);
 
-        let filteredRows;
-
-        if (vrIdFilter) {
-            filteredRows = allRows.filter(row =>
-                row.vrId.toLowerCase().includes(vrIdFilter)
-            );
-        } else {
-            filteredRows = allRows.filter(row =>
-                row.date >= now && row.date <= maxDate
-            );
-
-            if (status !== 'Tutti') {
-                filteredRows = filteredRows.filter(row => row.extraText === status);
-            }
+        if (status !== 'Tutti') {
+            filteredRows = filteredRows.filter(row => row.extraText === status);
         }
 
         showDataInTable(filteredRows);
@@ -194,101 +164,137 @@
         }
 
         tableContainer = document.createElement('div');
-        tableContainer.style.position = 'fixed';
-        tableContainer.style.top = '90px';
-        tableContainer.style.left = '10px';
-        tableContainer.style.zIndex = '10001';
-        tableContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-        tableContainer.style.padding = '15px';
-        tableContainer.style.maxHeight = '400px';
-        tableContainer.style.overflowY = 'scroll';
-        tableContainer.style.width = '25%';
-        tableContainer.style.border = '1px solid #ccc';
-        tableContainer.style.borderRadius = '5px';
+        tableContainer.className = 'custom-table-container';
 
         const table = document.createElement('table');
-        table.style.width = '100%';
-        table.style.borderCollapse = 'collapse';
-        table.style.fontFamily = 'Arial, sans-serif';
-        table.style.fontSize = '14px';
-        table.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
+        table.className = 'custom-table';
         table.innerHTML = `
-            <thead style="background-color: #f4f4f4; border-bottom: 2px solid #ccc;">
+            <thead>
                 <tr>
-                    <th style="padding: 10px; text-align: left;">LANE</th>
-                    <th style="padding: 10px; text-align: left;">SDT</th>
-                    <th style="padding: 10px; text-align: left;">CPT</th>
-                    <th style="padding: 10px; text-align: left;">Status</th>
+                    <th>LANE</th>
+                    <th>SDT</th>
+                    <th>CPT</th>
+                    <th>Status</th>
                 </tr>
             </thead>
             <tbody>
                 ${filteredRows.map(row => `
-                    <tr style="background-color: ${row.highlightColor}; color: white; text-align: left;">
-                        <td style="padding: 10px;">${row.lane}</td>
-                        <td style="padding: 10px;">${row.sdt}</td>
-                        <td style="padding: 10px;">${row.cpt}</td>
-                        <td style="padding: 10px;">${row.extraText}</td>
-                    </tr>`).join('')}
+                    <tr style="background-color: ${row.highlightColor};">
+                        <td>${row.lane}</td>
+                        <td>${row.sdt}</td>
+                        <td>${row.cpt}</td>
+                        <td>${row.extraText}</td>
+                    </tr>
+                `).join('')}
             </tbody>
         `;
-
         tableContainer.appendChild(table);
         document.body.appendChild(tableContainer);
     }
 
     function updateRowCount(count) {
-        if (!rowCountDisplay) {
-            rowCountDisplay = document.createElement('div');
-            rowCountDisplay.style.position = 'fixed';
-            rowCountDisplay.style.top = '90px';
-            rowCountDisplay.style.right = '10px';
-            rowCountDisplay.style.zIndex = '10002';
-            rowCountDisplay.style.backgroundColor = '#fff';
-            rowCountDisplay.style.padding = '5px 10px';
-            rowCountDisplay.style.border = '1px solid #ccc';
-            rowCountDisplay.style.borderRadius = '5px';
-            rowCountDisplay.style.fontSize = '14px';
-            document.body.appendChild(rowCountDisplay);
-        }
-        rowCountDisplay.textContent = `Results: ${count}`;
+        if (!rowCountDisplay) return;
+        rowCountDisplay.innerHTML = `NUMERO TRUCKS: ${count}`;
     }
 
     function showButtonsAndInputs() {
-        if (!dropdown) {
-            dropdown = document.createElement('select');
-            dropdown.innerHTML = `
-                <option value="Tutti">Tutti</option>
-                <option value="SWEEPER">SWEEPER</option>
-                <option value="TRANSFER">TRANSFER</option>
-                <option value="CPT">CPT</option>
-            `;
-            document.body.appendChild(dropdown);
-        }
-
-        if (!timeInputBox) {
-            timeInputBox = document.createElement('input');
-            timeInputBox.type = 'number';
-            timeInputBox.value = DEFAULT_HOURS;
-            timeInputBox.min = 1;
-            timeInputBox.max = MAX_HOURS;
-            document.body.appendChild(timeInputBox);
-        }
-
-        if (!vrIdInputBox) {
-            vrIdInputBox = document.createElement('input');
-            vrIdInputBox.type = 'text';
-            document.body.appendChild(vrIdInputBox);
-        }
+        dropdown.style.display = 'inline-block';
+        timeInputBox.style.display = 'inline-block';
+        printButton.style.display = 'inline-block';
+        rowCountDisplay.style.display = 'inline-block';
     }
 
-    // Set up auto-update interval (every 10 minutes)
-    setInterval(() => {
-        if (tableContainer && tableContainer.style.display !== 'none') {
-            loadIframeAndWait(parseInt(timeInputBox.value || DEFAULT_HOURS, 10)); // Refresh every time window
-        }
-    }, 10 * 60 * 1000); // Refresh every 10 minutes
+    function createButtons() {
+        containermain = document.createElement('div');
+        containermain.className = 'custom-button-container';
 
-    // Add button for initial loading
-    const button = createButtonForPageLoadAndDataExtraction();
-    document.body.appendChild(button);
+        containermain.appendChild(createButtonForPageLoadAndDataExtraction());
+
+        dropdown = document.createElement('select');
+        dropdown.style.display = 'none';
+        ['Tutti', 'CPT', 'COLLECTION', 'TRANSFER'].forEach(option => {
+            const opt = document.createElement('option');
+            opt.value = option;
+            opt.innerHTML = option;
+            dropdown.appendChild(opt);
+        });
+
+        dropdown.addEventListener('change', function () {
+            filterAndShowData(timeInputBox.value ? parseInt(timeInputBox.value, 10) : INITIAL_HOURS);
+        });
+
+        timeInputBox = document.createElement('input');
+        timeInputBox.type = 'number';
+        timeInputBox.placeholder = 'Ore';
+        timeInputBox.style.display = 'none';
+        timeInputBox.addEventListener('input', function () {
+            filterAndShowData(parseInt(timeInputBox.value, 10));
+        });
+
+        printButton = document.createElement('button');
+        printButton.innerHTML = 'Stampa';
+        printButton.style.display = 'none';
+
+        rowCountDisplay = document.createElement('span');
+        rowCountDisplay.style.display = 'none';
+
+        containermain.appendChild(dropdown);
+        containermain.appendChild(timeInputBox);
+        containermain.appendChild(printButton);
+        containermain.appendChild(rowCountDisplay);
+
+        document.body.appendChild(containermain);
+    }
+
+    createButtons();
+
+    // Styles
+    const style = document.createElement('style');
+    style.textContent = `
+        .custom-button {
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .custom-button-container {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            z-index: 10001;
+        }
+        .custom-table-container {
+            position: fixed;
+            top: 90px;
+            left: 10px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            overflow-y: auto;
+            max-height: 400px;
+            z-index: 10001;
+            width: 30%;
+        }
+        .custom-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .custom-table th, .custom-table td {
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        .custom-table th {
+            background-color: #f4f4f4;
+            text-align: left;
+        }
+    `;
+    document.head.appendChild(style);
 })();
