@@ -11,14 +11,13 @@
     let printButton = null;
     let rowCountDisplay = null;
     let vrIdInputBox = null;
-    let containermain = null;
 
-    // Costanti
+    // Constants
     const DEFAULT_HOURS = 1;
     const INITIAL_HOURS = 1;
     const MAX_HOURS = 24;
 
-    // Funzione per creare il pulsante di caricamento dati con funzione toggle
+    // Function to create the button to toggle the visibility of the data table
     function createButtonForPageLoadAndDataExtraction() {
         const button = document.createElement('button');
         button.innerHTML = 'Visualizza TRUCKS';
@@ -30,22 +29,22 @@
         button.style.marginRight = '5px';
         button.style.cursor = 'pointer';
 
-        let isTableVisible = false; // Stato toggle per la visibilità della tabella
+        let isTableVisible = false; // Toggle state for table visibility
 
         button.addEventListener('click', function () {
             if (isTableVisible) {
-                // Nascondi la tabella e resetta lo stato
+                // Hide the table and reset state
                 if (tableContainer) {
                     tableContainer.style.display = 'none';
                 }
                 button.innerHTML = 'Visualizza TRUCKS';
                 isTableVisible = false;
             } else {
-                // Mostra la tabella e carica i dati
+                // Show the table and load data
                 if (tableContainer) {
                     tableContainer.style.display = 'block';
                 } else {
-                    loadIframeAndWait(INITIAL_HOURS); // Carica dati per il massimo di 1 ora
+                    loadIframeAndWait(INITIAL_HOURS); // Load data for a maximum of 1 hour
                 }
                 button.innerHTML = 'Nascondi TRUCKS';
                 isTableVisible = true;
@@ -55,34 +54,25 @@
         return button;
     }
 
-    function refreshData() {
-        dropdown.value = 'Tutti';
-        timeInputBox.value = DEFAULT_HOURS;
-        vrIdInputBox.value = '';
-        loadIframeAndWait(DEFAULT_HOURS);
-    }
-
     function loadIframeAndWait(hours) {
         let iframe = document.getElementById('pageIframe');
         if (!iframe) {
             iframe = document.createElement('iframe');
             iframe.id = 'pageIframe';
             iframe.style.display = 'none';
-            iframe.src = 'https://www.amazonlogistics.eu/ssp/dock/hrz/ob?';
+            iframe.src = 'https://www.amazonlogistics.eu/ssp/dock/hrz/ob?'; // Update the URL as needed
             document.body.appendChild(iframe);
         }
 
         iframe.onload = function () {
             setTimeout(() => {
-                adjustTableRowSelection(iframe);
                 extractDataFromIframe(iframe, hours);
-
-                // Configura l'osservatore per aggiornamenti in tempo reale
                 observeIframeChanges(iframe);
             }, 1000);
         };
     }
 
+    // Auto-Update using MutationObserver
     function observeIframeChanges(iframe) {
         const iframeDoc = iframe.contentWindow.document;
         const targetTable = iframeDoc.querySelector('table#dashboard.display.dataTable.floatL');
@@ -92,30 +82,15 @@
             return;
         }
 
-        // Crea un osservatore per rilevare le modifiche nella tabella
+        // Create MutationObserver to detect changes in the table
         const observer = new MutationObserver(() => {
             console.log("Modifica rilevata nella tabella dell'iframe.");
             extractDataFromIframe(iframe, parseInt(timeInputBox.value || DEFAULT_HOURS, 10));
         });
 
-        // Configura l'osservatore per monitorare cambiamenti nei figli del DOM
+        // Monitor changes in the table's children (e.g., rows added or removed)
         observer.observe(targetTable, { childList: true, subtree: true });
-
         console.log("Osservatore configurato per la tabella dell'iframe.");
-    }
-
-    function adjustTableRowSelection(iframe) {
-        const iframeDoc = iframe.contentWindow.document;
-        const dropdown = iframeDoc.querySelector('#dashboard_length select');
-
-        if (dropdown) {
-            dropdown.value = '100';
-            const event = new Event('change', { bubbles: true });
-            dropdown.dispatchEvent(event);
-            console.log('Selezione righe impostata a 100.');
-        } else {
-            console.log('Dropdown per la selezione righe non trovato.');
-        }
     }
 
     function extractDataFromIframe(iframe, hours) {
@@ -253,8 +228,7 @@
                         <td style="padding: 10px;">${row.sdt}</td>
                         <td style="padding: 10px;">${row.cpt}</td>
                         <td style="padding: 10px;">${row.extraText}</td>
-                    </tr>
-                `).join('')}
+                    </tr>`).join('')}
             </tbody>
         `;
 
@@ -263,134 +237,58 @@
     }
 
     function updateRowCount(count) {
-        if (rowCountDisplay) {
-            rowCountDisplay.textContent = `Righe visibili: ${count}`;
+        if (!rowCountDisplay) {
+            rowCountDisplay = document.createElement('div');
+            rowCountDisplay.style.position = 'fixed';
+            rowCountDisplay.style.top = '90px';
+            rowCountDisplay.style.right = '10px';
+            rowCountDisplay.style.zIndex = '10002';
+            rowCountDisplay.style.backgroundColor = '#fff';
+            rowCountDisplay.style.padding = '5px 10px';
+            rowCountDisplay.style.border = '1px solid #ccc';
+            rowCountDisplay.style.borderRadius = '5px';
+            rowCountDisplay.style.fontSize = '14px';
+            document.body.appendChild(rowCountDisplay);
         }
+        rowCountDisplay.textContent = `Results: ${count}`;
     }
 
     function showButtonsAndInputs() {
         if (!dropdown) {
             dropdown = document.createElement('select');
-            dropdown.id = 'statusFilter';
-            dropdown.style.marginLeft = '10px';
             dropdown.innerHTML = `
                 <option value="Tutti">Tutti</option>
-                <option value="CPT">CPT</option>
                 <option value="SWEEPER">SWEEPER</option>
                 <option value="TRANSFER">TRANSFER</option>
+                <option value="CPT">CPT</option>
             `;
-            dropdown.addEventListener('change', () => {
-                filterAndShowData(parseInt(timeInputBox.value || DEFAULT_HOURS, 10));
-            });
             document.body.appendChild(dropdown);
         }
 
         if (!timeInputBox) {
             timeInputBox = document.createElement('input');
             timeInputBox.type = 'number';
-            timeInputBox.min = '1';
+            timeInputBox.value = DEFAULT_HOURS;
+            timeInputBox.min = 1;
             timeInputBox.max = MAX_HOURS;
-            timeInputBox.placeholder = 'Ore';
-            timeInputBox.style.marginLeft = '10px';
-            timeInputBox.addEventListener('change', () => {
-                const hours = parseInt(timeInputBox.value || DEFAULT_HOURS, 10);
-                filterAndShowData(hours);
-            });
             document.body.appendChild(timeInputBox);
-        }
-
-        if (!rowCountDisplay) {
-            rowCountDisplay = document.createElement('div');
-            rowCountDisplay.id = 'rowCountDisplay';
-            rowCountDisplay.style.marginTop = '10px';
-            document.body.appendChild(rowCountDisplay);
         }
 
         if (!vrIdInputBox) {
             vrIdInputBox = document.createElement('input');
             vrIdInputBox.type = 'text';
-            vrIdInputBox.placeholder = 'Filtra VR ID';
-            vrIdInputBox.style.marginLeft = '10px';
-            vrIdInputBox.addEventListener('input', () => {
-                filterAndShowData(parseInt(timeInputBox.value || DEFAULT_HOURS, 10));
-            });
             document.body.appendChild(vrIdInputBox);
-        }
-
-        if (!printButton) {
-            printButton = document.createElement('button');
-            printButton.innerHTML = 'Stampa';
-            printButton.style.padding = '3px';
-            printButton.style.backgroundColor = '#f5a623';
-            printButton.style.color = 'white';
-            printButton.style.border = 'none';
-            printButton.style.borderRadius = '3px';
-            printButton.style.marginLeft = '10px';
-            printButton.style.cursor = 'pointer';
-            printButton.addEventListener('click', () => {
-                const hours = parseInt(timeInputBox.value || DEFAULT_HOURS, 10);
-                const maxDate = new Date(new Date().getTime() + hours * 60 * 60 * 1000);
-
-                const rowsForPrint = allRows.filter(row =>
-                    row.date <= maxDate &&
-                    (dropdown.value === 'Tutti' || row.extraText === dropdown.value)
-                );
-
-                let printContent = `
-                    <html>
-                        <head>
-                            <style>
-                                table {
-                                    width: 100%;
-                                    border-collapse: collapse;
-                                    font-family: Arial, sans-serif;
-                                }
-                                th, td {
-                                    border: 1px solid black;
-                                    padding: 8px;
-                                    text-align: left;
-                                }
-                                th {
-                                    background-color: #f2f2f2;
-                                }
-                            </style>
-                        </head>
-                        <body>
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>LANE</th>
-                                        <th>SDT</th>
-                                        <th>CPT</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${rowsForPrint.map(row => `
-                                        <tr>
-                                            <td>${row.lane}</td>
-                                            <td>${row.sdt}</td>
-                                            <td>${row.cpt}</td>
-                                            <td>${row.extraText}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </body>
-                    </html>
-                `;
-
-                const printWindow = window.open('', '_blank');
-                printWindow.document.open();
-                printWindow.document.write(printContent);
-                printWindow.document.close();
-                printWindow.print();
-            });
-            document.body.appendChild(printButton);
         }
     }
 
-    // Creazione del pulsante iniziale
-    const buttonForPageLoadAndDataExtraction = createButtonForPageLoadAndDataExtraction();
-    document.body.appendChild(buttonForPageLoadAndDataExtraction);
+    // Set up auto-update interval (every 10 minutes)
+    setInterval(() => {
+        if (tableContainer && tableContainer.style.display !== 'none') {
+            loadIframeAndWait(parseInt(timeInputBox.value || DEFAULT_HOURS, 10)); // Refresh every time window
+        }
+    }, 10 * 60 * 1000); // Refresh every 10 minutes
+
+    // Add button for initial loading
+    const button = createButtonForPageLoadAndDataExtraction();
+    document.body.appendChild(button);
 })();
