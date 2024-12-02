@@ -76,8 +76,32 @@
             setTimeout(() => {
                 adjustTableRowSelection(iframe);
                 extractDataFromIframe(iframe, hours);
+
+                // Configura l'osservatore per aggiornamenti in tempo reale
+                observeIframeChanges(iframe);
             }, 1000);
         };
+    }
+
+    function observeIframeChanges(iframe) {
+        const iframeDoc = iframe.contentWindow.document;
+        const targetTable = iframeDoc.querySelector('table#dashboard.display.dataTable.floatL');
+
+        if (!targetTable) {
+            console.log("Tabella non trovata nell'iframe.");
+            return;
+        }
+
+        // Crea un osservatore per rilevare le modifiche nella tabella
+        const observer = new MutationObserver(() => {
+            console.log("Modifica rilevata nella tabella dell'iframe.");
+            extractDataFromIframe(iframe, parseInt(timeInputBox.value || DEFAULT_HOURS, 10));
+        });
+
+        // Configura l'osservatore per monitorare cambiamenti nei figli del DOM
+        observer.observe(targetTable, { childList: true, subtree: true });
+
+        console.log("Osservatore configurato per la tabella dell'iframe.");
     }
 
     function adjustTableRowSelection(iframe) {
@@ -109,7 +133,7 @@
                         const sdt = tds[13].textContent.trim();
                         const cpt = tds[14].textContent.trim();
                         const lane = tds[5].textContent.trim();
-                        const vrId = tds[7].textContent.trim(); // Ottieni VR ID
+                        const vrId = tds[7].textContent.trim();
 
                         const rowDate = parseDate(sdt);
 
@@ -162,35 +186,32 @@
     }
 
     function filterAndShowData(hours) {
-    const now = new Date();
-    const effectiveHours = Math.min(hours, MAX_HOURS);
-    const maxDate = new Date(now.getTime() + effectiveHours * 60 * 60 * 1000);
+        const now = new Date();
+        const effectiveHours = Math.min(hours, MAX_HOURS);
+        const maxDate = new Date(now.getTime() + effectiveHours * 60 * 60 * 1000);
 
-    const status = dropdown ? dropdown.value : 'Tutti';
-    const vrIdFilter = vrIdInputBox.value.trim().toLowerCase();
+        const status = dropdown ? dropdown.value : 'Tutti';
+        const vrIdFilter = vrIdInputBox.value.trim().toLowerCase();
 
-    let filteredRows;
+        let filteredRows;
 
-    if (vrIdFilter) {
-        // Se c'è un filtro VR ID, ignora il filtro delle ore
-        filteredRows = allRows.filter(row => 
-            row.vrId.toLowerCase().includes(vrIdFilter)
-        );
-    } else {
-        // Applica il filtro delle ore e dello stato
-        filteredRows = allRows.filter(row => 
-            row.date >= now && row.date <= maxDate
-        );
+        if (vrIdFilter) {
+            filteredRows = allRows.filter(row =>
+                row.vrId.toLowerCase().includes(vrIdFilter)
+            );
+        } else {
+            filteredRows = allRows.filter(row =>
+                row.date >= now && row.date <= maxDate
+            );
 
-        if (status !== 'Tutti') {
-            filteredRows = filteredRows.filter(row => row.extraText === status);
+            if (status !== 'Tutti') {
+                filteredRows = filteredRows.filter(row => row.extraText === status);
+            }
         }
+
+        showDataInTable(filteredRows);
+        updateRowCount(filteredRows.length);
     }
-
-    showDataInTable(filteredRows);
-    updateRowCount(filteredRows.length);
-}
-
 
     function showDataInTable(filteredRows) {
         if (tableContainer) {
@@ -236,139 +257,140 @@
                 `).join('')}
             </tbody>
         `;
+
         tableContainer.appendChild(table);
         document.body.appendChild(tableContainer);
     }
 
     function updateRowCount(count) {
-        if (!rowCountDisplay) return;
-        rowCountDisplay.innerHTML = `NUMERO TRUCKS: ${count}`;
+        if (rowCountDisplay) {
+            rowCountDisplay.textContent = `Righe visibili: ${count}`;
+        }
     }
 
     function showButtonsAndInputs() {
-        dropdown.style.display = 'inline-block';
-        timeInputBox.style.display = 'inline-block';
-        vrIdInputBox.style.display = 'inline-block';
-        printButton.style.display = 'inline-block';
-        rowCountDisplay.style.display = 'inline-block';
-    }
+        if (!dropdown) {
+            dropdown = document.createElement('select');
+            dropdown.id = 'statusFilter';
+            dropdown.style.marginLeft = '10px';
+            dropdown.innerHTML = `
+                <option value="Tutti">Tutti</option>
+                <option value="CPT">CPT</option>
+                <option value="SWEEPER">SWEEPER</option>
+                <option value="TRANSFER">TRANSFER</option>
+            `;
+            dropdown.addEventListener('change', () => {
+                filterAndShowData(parseInt(timeInputBox.value || DEFAULT_HOURS, 10));
+            });
+            document.body.appendChild(dropdown);
+        }
 
-    function createButtons() {
-        containermain = document.createElement('div');
-        containermain.style.position = 'fixed';
-        containermain.style.top = '10px';
-        containermain.style.left = '10px';
-        containermain.style.zIndex = '10001';
-        containermain.style.padding = '10px';
-        containermain.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-        containermain.style.borderRadius = '5px';
-        containermain.style.display = 'flex';
-        containermain.style.flexDirection = 'row';
+        if (!timeInputBox) {
+            timeInputBox = document.createElement('input');
+            timeInputBox.type = 'number';
+            timeInputBox.min = '1';
+            timeInputBox.max = MAX_HOURS;
+            timeInputBox.placeholder = 'Ore';
+            timeInputBox.style.marginLeft = '10px';
+            timeInputBox.addEventListener('change', () => {
+                const hours = parseInt(timeInputBox.value || DEFAULT_HOURS, 10);
+                filterAndShowData(hours);
+            });
+            document.body.appendChild(timeInputBox);
+        }
 
-        containermain.appendChild(createButtonForPageLoadAndDataExtraction());
+        if (!rowCountDisplay) {
+            rowCountDisplay = document.createElement('div');
+            rowCountDisplay.id = 'rowCountDisplay';
+            rowCountDisplay.style.marginTop = '10px';
+            document.body.appendChild(rowCountDisplay);
+        }
 
-        dropdown = document.createElement('select');
-        dropdown.style.display = 'none';
-        dropdown.style.marginRight = '5px';
-        dropdown.style.padding = '3px';
-        ['Tutti', 'CPT', 'SWEEPER', 'TRANSFER'].forEach(option => {
-            const opt = document.createElement('option');
-            opt.value = option;
-            opt.innerHTML = option;
-            dropdown.appendChild(opt);
-        });
+        if (!vrIdInputBox) {
+            vrIdInputBox = document.createElement('input');
+            vrIdInputBox.type = 'text';
+            vrIdInputBox.placeholder = 'Filtra VR ID';
+            vrIdInputBox.style.marginLeft = '10px';
+            vrIdInputBox.addEventListener('input', () => {
+                filterAndShowData(parseInt(timeInputBox.value || DEFAULT_HOURS, 10));
+            });
+            document.body.appendChild(vrIdInputBox);
+        }
 
-        dropdown.addEventListener('change', function () {
-            filterAndShowData(timeInputBox.value ? parseInt(timeInputBox.value, 10) : INITIAL_HOURS);
-        });
+        if (!printButton) {
+            printButton = document.createElement('button');
+            printButton.innerHTML = 'Stampa';
+            printButton.style.padding = '3px';
+            printButton.style.backgroundColor = '#f5a623';
+            printButton.style.color = 'white';
+            printButton.style.border = 'none';
+            printButton.style.borderRadius = '3px';
+            printButton.style.marginLeft = '10px';
+            printButton.style.cursor = 'pointer';
+            printButton.addEventListener('click', () => {
+                const hours = parseInt(timeInputBox.value || DEFAULT_HOURS, 10);
+                const maxDate = new Date(new Date().getTime() + hours * 60 * 60 * 1000);
 
-        timeInputBox = document.createElement('input');
-        timeInputBox.type = 'number';
-        timeInputBox.placeholder = 'Ore';
-        timeInputBox.style.padding = '3px';
-        timeInputBox.style.marginRight = '5px';
-        timeInputBox.style.display = 'none';
-        timeInputBox.addEventListener('input', function () {
-            filterAndShowData(parseInt(timeInputBox.value, 10));
-        });
+                const rowsForPrint = allRows.filter(row =>
+                    row.date <= maxDate &&
+                    (dropdown.value === 'Tutti' || row.extraText === dropdown.value)
+                );
 
-        vrIdInputBox = document.createElement('input');
-        vrIdInputBox.type = 'text';
-        vrIdInputBox.placeholder = 'Filtro VR ID';
-        vrIdInputBox.style.padding = '3px';
-        vrIdInputBox.style.marginRight = '5px';
-        vrIdInputBox.style.display = 'none';
-        vrIdInputBox.addEventListener('input', function () {
-            filterAndShowData(timeInputBox.value ? parseInt(timeInputBox.value, 10) : INITIAL_HOURS);
-        });
-
-        printButton = document.createElement('button');
-        printButton.innerHTML = 'Stampa';
-        printButton.style.padding = '3px';
-        printButton.style.marginRight = '5px';
-        printButton.style.display = 'none';
-        printButton.addEventListener('click', function () {
-            if (tableContainer) {
-                const printWindow = window.open('', '_blank');
-                const printDocument = printWindow.document;
-
-                // Crea un contenuto minimale per la stampa
-                printDocument.open();
-                printDocument.write(`
-                    <!DOCTYPE html>
+                let printContent = `
                     <html>
-                    <head>
-                        <title>Stampa Tabella</title>
-                        <style>
-                            table {
-                                width: 100%;
-                                border-collapse: collapse;
-                                margin-bottom: 20px;
-                                font-family: Arial, sans-serif;
-                                font-size: 14px;
-                                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-                            }
-                            th, td {
-                                border: 1px solid #ccc;
-                                padding: 8px;
-                                text-align: left;
-                            }
-                            th {
-                                background-color: #f4f4f4;
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        ${tableContainer.innerHTML}
-                    </body>
+                        <head>
+                            <style>
+                                table {
+                                    width: 100%;
+                                    border-collapse: collapse;
+                                    font-family: Arial, sans-serif;
+                                }
+                                th, td {
+                                    border: 1px solid black;
+                                    padding: 8px;
+                                    text-align: left;
+                                }
+                                th {
+                                    background-color: #f2f2f2;
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>LANE</th>
+                                        <th>SDT</th>
+                                        <th>CPT</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rowsForPrint.map(row => `
+                                        <tr>
+                                            <td>${row.lane}</td>
+                                            <td>${row.sdt}</td>
+                                            <td>${row.cpt}</td>
+                                            <td>${row.extraText}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </body>
                     </html>
-                `);
-                printDocument.close();
+                `;
 
-                // Avvia il processo di stampa
+                const printWindow = window.open('', '_blank');
+                printWindow.document.open();
+                printWindow.document.write(printContent);
+                printWindow.document.close();
                 printWindow.print();
-
-                // Chiudi la finestra di stampa dopo l'uso
-                printWindow.onafterprint = function () {
-                    printWindow.close();
-                };
-            } else {
-                alert('Nessuna tabella disponibile per la stampa.');
-            }
-        });
-
-        rowCountDisplay = document.createElement('span');
-        rowCountDisplay.style.marginLeft = '5px';
-        rowCountDisplay.style.display = 'none';
-
-        containermain.appendChild(dropdown);
-        containermain.appendChild(timeInputBox);
-        containermain.appendChild(vrIdInputBox);
-        containermain.appendChild(printButton);
-        containermain.appendChild(rowCountDisplay);
-
-        document.body.appendChild(containermain);
+            });
+            document.body.appendChild(printButton);
+        }
     }
 
-    createButtons();
+    // Creazione del pulsante iniziale
+    const buttonForPageLoadAndDataExtraction = createButtonForPageLoadAndDataExtraction();
+    document.body.appendChild(buttonForPageLoadAndDataExtraction);
 })();
