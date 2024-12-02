@@ -286,7 +286,7 @@
         if (tableContainer && tableContainer.style.display !== 'none') {
             loadIframeAndWait(parseInt(timeInputBox.value || DEFAULT_HOURS, 10)); // Refresh every time window
         }
-    }, 5 * 60 * 1000); // Refresh every 5 minutes
+    }, 10 * 60 * 1000); // Refresh every 10 minutes
 
     // Add button for initial loading
     const button = createButtonForPageLoadAndDataExtraction();
