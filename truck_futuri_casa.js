@@ -402,5 +402,9 @@
     // Monitoraggio iframe per cambiamenti
     monitorIframeChanges();
 
-    createButtons();
+    
+    window.onload = function () {
+        createButtons();
+        autoRefresh();
+    };
 })();
