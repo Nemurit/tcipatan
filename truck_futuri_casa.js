@@ -162,25 +162,35 @@
     }
 
     function filterAndShowData(hours) {
-        const now = new Date();
-        const effectiveHours = Math.min(hours, MAX_HOURS);
-        const maxDate = new Date(now.getTime() + effectiveHours * 60 * 60 * 1000);
+    const now = new Date();
+    const effectiveHours = Math.min(hours, MAX_HOURS);
+    const maxDate = new Date(now.getTime() + effectiveHours * 60 * 60 * 1000);
 
-        const status = dropdown ? dropdown.value : 'Tutti';
-        const vrIdFilter = vrIdInputBox.value.trim().toLowerCase();
+    const status = dropdown ? dropdown.value : 'Tutti';
+    const vrIdFilter = vrIdInputBox.value.trim().toLowerCase();
 
-        let filteredRows = allRows.filter(row => 
-            row.date >= now && row.date <= maxDate &&
-            (!vrIdFilter || row.vrId.toLowerCase().includes(vrIdFilter))
+    let filteredRows;
+
+    if (vrIdFilter) {
+        // Se c'è un filtro VR ID, ignora il filtro delle ore
+        filteredRows = allRows.filter(row => 
+            row.vrId.toLowerCase().includes(vrIdFilter)
+        );
+    } else {
+        // Applica il filtro delle ore e dello stato
+        filteredRows = allRows.filter(row => 
+            row.date >= now && row.date <= maxDate
         );
 
         if (status !== 'Tutti') {
             filteredRows = filteredRows.filter(row => row.extraText === status);
         }
-
-        showDataInTable(filteredRows);
-        updateRowCount(filteredRows.length);
     }
+
+    showDataInTable(filteredRows);
+    updateRowCount(filteredRows.length);
+}
+
 
     function showDataInTable(filteredRows) {
         if (tableContainer) {
