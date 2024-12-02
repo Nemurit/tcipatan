@@ -6,48 +6,48 @@
     let isDataLoaded = false; // Flag per sapere se i dati sono stati caricati
 
     // Funzione per caricare la pagina di yard in un iframe nascosto con attesa di 5 secondi
-    function loadYardPageAndExtractData(callback) {
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none'; // Nasconde l'iframe
-        iframe.src = "https://www.amazonlogistics.eu/yms/shipclerk";
+   function loadYardPageAndExtractData(callback) {
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none'; // Nasconde l'iframe
+    iframe.src = "https://www.amazonlogistics.eu/yms/shipclerk";
 
-        iframe.onload = function () {
-            setTimeout(() => {
-                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+    iframe.onload = function () {
+        setTimeout(() => {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
 
-                if (!iframeDoc) {
-                    console.error("Impossibile accedere al contenuto dell'iframe.");
-                    callback([]);
-                    return;
+            if (!iframeDoc) {
+                console.error("Impossibile accedere al contenuto dell'iframe.");
+                callback([]);
+                return;
+            }
+
+            // Seleziona tutte le righe
+            const rows = iframeDoc.querySelectorAll('tr');
+            const data = [];
+
+            rows.forEach(row => {
+                const col1 = row.querySelector('td.col1'); // Location
+                const col9 = row.querySelector('td.col9'); // Controlla per Transfers
+                const col11 = row.querySelector('td.col11'); // Note da mostrare
+
+                // Verifica che col1, col9 e col11 esistano e che col9 contenga "Transfer" (case-insensitive)
+                if (col1 && col9 && col11 && /Transfer/i.test(col9.innerText)) {
+                    const location = col1.innerText.trim(); // Testo della colonna Location
+                    const note = col11.innerText.trim(); // Testo della colonna Note (col11)
+                    data.push([location, note]); // Aggiungi Location e Note
                 }
+            });
 
-                // Seleziona tutte le righe
-                const rows = iframeDoc.querySelectorAll('tr');
-                const data = [];
+            console.log("Dati filtrati:", data);
+            callback(data);
 
-                rows.forEach(row => {
-                    const col1 = row.querySelector('td.col1'); // Location
-                    const col9 = row.querySelector('td.col9'); // Controlla per TransfersCarts
-                    const col11 = row.querySelector('td.col11'); // Note da mostrare
+            // Rimuove l'iframe dopo l'elaborazione
+            iframe.remove();
+        }, 3000); // Aspetta 3 secondi
+    };
 
-                    // Verifica che col9 contenga "TransfersCarts" (case-insensitive)
-                    if (col1 && col9 && col11 && /TransfersCarts/i.test(col9.innerText)) {
-                        const location = col1.innerText.trim(); // Testo della colonna Location
-                        const note = col11.innerText.trim(); // Testo della colonna Note (col11)
-                        data.push([location, note]); // Aggiungi Location e Note
-                    }
-                });
-
-                console.log("Dati filtrati:", data);
-                callback(data);
-
-                // Rimuove l'iframe dopo l'elaborazione
-                iframe.remove();
-            }, 3000); // Aspetta 5 secondi
-        };
-
-        document.body.appendChild(iframe);
-    }
+    document.body.appendChild(iframe);
+}
 
    // Funzione per visualizzare i dati in una tabella HTML all'interno del container
 function displayData(data) {
