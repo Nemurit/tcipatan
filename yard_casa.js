@@ -6,151 +6,178 @@
     let isDataLoaded = false; // Flag per sapere se i dati sono stati caricati
 
     // Funzione per caricare la pagina di yard in un iframe nascosto con attesa di 5 secondi
-   function loadYardPageAndExtractData(callback) {
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none'; // Nasconde l'iframe
-    iframe.src = "https://www.amazonlogistics.eu/yms/shipclerk";
+    function loadYardPageAndExtractData(callback) {
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none'; // Nasconde l'iframe
+        iframe.src = "https://www.amazonlogistics.eu/yms/shipclerk";
 
-    iframe.onload = function () {
-        setTimeout(() => {
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+        iframe.onload = function () {
+            setTimeout(() => {
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
 
-            if (!iframeDoc) {
-                console.error("Impossibile accedere al contenuto dell'iframe.");
-                callback([]);
-                return;
-            }
-
-            // Seleziona tutte le righe
-            const rows = iframeDoc.querySelectorAll('tr');
-            const data = [];
-
-            rows.forEach(row => {
-                const col1 = row.querySelector('td.col1'); // Location
-                const col9 = row.querySelector('td.col9'); // Tipo di Transfer
-                const col11 = row.querySelector('td.col11'); // Note da mostrare
-
-                // Se col1, col9 e col11 esistono
-                if (col1 && col9 && col11) {
-                    const location = col1.innerText.trim(); // Testo della colonna Location
-                    const note = col11.innerText.trim(); // Testo della colonna Note (col11)
-
-                    // Caso 1: Se col9 contiene "TransfersCarts", aggiungi la riga con la location e la nota
-                    if (/TransfersCarts/i.test(col9.innerText)) {
-                        data.push([location, note]); // Aggiungi Location e Note
-
-                    // Caso 2: Se col9 contiene "Transfer" ma non "TransfersCarts", aggiungi la riga solo se "Ricarica" è nelle note
-                    } else if (/Transfers/i.test(col9.innerText) && /Ricarica/i.test(note)) {
-                        data.push([location, note]); // Aggiungi Location e Note
-                    }
+                if (!iframeDoc) {
+                    console.error("Impossibile accedere al contenuto dell'iframe.");
+                    callback([]);
+                    return;
                 }
-            });
 
-            console.log("Dati filtrati:", data);
-            callback(data);
+                // Seleziona tutte le righe
+                const rows = iframeDoc.querySelectorAll('tr');
+                const data = [];
 
-            // Rimuove l'iframe dopo l'elaborazione
-            iframe.remove();
-        }, 3000); // Aspetta 3 secondi
-    };
+                rows.forEach(row => {
+                    const col1 = row.querySelector('td.col1'); // Location
+                    const col9 = row.querySelector('td.col9'); // Tipo di Transfer
+                    const col11 = row.querySelector('td.col11'); // Note da mostrare
 
-    document.body.appendChild(iframe);
-}
+                    // Se col1, col9 e col11 esistono
+                    if (col1 && col9 && col11) {
+                        const location = col1.innerText.trim(); // Testo della colonna Location
+                        const note = col11.innerText.trim(); // Testo della colonna Note (col11)
 
-   // Funzione per visualizzare i dati in una tabella HTML all'interno del container
-function displayData(data) {
-    // Pulisci il contenuto del container
-    dataContainer.innerHTML = "";
+                        // Caso 1: Se col9 contiene "TransfersCarts", aggiungi la riga con la location e la nota
+                        if (/TransfersCarts/i.test(col9.innerText)) {
+                            data.push([location, note]); // Aggiungi Location e Note
 
-    // Crea una tabella per visualizzare i dati
-    const dataTable = document.createElement('table');
-    dataTable.style.borderCollapse = 'collapse';
-    dataTable.style.fontSize = '14px';
-    dataTable.style.fontFamily = 'Arial, sans-serif';
-    dataTable.style.textAlign = 'left';
-    dataTable.style.border = '1px solid #ddd';
-    dataTable.style.width = 'auto'; // Adattamento alla lunghezza del contenuto
+                        // Caso 2: Se col9 contiene "Transfer" ma non "TransfersCarts", aggiungi la riga solo se "Ricarica" è nelle note
+                        } else if (/Transfers/i.test(col9.innerText) && /Ricarica/i.test(note)) {
+                            data.push([location, note]); // Aggiungi Location e Note
+                        }
+                    }
+                });
 
-    const thead = dataTable.createTHead();
-    const tbody = dataTable.createTBody();
+                console.log("Dati filtrati:", data);
+                callback(data);
 
-    // Intestazione
-    const headerRow = thead.insertRow();
-    const th1 = document.createElement('th');
-    th1.textContent = "Location";
-    headerRow.appendChild(th1);
+                // Rimuove l'iframe dopo l'elaborazione
+                iframe.remove();
+            }, 3000); // Aspetta 3 secondi
+        };
 
-    const th2 = document.createElement('th');
-    th2.textContent = "Note";
-    headerRow.appendChild(th2);
-
-    [th1, th2].forEach(th => {
-        th.style.padding = '8px';
-        th.style.border = '1px solid #ddd';
-        th.style.backgroundColor = '#f4f4f4';
-        th.style.color = '#333';
-    });
-
-    if (data.length === 0) {
-        // Aggiungi una riga con il messaggio di avviso
-        const row = tbody.insertRow();
-        const cell = row.insertCell();
-        cell.colSpan = 2; // Span su entrambe le colonne
-        cell.textContent = "ATTENZIONE, NON CI SONO JP CARTS SUL FLOOR E NEMMENO NELLO YARD!!!";
-        cell.style.color = 'red';
-        cell.style.fontWeight = 'bold';
-        cell.style.textAlign = 'center';
-        cell.style.padding = '8px';
-        cell.style.border = '1px solid #ddd';
-    } else {
-        // Aggiungi le righe dei dati
-        data.forEach(rowData => {
-            const row = tbody.insertRow();
-
-            const firstTd = row.insertCell();
-            firstTd.textContent = rowData[0]; // Location
-
-            const lastTd = row.insertCell();
-            lastTd.textContent = rowData[1]; // Note (col11)
-
-            [firstTd, lastTd].forEach(td => {
-                td.style.padding = '8px';
-                td.style.border = '1px solid #ddd';
-                td.style.whiteSpace = 'nowrap'; // Impedisce il wrapping per rispettare la lunghezza della stringa
-            });
-        });
+        document.body.appendChild(iframe);
     }
 
-    dataContainer.appendChild(dataTable); // Aggiungi la tabella al container
+    // Funzione per visualizzare i dati in una tabella HTML all'interno del container
+    function displayData(data) {
+        // Pulisci il contenuto del container
+        dataContainer.innerHTML = "";
 
-    // Impostiamo il flag che i dati sono stati caricati
-    isDataLoaded = true;
+        // Crea una tabella per visualizzare i dati
+        const dataTable = document.createElement('table');
+        dataTable.style.borderCollapse = 'collapse';
+        dataTable.style.fontSize = '14px';
+        dataTable.style.fontFamily = 'Arial, sans-serif';
+        dataTable.style.textAlign = 'left';
+        dataTable.style.border = '1px solid #ddd';
+        dataTable.style.width = 'auto'; // Adattamento alla lunghezza del contenuto
 
-    // Mostra il container dopo che i dati sono stati caricati
-    dataContainer.style.display = 'block';
-}
+        const thead = dataTable.createTHead();
+        const tbody = dataTable.createTBody();
 
+        // Intestazione
+        const headerRow = thead.insertRow();
+        const th1 = document.createElement('th');
+        th1.textContent = "Location";
+        headerRow.appendChild(th1);
+
+        const th2 = document.createElement('th');
+        th2.textContent = "Note";
+        headerRow.appendChild(th2);
+
+        [th1, th2].forEach(th => {
+            th.style.padding = '8px';
+            th.style.border = '1px solid #ddd';
+            th.style.backgroundColor = '#f4f4f4';
+            th.style.color = '#333';
+        });
+
+        if (data.length === 0) {
+            // Aggiungi una riga con il messaggio di avviso
+            const row = tbody.insertRow();
+            const cell = row.insertCell();
+            cell.colSpan = 2; // Span su entrambe le colonne
+            cell.textContent = "ATTENZIONE, NON CI SONO JP CARTS SUL FLOOR E NEMMENO NELLO YARD!!!";
+            cell.style.color = 'red';
+            cell.style.fontWeight = 'bold';
+            cell.style.textAlign = 'center';
+            cell.style.padding = '8px';
+            cell.style.border = '1px solid #ddd';
+        } else {
+            // Aggiungi le righe dei dati
+            data.forEach(rowData => {
+                const row = tbody.insertRow();
+
+                const firstTd = row.insertCell();
+                firstTd.textContent = rowData[0]; // Location
+
+                const lastTd = row.insertCell();
+                lastTd.textContent = rowData[1]; // Note (col11)
+
+                [firstTd, lastTd].forEach(td => {
+                    td.style.padding = '8px';
+                    td.style.border = '1px solid #ddd';
+                    td.style.whiteSpace = 'nowrap'; // Impedisce il wrapping per rispettare la lunghezza della stringa
+                });
+            });
+        }
+
+        dataContainer.appendChild(dataTable); // Aggiungi la tabella al container
+
+        // Impostiamo il flag che i dati sono stati caricati
+        isDataLoaded = true;
+
+        // Mostra il container dopo che i dati sono stati caricati
+        dataContainer.style.display = 'block';
+    }
 
     // Funzione per mostrare/nascondere i dati al clic del pulsante
     function toggleDataDisplay() {
-    if (tableVisible) {
-        dataContainer.style.display = 'none';
-        button.textContent = "Mostra Scarichi"; // Cambia testo del pulsante
-    } else {
-        // Carica e mostra i dati solo se i dati non sono ancora stati caricati
-        if (!isDataLoaded) {
+        if (tableVisible) {
+            dataContainer.style.display = 'none';
+            button.textContent = "Mostra Scarichi"; // Cambia testo del pulsante
+        } else {
+            // Carica e mostra i dati solo se i dati non sono ancora stati caricati
+            if (!isDataLoaded) {
+                loadYardPageAndExtractData(function (data) {
+                    displayData(data);
+                });
+            } else {
+                // Se i dati sono già stati caricati, mostra semplicemente la tabella
+                dataContainer.style.display = 'block';
+            }
+            button.textContent = "Nascondi Scarichi"; // Cambia testo del pulsante
+        }
+        tableVisible = !tableVisible; // Inverti lo stato della visibilità
+    }
+
+    // Funzione per monitorare cambiamenti nel contenuto dell'iframe e aggiornare i dati
+    function observeIframeChanges() {
+        const iframe = document.querySelector('iframe');
+        if (!iframe) return;
+
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+        const rowsContainer = iframeDoc.querySelectorAll('tr');
+        
+        // Create a MutationObserver to detect changes in the iframe content
+        const observer = new MutationObserver(() => {
+            console.log("Tabella modificata, ricarico i dati.");
             loadYardPageAndExtractData(function (data) {
                 displayData(data);
             });
-        } else {
-            // Se i dati sono già stati caricati, mostra semplicemente la tabella
-            dataContainer.style.display = 'block';
-        }
-        button.textContent = "Nascondi Scarichi"; // Cambia testo del pulsante
-    }
-    tableVisible = !tableVisible; // Inverti lo stato della visibilità
-}
+        });
 
+        observer.observe(iframeDoc.body, { childList: true, subtree: true });
+        console.log("Osservatore configurato per rilevare modifiche nel contenuto dell'iframe.");
+    }
+
+    // Auto-refresh every 10 minutes
+    setInterval(() => {
+        if (tableVisible) {
+            loadYardPageAndExtractData(function (data) {
+                displayData(data);
+            });
+        }
+    }, 3 * 60 * 1000); // 3 minutes interval
 
     // Crea il pulsante "Mostra dati veicoli"
     const button = document.createElement('button');
