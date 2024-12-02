@@ -27,14 +27,22 @@
 
             rows.forEach(row => {
                 const col1 = row.querySelector('td.col1'); // Location
-                const col9 = row.querySelector('td.col9'); // Controlla per Transfers
+                const col9 = row.querySelector('td.col9'); // Tipo di Transfer
                 const col11 = row.querySelector('td.col11'); // Note da mostrare
 
-                // Verifica che col1, col9 e col11 esistano e che col9 contenga "Transfer" (case-insensitive)
-                if (col1 && col9 && col11 && /Transfer/i.test(col9.innerText)) {
+                // Se col1, col9 e col11 esistono
+                if (col1 && col9 && col11) {
                     const location = col1.innerText.trim(); // Testo della colonna Location
                     const note = col11.innerText.trim(); // Testo della colonna Note (col11)
-                    data.push([location, note]); // Aggiungi Location e Note
+
+                    // Caso 1: Se col9 contiene "TransfersCarts", aggiungi la riga con la location e la nota
+                    if (/TransfersCarts/i.test(col9.innerText)) {
+                        data.push([location, note]); // Aggiungi Location e Note
+
+                    // Caso 2: Se col9 contiene "Transfer" ma non "TransfersCarts", aggiungi la riga solo se "Ricarica" è nelle note
+                    } else if (/Transfer/i.test(col9.innerText) && /Ricarica/i.test(note)) {
+                        data.push([location, note]); // Aggiungi Location e Note
+                    }
                 }
             });
 
