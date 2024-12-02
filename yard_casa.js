@@ -146,7 +146,7 @@ function displayData(data) {
 
     // Crea il pulsante "Mostra dati veicoli"
     const button = document.createElement('button');
-    button.textContent = "Mostra dati veicoli";
+    button.textContent = "Mostra Scarichi";
     button.style.position = 'fixed';
     button.style.top = '550px';
     button.style.left = '10px';
