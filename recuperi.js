@@ -181,10 +181,22 @@
                 laneColor = 'red';
             }
 
-            tbody.append(`<tr><td colspan="2" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td></tr>`);
+            // Aggiungere la riga della lane
+            const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
+                <td colspan="2" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
+            </tr>`);
 
+            // Gestire l'espansione/contrazione delle righe
+            laneRow.on('click', function() {
+                const nextRows = $(this).nextUntil('.laneRow');
+                nextRows.toggle();
+            });
+
+            tbody.append(laneRow);
+
+            // Aggiungere le righe dei buffer sotto la lane
             Object.entries(laneSummary).forEach(([location, data]) => {
-                const row = $('<tr></tr>');
+                const row = $('<tr class="locationRow"></tr>');
                 const count = data.count;
 
                 let color = '';
@@ -204,8 +216,9 @@
             totalContainers += laneTotal;
         });
 
+        // Aggiungere la riga del Totale Globale separata e sempre visibile
         const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Globale</td><td>' + totalContainers + '</td></tr>');
-        tbody.append(globalTotalRow);
+        tbody.append(globalTotalRow); // La riga "Totale Globale" rimane sempre visibile
 
         table.append(thead);
         table.append(tbody);
@@ -248,6 +261,9 @@
                 font-size: 14px;
                 padding: 5px;
                 margin: 0;
+            }
+            .locationRow {
+                display: none;
             }
         `);
     }
