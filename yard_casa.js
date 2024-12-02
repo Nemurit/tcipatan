@@ -125,21 +125,24 @@ function displayData(data) {
 
     // Funzione per mostrare/nascondere i dati al clic del pulsante
     function toggleDataDisplay() {
-        if (tableVisible) {
-            dataContainer.style.display = 'none';
+    if (tableVisible) {
+        dataContainer.style.display = 'none';
+        button.textContent = "Mostra Scarichi"; // Cambia testo del pulsante
+    } else {
+        // Carica e mostra i dati solo se i dati non sono ancora stati caricati
+        if (!isDataLoaded) {
+            loadYardPageAndExtractData(function (data) {
+                displayData(data);
+            });
         } else {
-            // Carica e mostra i dati solo se i dati non sono ancora stati caricati
-            if (!isDataLoaded) {
-                loadYardPageAndExtractData(function (data) {
-                    displayData(data);
-                });
-            } else {
-                // Se i dati sono già stati caricati, mostra semplicemente la tabella
-                dataContainer.style.display = 'block';
-            }
+            // Se i dati sono già stati caricati, mostra semplicemente la tabella
+            dataContainer.style.display = 'block';
         }
-        tableVisible = !tableVisible; // Inverti lo stato della visibilità
+        button.textContent = "Nascondi Scarichi"; // Cambia testo del pulsante
     }
+    tableVisible = !tableVisible; // Inverti lo stato della visibilità
+}
+
 
     // Crea il pulsante "Mostra dati veicoli"
     const button = document.createElement('button');
