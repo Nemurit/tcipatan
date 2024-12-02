@@ -133,7 +133,7 @@
 
         $('#contentContainer').remove();
 
-        const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 70vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
+        const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
 
         if (Object.keys(sortedSummary).length === 0) {
             return;
