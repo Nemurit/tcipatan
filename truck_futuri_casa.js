@@ -2,7 +2,7 @@
     'use strict';
 
     // Change the title of the page
-    document.title = "CLERK HANDOVER!!";
+    document.title = "CLERK HANDOVER";
 
     let tableContainer = null;
     let allRows = [];
@@ -402,9 +402,7 @@
     // Monitoraggio iframe per cambiamenti
     monitorIframeChanges();
 
+    createButtons();
+    autoRefresh();
     
-    window.onload = function () {
-        createButtons();
-        autoRefresh();
-    };
 })();
