@@ -1,24 +1,21 @@
-
 (function () {
     'use strict';
 
-    // Change the title of the page
     document.title = "CLERK HANDOVER";
 
     let tableContainer = null;
     let allRows = [];
     let dropdown = null;
     let timeInputBox = null;
+    let vridInputBox = null;
     let printButton = null;
     let rowCountDisplay = null;
     let containermain = null;
 
-    // Costanti
     const DEFAULT_HOURS = 1;
     const INITIAL_HOURS = 1;
     const MAX_HOURS = 24;
 
-    // Funzione per creare il pulsante di caricamento dati con funzione toggle
     function createButtonForPageLoadAndDataExtraction() {
         const button = document.createElement('button');
         button.innerHTML = 'Visualizza TRUCKS';
@@ -30,22 +27,20 @@
         button.style.marginRight = '5px';
         button.style.cursor = 'pointer';
 
-        let isTableVisible = false; // Stato toggle per la visibilità della tabella
+        let isTableVisible = false;
 
         button.addEventListener('click', function () {
             if (isTableVisible) {
-                // Nascondi la tabella e resetta lo stato
                 if (tableContainer) {
                     tableContainer.style.display = 'none';
                 }
                 button.innerHTML = 'Visualizza TRUCKS';
                 isTableVisible = false;
             } else {
-                // Mostra la tabella e carica i dati
                 if (tableContainer) {
                     tableContainer.style.display = 'block';
                 } else {
-                    loadIframeAndWait(INITIAL_HOURS); // Carica dati per il massimo di 1 ora
+                    loadIframeAndWait(INITIAL_HOURS);
                 }
                 button.innerHTML = 'Nascondi TRUCKS';
                 isTableVisible = true;
@@ -58,6 +53,7 @@
     function refreshData() {
         dropdown.value = 'Tutti';
         timeInputBox.value = DEFAULT_HOURS;
+        vridInputBox.value = '';
         loadIframeAndWait(DEFAULT_HOURS);
     }
 
@@ -108,7 +104,7 @@
                         const sdt = tds[13].textContent.trim();
                         const cpt = tds[14].textContent.trim();
                         const lane = tds[5].textContent.trim();
-
+                        const vrid = tds[7].textContent.trim(); // VR ID
                         const rowDate = parseDate(sdt);
 
                         if (!rowDate) {
@@ -133,6 +129,7 @@
                             sdt: sdt,
                             cpt: cpt,
                             date: rowDate,
+                            vrid: vrid, // Save VR ID
                             extraText: extraText,
                             highlightColor: highlightColor,
                         };
@@ -170,6 +167,11 @@
             filteredRows = filteredRows.filter(row => row.extraText === status);
         }
 
+        const vridValue = vridInputBox.value.trim();
+        if (vridValue) {
+            filteredRows = filteredRows.filter(row => row.vrid.includes(vridValue));
+        }
+
         showDataInTable(filteredRows);
         updateRowCount(filteredRows.length);
     }
@@ -180,46 +182,39 @@
         }
 
         tableContainer = document.createElement('div');
-        tableContainer.style.position = 'fixed';
-        tableContainer.style.top = '90px';
-        tableContainer.style.left = '10px';
-        tableContainer.style.zIndex = '10001';
-        tableContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+        tableContainer.style.marginTop = '10px';
         tableContainer.style.padding = '15px';
-        tableContainer.style.maxHeight = '400px';
-        tableContainer.style.overflowY = 'scroll';
-        tableContainer.style.width = '25%';
-        tableContainer.style.border = '1px solid #ccc';
-        tableContainer.style.borderRadius = '5px';
 
         const table = document.createElement('table');
         table.style.width = '100%';
         table.style.borderCollapse = 'collapse';
         table.style.fontFamily = 'Arial, sans-serif';
         table.style.fontSize = '14px';
-        table.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
         table.innerHTML = `
             <thead style="background-color: #f4f4f4; border-bottom: 2px solid #ccc;">
                 <tr>
                     <th style="padding: 10px; text-align: left;">LANE</th>
                     <th style="padding: 10px; text-align: left;">SDT</th>
                     <th style="padding: 10px; text-align: left;">CPT</th>
+                    <th style="padding: 10px; text-align: left;">VRID</th>
                     <th style="padding: 10px; text-align: left;">Status</th>
                 </tr>
             </thead>
             <tbody>
                 ${filteredRows.map(row => `
-                    <tr style="background-color: ${row.highlightColor}; color: white; text-align: left;">
+                    <tr style="background-color: ${row.highlightColor}; color: white;">
                         <td style="padding: 10px;">${row.lane}</td>
                         <td style="padding: 10px;">${row.sdt}</td>
                         <td style="padding: 10px;">${row.cpt}</td>
+                        <td style="padding: 10px;">${row.vrid}</td>
                         <td style="padding: 10px;">${row.extraText}</td>
                     </tr>
                 `).join('')}
             </tbody>
         `;
+
         tableContainer.appendChild(table);
-        document.body.appendChild(tableContainer);
+        containermain.appendChild(tableContainer);
     }
 
     function updateRowCount(count) {
@@ -230,6 +225,7 @@
     function showButtonsAndInputs() {
         dropdown.style.display = 'inline-block';
         timeInputBox.style.display = 'inline-block';
+        vridInputBox.style.display = 'inline-block';
         printButton.style.display = 'inline-block';
         rowCountDisplay.style.display = 'inline-block';
     }
@@ -244,7 +240,7 @@
         containermain.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
         containermain.style.borderRadius = '5px';
         containermain.style.display = 'flex';
-        containermain.style.flexDirection = 'row';
+        containermain.style.flexDirection = 'column';
 
         containermain.appendChild(createButtonForPageLoadAndDataExtraction());
 
@@ -273,6 +269,16 @@
             filterAndShowData(parseInt(timeInputBox.value, 10));
         });
 
+        vridInputBox = document.createElement('input');
+        vridInputBox.type = 'text';
+        vridInputBox.placeholder = 'RICERCA VRID';
+        vridInputBox.style.padding = '3px';
+        vridInputBox.style.marginTop = '10px';
+        vridInputBox.style.display = 'none';
+        vridInputBox.addEventListener('input', function () {
+            filterAndShowData(timeInputBox.value ? parseInt(timeInputBox.value, 10) : INITIAL_HOURS);
+        });
+
         printButton = document.createElement('button');
         printButton.innerHTML = 'Stampa';
         printButton.style.padding = '3px';
@@ -283,7 +289,6 @@
                 const printWindow = window.open('', '_blank');
                 const printDocument = printWindow.document;
 
-                // Crea un contenuto minimale per la stampa
                 printDocument.open();
                 printDocument.write(`
                     <!DOCTYPE html>
@@ -297,7 +302,6 @@
                                 margin-bottom: 20px;
                                 font-family: Arial, sans-serif;
                                 font-size: 14px;
-                                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
                             }
                             th, td {
                                 border: 1px solid #ccc;
@@ -315,11 +319,7 @@
                     </html>
                 `);
                 printDocument.close();
-
-                // Avvia il processo di stampa
                 printWindow.print();
-
-                // Chiudi la finestra di stampa dopo l'uso
                 printWindow.onafterprint = function () {
                     printWindow.close();
                 };
@@ -334,6 +334,7 @@
 
         containermain.appendChild(dropdown);
         containermain.appendChild(timeInputBox);
+        containermain.appendChild(vridInputBox);
         containermain.appendChild(printButton);
         containermain.appendChild(rowCountDisplay);
 
