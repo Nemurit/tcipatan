@@ -205,52 +205,56 @@
     }
 
     function showDataInTable(filteredRows) {
-        if (tableContainer) {
-            tableContainer.remove();
-        }
+    console.log("Filtrando e mostrando i dati:", filteredRows);
 
-        tableContainer = document.createElement('div');
-        tableContainer.style.position = 'fixed';
-        tableContainer.style.top = '90px';
-        tableContainer.style.left = '10px';
-        tableContainer.style.zIndex = '10001';
-        tableContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-        tableContainer.style.padding = '15px';
-        tableContainer.style.maxHeight = '400px';
-        tableContainer.style.overflowY = 'scroll';
-        tableContainer.style.width = '25%';
-        tableContainer.style.border = '1px solid #ccc';
-        tableContainer.style.borderRadius = '5px';
-
-        const table = document.createElement('table');
-        table.style.width = '100%';
-        table.style.borderCollapse = 'collapse';
-        table.style.fontFamily = 'Arial, sans-serif';
-        table.style.fontSize = '14px';
-        table.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
-        table.innerHTML = `
-            <thead style="background-color: #f4f4f4; border-bottom: 2px solid #ccc;">
-                <tr>
-                    <th style="padding: 10px; text-align: left;">LANE</th>
-                    <th style="padding: 10px; text-align: left;">SDT</th>
-                    <th style="padding: 10px; text-align: left;">CPT</th>
-                    <th style="padding: 10px; text-align: left;">Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${filteredRows.map(row => `
-                    <tr style="background-color: ${row.highlightColor};">
-                        <td style="padding: 8px;">${row.lane}</td>
-                        <td style="padding: 8px;">${row.sdt}</td>
-                        <td style="padding: 8px;">${row.cpt}</td>
-                        <td style="padding: 8px;">${row.extraText}</td>
-                    </tr>
-                `).join('')}
-            </tbody>
-        `;
-        tableContainer.appendChild(table);
-        document.body.appendChild(tableContainer);
+    if (tableContainer) {
+        tableContainer.remove();
     }
+
+    tableContainer = document.createElement('div');
+    tableContainer.style.position = 'fixed';
+    tableContainer.style.top = '90px';
+    tableContainer.style.left = '10px';
+    tableContainer.style.zIndex = '10001';
+    tableContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+    tableContainer.style.padding = '15px';
+    tableContainer.style.maxHeight = '400px';
+    tableContainer.style.overflowY = 'scroll';
+    tableContainer.style.width = '25%';
+    tableContainer.style.border = '1px solid #ccc';
+    tableContainer.style.borderRadius = '5px';
+
+    const table = document.createElement('table');
+    table.style.width = '100%';
+    table.style.borderCollapse = 'collapse';
+    table.style.fontFamily = 'Arial, sans-serif';
+    table.style.fontSize = '14px';
+    table.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
+    table.innerHTML = `
+        <thead style="background-color: #f4f4f4; border-bottom: 2px solid #ccc;">
+            <tr>
+                <th style="padding: 10px; text-align: left;">LANE</th>
+                <th style="padding: 10px; text-align: left;">SDT</th>
+                <th style="padding: 10px; text-align: left;">CPT</th>
+                <th style="padding: 10px; text-align: left;">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${filteredRows.map(row => `
+                <tr style="background-color: ${row.highlightColor};">
+                    <td style="padding: 8px;">${row.lane}</td>
+                    <td style="padding: 8px;">${row.sdt}</td>
+                    <td style="padding: 8px;">${row.cpt}</td>
+                    <td style="padding: 8px;">${row.extraText}</td>
+                </tr>`).join('')}
+        </tbody>
+    `;
+
+    console.log("Tabella creata:", table);
+    tableContainer.appendChild(table);
+    document.body.appendChild(tableContainer);
+}
+
 
     function updateRowCount(count) {
         if (rowCountDisplay) {
