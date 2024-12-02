@@ -5,10 +5,16 @@
     let dataContainer; // Variabile per il container
     let isDataLoaded = false; // Flag per sapere se i dati sono stati caricati
 
-    // Funzione per caricare la pagina di yard in un iframe nascosto con attesa di 5 secondi
     function loadYardPageAndExtractData(callback) {
+        // Rimuovi eventuali iframe esistenti
+        const existingIframe = document.querySelector('iframe[data-yard="true"]');
+        if (existingIframe) {
+            existingIframe.remove();
+        }
+
         const iframe = document.createElement('iframe');
         iframe.style.display = 'none'; // Nasconde l'iframe
+        iframe.setAttribute('data-yard', 'true'); // Per identificare facilmente questo iframe
         iframe.src = "https://www.amazonlogistics.eu/yms/shipclerk";
 
         iframe.onload = function () {
@@ -51,13 +57,12 @@
 
                 // Rimuove l'iframe dopo l'elaborazione
                 iframe.remove();
-            }, 3000); // Aspetta 3 secondi
+            }, 5000); // Aspetta 5 secondi
         };
 
         document.body.appendChild(iframe);
     }
 
-    // Funzione per visualizzare i dati in una tabella HTML all'interno del container
     function displayData(data) {
         // Pulisci il contenuto del container
         dataContainer.innerHTML = "";
@@ -69,7 +74,7 @@
         dataTable.style.fontFamily = 'Arial, sans-serif';
         dataTable.style.textAlign = 'left';
         dataTable.style.border = '1px solid #ddd';
-        dataTable.style.width = 'auto'; // Adattamento alla lunghezza del contenuto
+        dataTable.style.width = 'auto';
 
         const thead = dataTable.createTHead();
         const tbody = dataTable.createTBody();
@@ -116,7 +121,7 @@
                 [firstTd, lastTd].forEach(td => {
                     td.style.padding = '8px';
                     td.style.border = '1px solid #ddd';
-                    td.style.whiteSpace = 'nowrap'; // Impedisce il wrapping per rispettare la lunghezza della stringa
+                    td.style.whiteSpace = 'nowrap'; // Impedisce il wrapping
                 });
             });
         }
@@ -126,60 +131,32 @@
         // Impostiamo il flag che i dati sono stati caricati
         isDataLoaded = true;
 
-        // Mostra il container dopo che i dati sono stati caricati
+        // Mostra il container
         dataContainer.style.display = 'block';
     }
 
-    // Funzione per mostrare/nascondere i dati al clic del pulsante
     function toggleDataDisplay() {
         if (tableVisible) {
             dataContainer.style.display = 'none';
-            button.textContent = "Mostra Scarichi"; // Cambia testo del pulsante
+            button.textContent = "Mostra Scarichi";
         } else {
-            // Carica e mostra i dati solo se i dati non sono ancora stati caricati
-            if (!isDataLoaded) {
-                loadYardPageAndExtractData(function (data) {
-                    displayData(data);
-                });
-            } else {
-                // Se i dati sono già stati caricati, mostra semplicemente la tabella
-                dataContainer.style.display = 'block';
-            }
-            button.textContent = "Nascondi Scarichi"; // Cambia testo del pulsante
-        }
-        tableVisible = !tableVisible; // Inverti lo stato della visibilità
-    }
-
-    // Funzione per monitorare cambiamenti nel contenuto dell'iframe e aggiornare i dati
-    function observeIframeChanges() {
-        const iframe = document.querySelector('iframe');
-        if (!iframe) return;
-
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-        const rowsContainer = iframeDoc.querySelectorAll('tr');
-        
-        // Create a MutationObserver to detect changes in the iframe content
-        const observer = new MutationObserver(() => {
-            console.log("Tabella modificata, ricarico i dati.");
             loadYardPageAndExtractData(function (data) {
                 displayData(data);
             });
-        });
-
-        observer.observe(iframeDoc.body, { childList: true, subtree: true });
-        console.log("Osservatore configurato per rilevare modifiche nel contenuto dell'iframe.");
+            button.textContent = "Nascondi Scarichi";
+        }
+        tableVisible = !tableVisible;
     }
 
-    // Auto-refresh every 10 minutes
     setInterval(() => {
         if (tableVisible) {
+            console.log("Esecuzione auto-refresh");
             loadYardPageAndExtractData(function (data) {
                 displayData(data);
             });
         }
-    }, 3 * 60 * 1000); // 3 minutes interval
+    }, 10 * 60 * 1000); // 10 minuti
 
-    // Crea il pulsante "Mostra dati veicoli"
     const button = document.createElement('button');
     button.textContent = "Mostra Scarichi";
     button.style.position = 'fixed';
@@ -193,7 +170,6 @@
     button.style.cursor = 'pointer';
     button.style.zIndex = '1000';
 
-    // Crea il container per i dati
     dataContainer = document.createElement('div');
     dataContainer.style.position = 'fixed';
     dataContainer.style.top = '600px';
@@ -203,13 +179,11 @@
     dataContainer.style.borderRadius = '5px';
     dataContainer.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
     dataContainer.style.padding = '10px';
-    dataContainer.style.display = 'none'; // Nascondi inizialmente
+    dataContainer.style.display = 'none';
     dataContainer.style.zIndex = '999';
 
-    // Aggiungi evento click al pulsante
     button.addEventListener('click', toggleDataDisplay);
 
-    // Aggiungi il pulsante e il container alla pagina
     document.body.appendChild(button);
     document.body.appendChild(dataContainer);
 })();
