@@ -262,6 +262,9 @@
                 padding: 5px;
                 margin: 0;
             }
+            .locationRow {
+                display: none;
+            }
         `);
     }
 
