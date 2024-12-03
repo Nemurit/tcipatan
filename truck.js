@@ -1,237 +1,94 @@
-(function () {
+(async function () {
     'use strict';
 
-    // Costanti
-    const DEFAULT_HOURS = 1;
-    const INITIAL_HOURS = 1;
-    const MAX_HOURS = 24;
+    // URL della pagina che contiene la tabella dinamica
+    const targetUrl = 'https://www.amazonlogistics.eu/ssp/dock/hrz/ob';
 
-    // Variabili globali
-    let tableContainer = null;
-    let allRows = [];
-    let dropdown = null;
-    let timeInputBox = null;
-    let printButton = null;
-    let rowCountDisplay = null;
-    let vrIdInputBox = null;
-    let containermain = null;
+    // Funzione principale per avviare il processo
+    async function main() {
+        console.log('Caricamento dati da /ob...');
+        
+        // Crea un iframe invisibile per caricare la pagina
+        const iframe = createHiddenIframe(targetUrl);
 
-    // Funzione principale per fetch dei dati
-    async function fetchTruckData(hours) {
-        const url = 'https://www.amazonlogistics.eu/ssp/dock/hrz/ob';
-        const params = new URLSearchParams({
-            hours: hours || DEFAULT_HOURS,
+        // Aspetta il caricamento dell'iframe e ottieni il suo documento
+        const iframeDoc = await waitForIframeLoad(iframe);
+
+        // Aspetta che la tabella venga popolata dinamicamente
+        const table = await waitForTableLoad(iframeDoc, 'table#dashboard');
+
+        // Estrai i dati dalla tabella
+        const rows = extractTableData(table);
+        console.log('Dati estratti:', rows);
+
+        // Rimuovi l'iframe per pulizia
+        iframe.remove();
+
+        // Visualizza i dati in console o utilizzali come necessario
+        console.log(`Dati estratti (${rows.length} righe):`, rows);
+    }
+
+    // Crea un iframe nascosto
+    function createHiddenIframe(url) {
+        const iframe = document.createElement('iframe');
+        iframe.src = url;
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+        return iframe;
+    }
+
+    // Aspetta il caricamento dell'iframe
+    function waitForIframeLoad(iframe) {
+        return new Promise((resolve, reject) => {
+            iframe.onload = () => {
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                if (iframeDoc) {
+                    resolve(iframeDoc);
+                } else {
+                    reject(new Error('Impossibile accedere al contenuto dell\'iframe.'));
+                }
+            };
         });
+    }
 
-        try {
-            const response = await fetch(`${url}?${params.toString()}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
-                credentials: 'include', // Necessario se il server richiede autenticazione tramite cookie
-            });
+    // Aspetta che una tabella specifica venga caricata
+    function waitForTableLoad(doc, tableSelector, timeout = 10000) {
+        return new Promise((resolve, reject) => {
+            const startTime = Date.now();
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
+            function checkTable() {
+                const table = doc.querySelector(tableSelector);
+                if (table) {
+                    resolve(table);
+                } else if (Date.now() - startTime > timeout) {
+                    reject(new Error('Timeout: La tabella non è stata caricata.'));
+                } else {
+                    setTimeout(checkTable, 500);
+                }
             }
 
-            const data = await response.json(); // Supponendo che il server restituisca JSON
-            console.log('Dati ricevuti:', data);
-
-            // Trasformare i dati nel formato atteso
-            allRows = data.map((row, index) => ({
-                index: index + 1,
-                lane: row.lane || '',
-                sdt: row.sdt || '',
-                cpt: row.cpt || '',
-                vrId: row.vrId || '',
-                date: parseDate(row.sdt),
-                extraText: determineStatus(row),
-                highlightColor: determineColor(row),
-            }));
-
-            filterAndShowData(hours);
-        } catch (error) {
-            console.error('Errore durante il fetch dei dati:', error);
-        }
-    }
-
-    fetch(url, {
-    method: 'GET',
-    headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-    },
-    credentials: 'include', // Necessario per inviare i cookie
-});
-
-    // Funzioni di supporto
-    function parseDate(dateString) {
-        const parsedDate = new Date(dateString);
-        if (!isNaN(parsedDate.getTime())) {
-            return parsedDate;
-        }
-        console.error(`Impossibile convertire la data: ${dateString}`);
-        return null;
-    }
-
-    function determineStatus(row) {
-        if (row.sdt === row.cpt) {
-            return 'CPT';
-        } else if (row.lane.startsWith('WT')) {
-            return 'TRANSFER';
-        }
-        return 'COLLECTION';
-    }
-
-    function determineColor(row) {
-        if (row.sdt === row.cpt) {
-            return 'green';
-        } else if (row.lane.startsWith('WT')) {
-            return 'violet';
-        }
-        return 'orange';
-    }
-
-    function filterAndShowData(hours) {
-        const now = new Date();
-        const effectiveHours = Math.min(hours, MAX_HOURS);
-        const maxDate = new Date(now.getTime() + effectiveHours * 60 * 60 * 1000);
-
-        const status = dropdown ? dropdown.value : 'Tutti';
-        const vrIdFilter = vrIdInputBox.value.trim().toLowerCase();
-
-        let filteredRows;
-
-        if (vrIdFilter) {
-            filteredRows = allRows.filter(row =>
-                row.vrId.toLowerCase().includes(vrIdFilter)
-            );
-        } else {
-            filteredRows = allRows.filter(row =>
-                row.date >= now && row.date <= maxDate
-            );
-
-            if (status !== 'Tutti') {
-                filteredRows = filteredRows.filter(row => row.extraText === status);
-            }
-        }
-
-        showDataInTable(filteredRows);
-        updateRowCount(filteredRows.length);
-    }
-
-    function showDataInTable(filteredRows) {
-        if (tableContainer) {
-            tableContainer.remove();
-        }
-
-        tableContainer = document.createElement('div');
-        tableContainer.id = 'tableContainer';
-
-        const table = document.createElement('table');
-        table.style.width = '100%';
-        table.style.borderCollapse = 'collapse';
-        table.innerHTML = `
-            <thead>
-                <tr>
-                    <th>LANE</th>
-                    <th>SDT</th>
-                    <th>CPT</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${filteredRows.map(row => `
-                    <tr style="background-color: ${row.highlightColor}; color: white;">
-                        <td>${row.lane}</td>
-                        <td>${row.sdt}</td>
-                        <td>${row.cpt}</td>
-                        <td>${row.extraText}</td>
-                    </tr>
-                `).join('')}
-            </tbody>
-        `;
-        tableContainer.appendChild(table);
-        document.body.appendChild(tableContainer);
-    }
-
-    function updateRowCount(count) {
-        if (!rowCountDisplay) return;
-        rowCountDisplay.innerHTML = `NUMERO TRUCKS: ${count}`;
-    }
-
-    function createButtons() {
-        containermain = document.createElement('div');
-        containermain.style.position = 'fixed';
-        containermain.style.top = '10px';
-        containermain.style.left = '10px';
-        containermain.style.zIndex = '10001';
-        containermain.style.padding = '10px';
-        containermain.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-        containermain.style.borderRadius = '5px';
-        containermain.style.display = 'flex';
-        containermain.style.flexDirection = 'row';
-
-        const loadButton = document.createElement('button');
-        loadButton.innerHTML = 'Carica Dati';
-        loadButton.addEventListener('click', () => fetchTruckData(DEFAULT_HOURS));
-        containermain.appendChild(loadButton);
-
-        dropdown = document.createElement('select');
-        ['Tutti', 'CPT', 'COLLECTION', 'TRANSFER'].forEach(option => {
-            const opt = document.createElement('option');
-            opt.value = option;
-            opt.innerHTML = option;
-            dropdown.appendChild(opt);
+            checkTable();
         });
-
-        dropdown.addEventListener('change', function () {
-            filterAndShowData(timeInputBox.value ? parseInt(timeInputBox.value, 10) : INITIAL_HOURS);
-        });
-
-        timeInputBox = document.createElement('input');
-        timeInputBox.type = 'number';
-        timeInputBox.placeholder = 'Ore';
-        timeInputBox.addEventListener('input', function () {
-            filterAndShowData(parseInt(timeInputBox.value, 10));
-        });
-
-        vrIdInputBox = document.createElement('input');
-        vrIdInputBox.type = 'text';
-        vrIdInputBox.placeholder = 'Filtro VR ID';
-        vrIdInputBox.addEventListener('input', function () {
-            filterAndShowData(timeInputBox.value ? parseInt(timeInputBox.value, 10) : INITIAL_HOURS);
-        });
-
-        printButton = document.createElement('button');
-        printButton.innerHTML = 'Stampa';
-        printButton.addEventListener('click', function () {
-            if (tableContainer) {
-                const printWindow = window.open('', '_blank');
-                printWindow.document.write(tableContainer.innerHTML);
-                printWindow.document.close();
-                printWindow.print();
-            }
-        });
-
-        rowCountDisplay = document.createElement('span');
-
-        containermain.appendChild(dropdown);
-        containermain.appendChild(timeInputBox);
-        containermain.appendChild(vrIdInputBox);
-        containermain.appendChild(printButton);
-        containermain.appendChild(rowCountDisplay);
-
-        document.body.appendChild(containermain);
     }
 
-    createButtons();
+    // Estrai i dati da una tabella
+    function extractTableData(table) {
+        const rows = Array.from(table.querySelectorAll('tbody tr'));
+        return rows.map(row => {
+            const cells = row.querySelectorAll('td');
+            return {
+                lane: cells[5]?.textContent.trim(),
+                sdt: cells[13]?.textContent.trim(),
+                cpt: cells[14]?.textContent.trim(),
+                vrId: cells[7]?.textContent.trim(),
+            };
+        });
+    }
 
-    const response = await fetch(url, { ... });
-const text = await response.text(); // Legge la risposta come testo
-console.log(text); // Stampa il contenuto della risposta
-
+    // Avvia lo script
+    try {
+        await main();
+    } catch (error) {
+        console.error('Errore durante l\'esecuzione:', error);
+    }
 })();
