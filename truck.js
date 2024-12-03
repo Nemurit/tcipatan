@@ -1,58 +1,49 @@
 (async function () {
     'use strict';
 
-    // URL della pagina che contiene la tabella dinamica
-    const targetUrl = 'https://www.amazonlogistics.eu/ssp/dock/hrz/ob';
+    // URL della pagina o endpoint API per i dati della tabella
+    const apiUrl = 'https://www.amazonlogistics.eu/ssp/dock/hrz/ob';
 
     // Funzione principale per avviare il processo
     async function main() {
-        console.log('Caricamento dati da /ob...');
-        
-        // Crea un iframe invisibile per caricare la pagina
-        const iframe = createHiddenIframe(targetUrl);
+        console.log('Inizio estrazione dati...');
 
-        // Aspetta il caricamento dell'iframe e ottieni il suo documento
-        const iframeDoc = await waitForIframeLoad(iframe);
+        try {
+            // Esegui una richiesta GET per ottenere i dati
+            const response = await fetch(apiUrl, {
+                method: 'GET',
+                credentials: 'include', // Invia cookie/sessione
+                headers: {
+                    'Accept': 'text/html,application/xhtml+xml',
+                },
+            });
 
-        // Aspetta che la tabella venga popolata dinamicamente
-        const table = await waitForTableLoad(iframeDoc, 'table#dashboard');
+            // Controlla se la risposta è valida
+            if (!response.ok) {
+                throw new Error(`Errore HTTP: ${response.status}`);
+            }
 
-        // Estrai i dati dalla tabella
-        const rows = extractTableData(table);
-        console.log('Dati estratti:', rows);
+            // Estrai il contenuto come testo HTML
+            const htmlText = await response.text();
 
-        // Rimuovi l'iframe per pulizia
-        iframe.remove();
+            // Crea un DOMParser per analizzare l'HTML
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlText, 'text/html');
 
-        // Visualizza i dati in console o utilizzali come necessario
-        console.log(`Dati estratti (${rows.length} righe):`, rows);
+            // Aspetta che la tabella venga generata
+            const table = await waitForTable(doc, 'table#dashboard');
+
+            // Estrai i dati dalla tabella
+            const rows = extractTableData(table);
+            console.log(`Dati estratti (${rows.length} righe):`, rows);
+
+        } catch (error) {
+            console.error('Errore durante il fetch dei dati:', error);
+        }
     }
 
-    // Crea un iframe nascosto
-    function createHiddenIframe(url) {
-        const iframe = document.createElement('iframe');
-        iframe.src = url;
-        iframe.style.display = 'none';
-        document.body.appendChild(iframe);
-        return iframe;
-    }
-
-    // Aspetta il caricamento dell'iframe
-    function waitForIframeLoad(iframe) {
-        return new Promise((resolve, reject) => {
-            iframe.onload = () => {
-                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                if (iframeDoc) {
-                    resolve(iframeDoc);
-                } else {
-                    reject(new Error('Impossibile accedere al contenuto dell\'iframe.'));
-                }
-            };
-        });
-    }
-
-    // Aspetta che una tabella specifica venga caricata
-    function waitForTableLoad(doc, tableSelector, timeout = 10000) {
+    // Aspetta che una tabella specifica sia presente nel DOM
+    function waitForTable(doc, tableSelector, timeout = 10000) {
         return new Promise((resolve, reject) => {
             const startTime = Date.now();
 
@@ -61,7 +52,7 @@
                 if (table) {
                     resolve(table);
                 } else if (Date.now() - startTime > timeout) {
-                    reject(new Error('Timeout: La tabella non è stata caricata.'));
+                    reject(new Error('Timeout: La tabella non è stata trovata.'));
                 } else {
                     setTimeout(checkTable, 500);
                 }
@@ -71,7 +62,7 @@
         });
     }
 
-    // Estrai i dati da una tabella
+    // Estrai i dati da una tabella HTML
     function extractTableData(table) {
         const rows = Array.from(table.querySelectorAll('tbody tr'));
         return rows.map(row => {
@@ -86,9 +77,5 @@
     }
 
     // Avvia lo script
-    try {
-        await main();
-    } catch (error) {
-        console.error('Errore durante l\'esecuzione:', error);
-    }
+    await main();
 })();
