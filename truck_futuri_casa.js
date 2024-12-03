@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    // Cambia il titolo della pagina
+    // Change the title of the page
     document.title = "CLERK HANDOVER";
 
     let tableContainer = null;
@@ -17,24 +17,6 @@
     const DEFAULT_HOURS = 1;
     const INITIAL_HOURS = 1;
     const MAX_HOURS = 24;
-    const REFRESH_INTERVAL = 60000; // 60 secondi
-
-    // Timer per il refresh automatico
-    let refreshInterval = null;
-    let isTableVisible = false; // Variabile per gestire la visibilità della tabella
-
-    // Funzione per impostare il refresh automatico
-    function setupAutoRefresh() {
-        if (refreshInterval) {
-            clearInterval(refreshInterval);
-        }
-        refreshInterval = setInterval(() => {
-            if (isTableVisible) {
-                console.log('Eseguendo refresh automatico...');
-                loadIframeAndWait(DEFAULT_HOURS);
-            }
-        }, REFRESH_INTERVAL);
-    }
 
     // Funzione per creare il pulsante di caricamento dati con funzione toggle
     function createButtonForPageLoadAndDataExtraction() {
@@ -47,6 +29,8 @@
         button.style.borderRadius = '3px';
         button.style.marginRight = '5px';
         button.style.cursor = 'pointer';
+
+        let isTableVisible = false; // Stato toggle per la visibilità della tabella
 
         button.addEventListener('click', function () {
             if (isTableVisible) {
@@ -69,6 +53,204 @@
         });
 
         return button;
+    }
+
+    function refreshData() {
+        dropdown.value = 'Tutti';
+        timeInputBox.value = DEFAULT_HOURS;
+        vrIdInputBox.value = '';
+        loadIframeAndWait(DEFAULT_HOURS);
+    }
+
+    function loadIframeAndWait(hours) {
+        let iframe = document.getElementById('pageIframe');
+        if (!iframe) {
+            iframe = document.createElement('iframe');
+            iframe.id = 'pageIframe';
+            iframe.style.display = 'none';
+            iframe.src = 'https://www.amazonlogistics.eu/ssp/dock/hrz/ob?';
+            document.body.appendChild(iframe);
+        }
+
+        iframe.onload = function () {
+            setTimeout(() => {
+                adjustTableRowSelection(iframe);
+                extractDataFromIframe(iframe, hours);
+            }, 1000);
+        };
+    }
+
+    function adjustTableRowSelection(iframe) {
+        const iframeDoc = iframe.contentWindow.document;
+        const dropdown = iframeDoc.querySelector('#dashboard_length select');
+
+        if (dropdown) {
+            dropdown.value = '100';
+            const event = new Event('change', { bubbles: true });
+            dropdown.dispatchEvent(event);
+            console.log('Selezione righe impostata a 100.');
+        } else {
+            console.log('Dropdown per la selezione righe non trovato.');
+        }
+    }
+
+    function extractDataFromIframe(iframe, hours) {
+        const iframeDoc = iframe.contentWindow.document;
+        const targetTable = iframeDoc.querySelector('table#dashboard.display.dataTable.floatL');
+
+        if (targetTable) {
+            const tbody = targetTable.querySelector('tbody');
+            if (tbody) {
+                const rows = Array.from(tbody.querySelectorAll('tr'));
+
+                allRows = rows.map((row, index) => {
+                    const tds = row.querySelectorAll('td');
+                    if (tds.length >= 15) {
+                        const sdt = tds[13].textContent.trim();
+                        const cpt = tds[14].textContent.trim();
+                        const lane = tds[5].textContent.trim();
+                        const vrId = tds[7].textContent.trim(); // Ottieni VR ID
+
+                        const rowDate = parseDate(sdt);
+
+                        if (!rowDate) {
+                            console.error(`Errore nel parsing della data: ${sdt}`);
+                            return null;
+                        }
+
+                        let extraText = 'COLLECTION';
+                        let highlightColor = 'orange';
+                        if (sdt === cpt) {
+                            extraText = 'CPT';
+                            highlightColor = 'green';
+                        }
+                        if (lane.startsWith('WT')) {
+                            extraText = 'TRANSFER';
+                            highlightColor = 'violet';
+                        }
+
+                        return {
+                            index: index + 1,
+                            lane: lane,
+                            sdt: sdt,
+                            cpt: cpt,
+                            vrId: vrId,
+                            date: rowDate,
+                            extraText: extraText,
+                            highlightColor: highlightColor,
+                        };
+                    }
+                }).filter(Boolean);
+
+                showButtonsAndInputs();
+                filterAndShowData(hours);
+            } else {
+                console.log('Il <tbody> non è stato trovato nella tabella.');
+            }
+        } else {
+            console.log('La tabella non è stata trovata.');
+        }
+    }
+
+    function parseDate(dateString) {
+        const parsedDate = new Date(dateString);
+        if (!isNaN(parsedDate.getTime())) {
+            return parsedDate;
+        }
+        console.error(`Impossibile convertire la data: ${dateString}`);
+        return null;
+    }
+
+    function filterAndShowData(hours) {
+    const now = new Date();
+    const effectiveHours = Math.min(hours, MAX_HOURS);
+    const maxDate = new Date(now.getTime() + effectiveHours * 60 * 60 * 1000);
+
+    const status = dropdown ? dropdown.value : 'Tutti';
+    const vrIdFilter = vrIdInputBox.value.trim().toLowerCase();
+
+    let filteredRows;
+
+    if (vrIdFilter) {
+        // Se c'è un filtro VR ID, ignora il filtro delle ore
+        filteredRows = allRows.filter(row => 
+            row.vrId.toLowerCase().includes(vrIdFilter)
+        );
+    } else {
+        // Applica il filtro delle ore e dello stato
+        filteredRows = allRows.filter(row => 
+            row.date >= now && row.date <= maxDate
+        );
+
+        if (status !== 'Tutti') {
+            filteredRows = filteredRows.filter(row => row.extraText === status);
+        }
+    }
+
+    showDataInTable(filteredRows);
+    updateRowCount(filteredRows.length);
+}
+
+
+    function showDataInTable(filteredRows) {
+        if (tableContainer) {
+            tableContainer.remove();
+        }
+
+        tableContainer = document.createElement('div');
+        tableContainer.style.position = 'fixed';
+        tableContainer.style.top = '90px';
+        tableContainer.style.left = '10px';
+        tableContainer.style.zIndex = '10001';
+        tableContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+        tableContainer.style.padding = '15px';
+        tableContainer.style.maxHeight = '400px';
+        tableContainer.style.overflowY = 'scroll';
+        tableContainer.style.width = '25%';
+        tableContainer.style.border = '1px solid #ccc';
+        tableContainer.style.borderRadius = '5px';
+
+        const table = document.createElement('table');
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.style.fontFamily = 'Arial, sans-serif';
+        table.style.fontSize = '14px';
+        table.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
+        table.innerHTML = `
+            <thead style="background-color: #f4f4f4; border-bottom: 2px solid #ccc;">
+                <tr>
+                    <th style="padding: 10px; text-align: left;">LANE</th>
+                    <th style="padding: 10px; text-align: left;">SDT</th>
+                    <th style="padding: 10px; text-align: left;">CPT</th>
+                    <th style="padding: 10px; text-align: left;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${filteredRows.map(row => `
+                    <tr style="background-color: ${row.highlightColor}; color: white; text-align: left;">
+                        <td style="padding: 10px;">${row.lane}</td>
+                        <td style="padding: 10px;">${row.sdt}</td>
+                        <td style="padding: 10px;">${row.cpt}</td>
+                        <td style="padding: 10px;">${row.extraText}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        `;
+        tableContainer.appendChild(table);
+        document.body.appendChild(tableContainer);
+    }
+
+    function updateRowCount(count) {
+        if (!rowCountDisplay) return;
+        rowCountDisplay.innerHTML = `NUMERO TRUCKS: ${count}`;
+    }
+
+    function showButtonsAndInputs() {
+        dropdown.style.display = 'inline-block';
+        timeInputBox.style.display = 'inline-block';
+        vrIdInputBox.style.display = 'inline-block';
+        printButton.style.display = 'inline-block';
+        rowCountDisplay.style.display = 'inline-block';
     }
 
     function createButtons() {
@@ -125,6 +307,55 @@
         printButton.style.padding = '3px';
         printButton.style.marginRight = '5px';
         printButton.style.display = 'none';
+        printButton.addEventListener('click', function () {
+            if (tableContainer) {
+                const printWindow = window.open('', '_blank');
+                const printDocument = printWindow.document;
+
+                // Crea un contenuto minimale per la stampa
+                printDocument.open();
+                printDocument.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Stampa Tabella</title>
+                        <style>
+                            table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin-bottom: 20px;
+                                font-family: Arial, sans-serif;
+                                font-size: 14px;
+                                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                            }
+                            th, td {
+                                border: 1px solid #ccc;
+                                padding: 8px;
+                                text-align: left;
+                            }
+                            th {
+                                background-color: #f4f4f4;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${tableContainer.innerHTML}
+                    </body>
+                    </html>
+                `);
+                printDocument.close();
+
+                // Avvia il processo di stampa
+                printWindow.print();
+
+                // Chiudi la finestra di stampa dopo l'uso
+                printWindow.onafterprint = function () {
+                    printWindow.close();
+                };
+            } else {
+                alert('Nessuna tabella disponibile per la stampa.');
+            }
+        });
 
         rowCountDisplay = document.createElement('span');
         rowCountDisplay.style.marginLeft = '5px';
