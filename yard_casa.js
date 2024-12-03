@@ -57,7 +57,7 @@
 
                 // Rimuove l'iframe dopo l'elaborazione
                 iframe.remove();
-            }, 7000); // Aspetta 7 secondi
+            }, 5000); // Aspetta 7 secondi
         };
 
         document.body.appendChild(iframe);
