@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    // Cambia il titolo della pagina
+    // Change the title of the page
     document.title = "CLERK HANDOVER";
 
     let tableContainer = null;
@@ -13,30 +13,27 @@
     let vrIdInputBox = null;
     let containermain = null;
 
-    // Stato della visibilità della tabella
-    let isTableVisible = false;
-
     // Costanti
     const DEFAULT_HOURS = 1;
     const INITIAL_HOURS = 1;
     const MAX_HOURS = 24;
-    const REFRESH_INTERVAL = 3 * 60 * 1000; // 3 minuti in millisecondi
+
 
     // Timer per il refresh automatico
-    let refreshInterval = null;
+       lett refreshInterval = null;
 
     // Funzione per impostare il refresh automatico
-    function setupAutoRefresh() {
-        if (refreshInterval) {
-            clearInterval(refreshInterval);
-        }
-        refreshInterval = setInterval(() => {
-            if (isTableVisible) {
-                console.log('Eseguendo refresh automatico...');
-                loadIframeAndWait(DEFAULT_HOURS);
+        function setupAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
             }
-        }, REFRESH_INTERVAL);
-    }
+            refreshInterval = setInterval(() => {
+                if (isTableVisible) {
+                    console.log('Eseguendo refresh automatico...');
+                    loadIframeAndWait(DEFAULT_HOURS);
+                }
+            }, REFRESH_INTERVAL);
+        }
 
     // Funzione per creare il pulsante di caricamento dati con funzione toggle
     function createButtonForPageLoadAndDataExtraction() {
@@ -49,6 +46,8 @@
         button.style.borderRadius = '3px';
         button.style.marginRight = '5px';
         button.style.cursor = 'pointer';
+
+        let isTableVisible = false; // Stato toggle per la visibilità della tabella
 
         button.addEventListener('click', function () {
             if (isTableVisible) {
@@ -73,7 +72,8 @@
         return button;
     }
 
-    // Funzione per caricare e aggiornare i dati dall'iframe
+ 
+
     function loadIframeAndWait(hours) {
         let iframe = document.getElementById('pageIframe');
         if (!iframe) {
@@ -88,10 +88,9 @@
             setTimeout(() => {
                 adjustTableRowSelection(iframe);
                 extractDataFromIframe(iframe, hours);
-            }, 1000); // Aspetta 1 secondo per garantire il caricamento
+            }, 1000);
         };
     }
-
     // Funzione per aggiornare la selezione delle righe della tabella nell'iframe
     function adjustTableRowSelection(iframe) {
         const iframeDoc = iframe.contentWindow.document;
@@ -106,7 +105,6 @@
             console.log('Dropdown per la selezione righe non trovato.');
         }
     }
-
     // Funzione per estrarre i dati dalla tabella nell'iframe
     function extractDataFromIframe(iframe, hours) {
         const iframeDoc = iframe.contentWindow.document;
@@ -123,7 +121,7 @@
                         const sdt = tds[13].textContent.trim();
                         const cpt = tds[14].textContent.trim();
                         const lane = tds[5].textContent.trim();
-                        const vrId = tds[7].textContent.trim();
+                        const vrId = tds[7].textContent.trim(); // Ottieni VR ID
 
                         const rowDate = parseDate(sdt);
 
@@ -176,34 +174,35 @@
     }
 
     function filterAndShowData(hours) {
-        const now = new Date();
-        const effectiveHours = Math.min(hours, MAX_HOURS);
-        const maxDate = new Date(now.getTime() + effectiveHours * 60 * 60 * 1000);
+    const now = new Date();
+    const effectiveHours = Math.min(hours, MAX_HOURS);
+    const maxDate = new Date(now.getTime() + effectiveHours * 60 * 60 * 1000);
 
-        const status = dropdown ? dropdown.value : 'Tutti';
-        const vrIdFilter = vrIdInputBox.value.trim().toLowerCase();
+    const status = dropdown ? dropdown.value : 'Tutti';
+    const vrIdFilter = vrIdInputBox.value.trim().toLowerCase();
 
-        let filteredRows;
+    let filteredRows;
 
-        if (vrIdFilter) {
-            // Se c'è un filtro VR ID, ignora il filtro delle ore
-            filteredRows = allRows.filter(row =>
-                row.vrId.toLowerCase().includes(vrIdFilter)
-            );
-        } else {
-            // Applica il filtro delle ore e dello stato
-            filteredRows = allRows.filter(row =>
-                row.date >= now && row.date <= maxDate
-            );
+    if (vrIdFilter) {
+        // Se c'è un filtro VR ID, ignora il filtro delle ore
+        filteredRows = allRows.filter(row => 
+            row.vrId.toLowerCase().includes(vrIdFilter)
+        );
+    } else {
+        // Applica il filtro delle ore e dello stato
+        filteredRows = allRows.filter(row => 
+            row.date >= now && row.date <= maxDate
+        );
 
-            if (status !== 'Tutti') {
-                filteredRows = filteredRows.filter(row => row.extraText === status);
-            }
+        if (status !== 'Tutti') {
+            filteredRows = filteredRows.filter(row => row.extraText === status);
         }
-
-        showDataInTable(filteredRows);
-        updateRowCount(filteredRows.length);
     }
+
+    showDataInTable(filteredRows);
+    updateRowCount(filteredRows.length);
+}
+
 
     function showDataInTable(filteredRows) {
         if (tableContainer) {
@@ -249,12 +248,139 @@
                 `).join('')}
             </tbody>
         `;
-
         tableContainer.appendChild(table);
         document.body.appendChild(tableContainer);
     }
 
-    // Avvia il refresh automatico
-    createButtons();
+    function updateRowCount(count) {
+        if (!rowCountDisplay) return;
+        rowCountDisplay.innerHTML = `NUMERO TRUCKS: ${count}`;
+    }
+
+    function showButtonsAndInputs() {
+        dropdown.style.display = 'inline-block';
+        timeInputBox.style.display = 'inline-block';
+        vrIdInputBox.style.display = 'inline-block';
+        printButton.style.display = 'inline-block';
+        rowCountDisplay.style.display = 'inline-block';
+    }
+
+    function createButtons() {
+        containermain = document.createElement('div');
+        containermain.style.position = 'fixed';
+        containermain.style.top = '10px';
+        containermain.style.left = '10px';
+        containermain.style.zIndex = '10001';
+        containermain.style.padding = '10px';
+        containermain.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+        containermain.style.borderRadius = '5px';
+        containermain.style.display = 'flex';
+        containermain.style.flexDirection = 'row';
+
+        containermain.appendChild(createButtonForPageLoadAndDataExtraction());
+
+        dropdown = document.createElement('select');
+        dropdown.style.display = 'none';
+        dropdown.style.marginRight = '5px';
+        dropdown.style.padding = '3px';
+        ['Tutti', 'CPT', 'COLLECTION', 'TRANSFER'].forEach(option => {
+            const opt = document.createElement('option');
+            opt.value = option;
+            opt.innerHTML = option;
+            dropdown.appendChild(opt);
+        });
+
+        dropdown.addEventListener('change', function () {
+            filterAndShowData(timeInputBox.value ? parseInt(timeInputBox.value, 10) : INITIAL_HOURS);
+        });
+
+        timeInputBox = document.createElement('input');
+        timeInputBox.type = 'number';
+        timeInputBox.placeholder = 'Ore';
+        timeInputBox.style.padding = '3px';
+        timeInputBox.style.marginRight = '5px';
+        timeInputBox.style.display = 'none';
+        timeInputBox.addEventListener('input', function () {
+            filterAndShowData(parseInt(timeInputBox.value, 10));
+        });
+
+        vrIdInputBox = document.createElement('input');
+        vrIdInputBox.type = 'text';
+        vrIdInputBox.placeholder = 'Filtro VR ID';
+        vrIdInputBox.style.padding = '3px';
+        vrIdInputBox.style.marginRight = '5px';
+        vrIdInputBox.style.display = 'none';
+        vrIdInputBox.addEventListener('input', function () {
+            filterAndShowData(timeInputBox.value ? parseInt(timeInputBox.value, 10) : INITIAL_HOURS);
+        });
+
+        printButton = document.createElement('button');
+        printButton.innerHTML = 'Stampa';
+        printButton.style.padding = '3px';
+        printButton.style.marginRight = '5px';
+        printButton.style.display = 'none';
+        printButton.addEventListener('click', function () {
+            if (tableContainer) {
+                const printWindow = window.open('', '_blank');
+                const printDocument = printWindow.document;
+
+                // Crea un contenuto minimale per la stampa
+                printDocument.open();
+                printDocument.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Stampa Tabella</title>
+                        <style>
+                            table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin-bottom: 20px;
+                                font-family: Arial, sans-serif;
+                                font-size: 14px;
+                                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                            }
+                            th, td {
+                                border: 1px solid #ccc;
+                                padding: 8px;
+                                text-align: left;
+                            }
+                            th {
+                                background-color: #f4f4f4;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${tableContainer.innerHTML}
+                    </body>
+                    </html>
+                `);
+                printDocument.close();
+
+                // Avvia il processo di stampa
+                printWindow.print();
+
+                // Chiudi la finestra di stampa dopo l'uso
+                printWindow.onafterprint = function () {
+                    printWindow.close();
+                };
+            } else {
+                alert('Nessuna tabella disponibile per la stampa.');
+            }
+        });
+
+        rowCountDisplay = document.createElement('span');
+        rowCountDisplay.style.marginLeft = '5px';
+        rowCountDisplay.style.display = 'none';
+
+        containermain.appendChild(dropdown);
+        containermain.appendChild(timeInputBox);
+        containermain.appendChild(vrIdInputBox);
+        containermain.appendChild(printButton);
+        containermain.appendChild(rowCountDisplay);
+
+        document.body.appendChild(containermain);
+    }
     setupAutoRefresh();
+    createButtons();
 })();
