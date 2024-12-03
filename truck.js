@@ -58,6 +58,15 @@
         }
     }
 
+    fetch(url, {
+    method: 'GET',
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+    },
+    credentials: 'include', // Necessario per inviare i cookie
+});
+
     // Funzioni di supporto
     function parseDate(dateString) {
         const parsedDate = new Date(dateString);
@@ -220,4 +229,9 @@
     }
 
     createButtons();
+
+    const response = await fetch(url, { ... });
+const text = await response.text(); // Legge la risposta come testo
+console.log(text); // Stampa il contenuto della risposta
+
 })();
