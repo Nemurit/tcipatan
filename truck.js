@@ -1,64 +1,44 @@
 (async function () {
     'use strict';
 
-    // URL della pagina o endpoint API per i dati della tabella
-    const apiUrl = 'https://www.amazonlogistics.eu/ssp/dock/hrz/ob';
+    console.log('Inizio script per l\'estrazione dati dalla tabella #dashboard.');
 
-    // Funzione principale per avviare il processo
+    // Funzione principale
     async function main() {
-        console.log('Inizio estrazione dati...');
-
+        // Aspetta che la tabella con ID `dashboard` venga aggiunta al DOM
         try {
-            // Esegui una richiesta GET per ottenere i dati
-            const response = await fetch(apiUrl, {
-                method: 'GET',
-                credentials: 'include', // Invia cookie/sessione
-                headers: {
-                    'Accept': 'text/html,application/xhtml+xml',
-                },
-            });
-
-            // Controlla se la risposta è valida
-            if (!response.ok) {
-                throw new Error(`Errore HTTP: ${response.status}`);
-            }
-
-            // Estrai il contenuto come testo HTML
-            const htmlText = await response.text();
-
-            // Crea un DOMParser per analizzare l'HTML
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(htmlText, 'text/html');
-
-            // Aspetta che la tabella venga generata
-            const table = await waitForTable(doc, 'table#dashboard');
+            const table = await waitForElement('table#dashboard');
+            console.log('Tabella trovata, inizio estrazione dati.');
 
             // Estrai i dati dalla tabella
             const rows = extractTableData(table);
             console.log(`Dati estratti (${rows.length} righe):`, rows);
 
+            // (Facoltativo) Mostra i dati in una tabella personalizzata o gestiscili
+            showDataInConsole(rows);
+
         } catch (error) {
-            console.error('Errore durante il fetch dei dati:', error);
+            console.error('Errore durante il caricamento della tabella:', error);
         }
     }
 
-    // Aspetta che una tabella specifica sia presente nel DOM
-    function waitForTable(doc, tableSelector, timeout = 10000) {
+    // Aspetta un elemento specifico nel DOM
+    function waitForElement(selector, timeout = 10000) {
         return new Promise((resolve, reject) => {
-            const startTime = Date.now();
-
-            function checkTable() {
-                const table = doc.querySelector(tableSelector);
-                if (table) {
-                    resolve(table);
-                } else if (Date.now() - startTime > timeout) {
-                    reject(new Error('Timeout: La tabella non è stata trovata.'));
-                } else {
-                    setTimeout(checkTable, 500);
+            const observer = new MutationObserver((mutations, obs) => {
+                const element = document.querySelector(selector);
+                if (element) {
+                    obs.disconnect(); // Disabilita l'osservatore
+                    resolve(element);
                 }
-            }
+            });
 
-            checkTable();
+            observer.observe(document.body, { childList: true, subtree: true });
+
+            setTimeout(() => {
+                observer.disconnect();
+                reject(new Error(`Timeout: L'elemento ${selector} non è stato trovato.`));
+            }, timeout);
         });
     }
 
@@ -74,6 +54,11 @@
                 vrId: cells[7]?.textContent.trim(),
             };
         });
+    }
+
+    // Mostra i dati nella console
+    function showDataInConsole(rows) {
+        console.table(rows, ['lane', 'sdt', 'cpt', 'vrId']);
     }
 
     // Avvia lo script
