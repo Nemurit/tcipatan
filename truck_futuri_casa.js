@@ -20,7 +20,7 @@
 
 
     // Timer per il refresh automatico
-       lett refreshInterval = null;
+       let refreshInterval = null;
 
     // Funzione per impostare il refresh automatico
         function setupAutoRefresh() {
