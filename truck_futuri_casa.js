@@ -1,7 +1,9 @@
 (function () {
     'use strict';
 
-    // Variabili globali
+    // Cambia il titolo della pagina
+    document.title = "CLERK HANDOVER";
+
     let tableContainer = null;
     let allRows = [];
     let dropdown = null;
@@ -18,8 +20,7 @@
     const DEFAULT_HOURS = 1;
     const INITIAL_HOURS = 1;
     const MAX_HOURS = 24;
-    const REFRESH_INTERVAL = 10 * 60 * 1000; // Intervallo di 10 minuti
-    const REFRESH_DELAY = 15 * 1000; // Ritardo di 15 secondi per il caricamento
+    const REFRESH_INTERVAL = 3 * 60 * 1000; // 3 minuti in millisecondi
 
     // Timer per il refresh automatico
     let refreshInterval = null;
@@ -87,7 +88,7 @@
             setTimeout(() => {
                 adjustTableRowSelection(iframe);
                 extractDataFromIframe(iframe, hours);
-            }, REFRESH_DELAY); // Aspetta 15 secondi per garantire il caricamento
+            }, 1000); // Aspetta 1 secondo per garantire il caricamento
         };
     }
 
@@ -165,10 +166,95 @@
         }
     }
 
-    // Inizializza i pulsanti e gli input
-    createButtons();
+    function parseDate(dateString) {
+        const parsedDate = new Date(dateString);
+        if (!isNaN(parsedDate.getTime())) {
+            return parsedDate;
+        }
+        console.error(`Impossibile convertire la data: ${dateString}`);
+        return null;
+    }
+
+    function filterAndShowData(hours) {
+        const now = new Date();
+        const effectiveHours = Math.min(hours, MAX_HOURS);
+        const maxDate = new Date(now.getTime() + effectiveHours * 60 * 60 * 1000);
+
+        const status = dropdown ? dropdown.value : 'Tutti';
+        const vrIdFilter = vrIdInputBox.value.trim().toLowerCase();
+
+        let filteredRows;
+
+        if (vrIdFilter) {
+            // Se c'è un filtro VR ID, ignora il filtro delle ore
+            filteredRows = allRows.filter(row =>
+                row.vrId.toLowerCase().includes(vrIdFilter)
+            );
+        } else {
+            // Applica il filtro delle ore e dello stato
+            filteredRows = allRows.filter(row =>
+                row.date >= now && row.date <= maxDate
+            );
+
+            if (status !== 'Tutti') {
+                filteredRows = filteredRows.filter(row => row.extraText === status);
+            }
+        }
+
+        showDataInTable(filteredRows);
+        updateRowCount(filteredRows.length);
+    }
+
+    function showDataInTable(filteredRows) {
+        if (tableContainer) {
+            tableContainer.remove();
+        }
+
+        tableContainer = document.createElement('div');
+        tableContainer.style.position = 'fixed';
+        tableContainer.style.top = '90px';
+        tableContainer.style.left = '10px';
+        tableContainer.style.zIndex = '10001';
+        tableContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+        tableContainer.style.padding = '15px';
+        tableContainer.style.maxHeight = '400px';
+        tableContainer.style.overflowY = 'scroll';
+        tableContainer.style.width = '25%';
+        tableContainer.style.border = '1px solid #ccc';
+        tableContainer.style.borderRadius = '5px';
+
+        const table = document.createElement('table');
+        table.style.width = '100%';
+        table.style.borderCollapse = 'collapse';
+        table.style.fontFamily = 'Arial, sans-serif';
+        table.style.fontSize = '14px';
+        table.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
+        table.innerHTML = `
+            <thead style="background-color: #f4f4f4; border-bottom: 2px solid #ccc;">
+                <tr>
+                    <th style="padding: 10px; text-align: left;">LANE</th>
+                    <th style="padding: 10px; text-align: left;">SDT</th>
+                    <th style="padding: 10px; text-align: left;">CPT</th>
+                    <th style="padding: 10px; text-align: left;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${filteredRows.map(row => `
+                    <tr style="background-color: ${row.highlightColor}; color: white; text-align: left;">
+                        <td style="padding: 10px;">${row.lane}</td>
+                        <td style="padding: 10px;">${row.sdt}</td>
+                        <td style="padding: 10px;">${row.cpt}</td>
+                        <td style="padding: 10px;">${row.extraText}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        `;
+
+        tableContainer.appendChild(table);
+        document.body.appendChild(tableContainer);
+    }
 
     // Avvia il refresh automatico
+    createButtons();
     setupAutoRefresh();
-
 })();
