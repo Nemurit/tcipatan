@@ -381,6 +381,6 @@
 
         document.body.appendChild(containermain);
     }
-    setupAutoRefresh();
+  
     createButtons();
 })();
