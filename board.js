@@ -84,7 +84,8 @@
             const location = container.location || '';
             const stackingFilter = container.stackingFilter || 'N/A';
             const lane = stackingToLaneMap[stackingFilter] || 'N/A';
-            const contentCount = container.contentCount || 0;
+
+            const contentCount = container.contentCount || 0; // Numero pacchi da Content count
 
             if (
                 location.toUpperCase().startsWith("BUFFER") &&
@@ -106,53 +107,20 @@
             }
         });
 
-        const sortedSummary = {};
-        Object.keys(filteredSummary).forEach(lane => {
-            const laneSummary = filteredSummary[lane];
-            sortedSummary[lane] = Object.keys(laneSummary)
-                .sort((a, b) => {
-                    const numA = parseBufferNumber(a);
-                    const numB = parseBufferNumber(b);
-
-                    if (numA === numB) {
-                        return a.localeCompare(b);
-                    }
-                    return numA - numB;
-                })
-                .reduce((acc, location) => {
-                    acc[location] = laneSummary[location];
-                    return acc;
-                }, {});
-        });
-
-        if (isVisible) {
-            displayTables(sortedSummary, totalPackageCount);
-        }
+        displayTable(filteredSummary, totalPackageCount);
     }
 
-    function parseBufferNumber(bufferName) {
-        const match = bufferName.match(/(\d+)/);
-        return match ? parseInt(match[0], 10) : 0;
-    }
-
-    function displayTables(sortedSummary, totalPackageCount) {
+    function displayTable(sortedSummary, totalPackageCount) {
         $('#contentContainer').remove();
 
-        const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; left: 10px; height: 90vh; width: 850px; overflow-y: auto; display: flex; gap: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
+        const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
 
-        // Tabella sinistra: Totale pacchi
-        const packageTable = $('<table id="packageSummaryTable" class="performance"></table>');
-        packageTable.append(`
-            <thead>
-                <tr><th>Totale Pacchi</th></tr>
-            </thead>
-            <tbody>
-                <tr><td>${totalPackageCount}</td></tr>
-            </tbody>
-        `);
+        if (Object.keys(sortedSummary).length === 0) {
+            return;
+        }
 
-        // Tabella destra: Dettagli buffer
-        const bufferTable = $('<table id="bufferSummaryTable" class="performance"></table>');
+        const table = $('<table id="bufferSummaryTable" class="performance"></table>');
+
         const thead = $('<thead></thead>');
         thead.append(`
             <tr>
@@ -163,22 +131,50 @@
         `);
 
         const tbody = $('<tbody></tbody>');
+        let totalContainers = 0;
 
         Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
+            let laneTotal = 0;
+            let lanePackages = 0;
+
             Object.entries(laneSummary).forEach(([location, data]) => {
-                const row = $('<tr></tr>');
+                laneTotal += data.count;
+                lanePackages += data.packages;
+            });
+
+            const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
+                <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: ${laneTotal} Container, ${lanePackages} Pacchi</td>
+            </tr>`);
+
+            laneRow.on('click', function() {
+                const nextRows = $(this).nextUntil('.laneRow');
+                nextRows.toggle();
+            });
+
+            tbody.append(laneRow);
+
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                const row = $('<tr class="locationRow"></tr>');
                 row.append(`<td>${location}</td>`);
                 row.append(`<td>${data.count}</td>`);
                 row.append(`<td>${data.packages}</td>`);
                 tbody.append(row);
             });
+
+            totalContainers += laneTotal;
         });
 
-        bufferTable.append(thead);
-        bufferTable.append(tbody);
+        const tfoot = $('<tfoot></tfoot>');
+        const globalTotalRow = $(`<tr>
+            <td colspan="2" style="font-weight: bold;">Totale Globale:</td>
+            <td>${totalPackageCount} Pacchi</td>
+        </tr>`);
+        tfoot.append(globalTotalRow);
 
-        contentContainer.append(packageTable);
-        contentContainer.append(bufferTable);
+        table.append(thead);
+        table.append(tbody);
+        table.append(tfoot);
+        contentContainer.append(table);
 
         $('body').append(contentContainer);
     }
