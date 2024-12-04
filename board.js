@@ -33,6 +33,49 @@
         });
     }
 
+    function fetchBufferSummary() {
+        const endTime = new Date().getTime();
+        const startTime = endTime - 24 * 60 * 60 * 1000;
+
+        const apiUrl = `https://www.amazonlogistics.eu/sortcenter/vista/controller/getContainersDetailByCriteria`;
+        const payload = {
+            entity: "getContainersDetailByCriteria",
+            nodeId: nodeId,
+            timeBucket: {
+                fieldName: "physicalLocationMoveTimestamp",
+                startTime: startTime,
+                endTime: endTime
+            },
+            filterBy: {
+                state: ["Stacked"],
+                isClosed: [true],
+                isMissing: [false]
+            },
+            containerTypes: ["PALLET", "GAYLORD", "CART"]
+        };
+
+        GM_xmlhttpRequest({
+            method: "GET",
+            url: `${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })}`,
+            onload: function(response) {
+                try {
+                    const data = JSON.parse(response.responseText);
+                    if (data.ret && data.ret.getContainersDetailByCriteriaOutput) {
+                        const containers = data.ret.getContainersDetailByCriteriaOutput.containerDetails[0].containerDetails;
+                        processAndDisplay(containers);
+                    } else {
+                        console.warn("Nessun dato trovato nella risposta API.");
+                    }
+                } catch (error) {
+                    console.error("Errore nella risposta API:", error);
+                }
+            },
+            onerror: function(error) {
+                console.error("Errore nella chiamata API:", error);
+            }
+        });
+    }
+
     function processAndDisplay(containers) {
     const filteredSummary = {};
 
