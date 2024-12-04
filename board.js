@@ -80,13 +80,13 @@
 
     function processAndDisplay(containers) {
         const filteredSummary = {};
-        let totalPackages = 0;
+        let totalChildCount = 0;
 
         containers.forEach(container => {
             const location = container.location || '';
             const stackingFilter = container.stackingFilter || 'N/A';
             const lane = stackingToLaneMap[stackingFilter] || 'N/A';
-            const contentCount = container.contentCount || 0; // Assicuriamoci che il conteggio dei pacchi venga preso
+            const childCount = container.childCount || 0; // Conteggio dei pacchi (childCount)
 
             if (
                 location.toUpperCase().startsWith("BUFFER") &&
@@ -98,19 +98,19 @@
                 }
 
                 if (!filteredSummary[lane][location]) {
-                    filteredSummary[lane][location] = { count: 0, packages: 0 };
+                    filteredSummary[lane][location] = { count: 0, childCount: 0 };
                 }
 
                 filteredSummary[lane][location].count++;
-                filteredSummary[lane][location].packages += contentCount;
-                totalPackages += contentCount;
+                filteredSummary[lane][location].childCount += childCount;
+                totalChildCount += childCount;
             }
         });
 
-        displayTable(filteredSummary, totalPackages);
+        displayTable(filteredSummary, totalChildCount);
     }
 
-    function displayTable(sortedSummary, totalPackages) {
+    function displayTable(sortedSummary, totalChildCount) {
         $('#contentContainer').remove();
 
         const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 600px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
@@ -135,17 +135,17 @@
             Object.entries(laneSummary).forEach(([location, data]) => {
                 const row = $('<tr></tr>');
                 const count = data.count;
-                const packages = data.packages;
+                const childCount = data.childCount;
 
                 row.append(`<td>${location}</td>`);
                 row.append(`<td>${count}</td>`);
-                row.append(`<td>${packages}</td>`);
+                row.append(`<td>${childCount}</td>`);
                 tbody.append(row);
             });
         });
 
         const tfoot = $('<tfoot></tfoot>');
-        const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Pacchi: ' + totalPackages + '</td></tr>');
+        const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Pacchi: ' + totalChildCount + '</td></tr>');
         tfoot.append(globalTotalRow);
 
         table.append(thead);
