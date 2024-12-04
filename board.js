@@ -83,7 +83,10 @@
         const location = container.location || '';
         const stackingFilter = container.stackingFilter || 'N/A';
         const lane = stackingToLaneMap[stackingFilter] || 'N/A';
-
+        
+        // Gestione di Contentcount (pacchi)
+        const pacchi = parseInt(container.Contentcount, 10) || 0;  // Se non è valido, imposta 0
+    
         // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
         if (
             location.toUpperCase().startsWith("BUFFER") &&
@@ -93,15 +96,16 @@
             if (!filteredSummary[lane]) {
                 filteredSummary[lane] = {};
             }
-
+    
             if (!filteredSummary[lane][location]) {
-                filteredSummary[lane][location] = { count: 0 };
+                filteredSummary[lane][location] = { count: 0, totalPacchi: 0 };  // Aggiungi totalPacchi
             }
-
+    
             filteredSummary[lane][location].count++;
+            filteredSummary[lane][location].totalPacchi += pacchi;  // Somma i pacchi
         }
     });
-
+    
     const sortedSummary = {};
     Object.keys(filteredSummary).forEach(lane => {
         const laneSummary = filteredSummary[lane];
@@ -109,7 +113,7 @@
             .sort((a, b) => {
                 const numA = parseBufferNumber(a);
                 const numB = parseBufferNumber(b);
-
+    
                 if (numA === numB) {
                     return a.localeCompare(b);
                 }
@@ -120,10 +124,11 @@
                 return acc;
             }, {});
     });
-
+    
     if (isVisible) {
         displayTable(sortedSummary);
     }
+    
 }
 
 // Funzione che confronta il numero esatto nel nome del buffer con il filtro
