@@ -118,15 +118,17 @@
                 const firstTd = row.insertCell();
                 firstTd.textContent = rowData[0]; // Location
 
-                // Aggiungi l'icona del Tractor verde lampeggiante accanto alla Location
+                // Aggiungi il pallino verde accanto alla Location se il Tractor è presente
                 if (rowData[2]) {
-                    const tractorIcon = document.createElement('img');
-                    tractorIcon.src = "https://cdn.creazilla.com/silhouettes/840/tractor-unit-silhouette-4edd69-xl.png"; // URL dell'icona del Tractor verde
-                    tractorIcon.style.width = '20px';
-                    tractorIcon.style.height = '20px';
-                    tractorIcon.style.marginLeft = '10px';
-                    tractorIcon.style.animation = 'blink 1s infinite';
-                    firstTd.appendChild(tractorIcon);
+                    const dot = document.createElement('span');
+                    dot.style.display = 'inline-block';
+                    dot.style.width = '10px';
+                    dot.style.height = '10px';
+                    dot.style.borderRadius = '50%';
+                    dot.style.backgroundColor = 'green';
+                    dot.style.marginLeft = '10px';
+                    dot.style.animation = 'blink 1s infinite';
+                    firstTd.appendChild(dot);
                 }
 
                 // Cella Note
@@ -197,12 +199,12 @@
     dataContainer.style.display = 'none';
     dataContainer.style.zIndex = '999';
 
-    // Aggiungi l'animazione per il lampeggio dell'icona
+    // Aggiungi l'animazione per il lampeggio del pallino verde
     const style = document.createElement('style');
     style.innerHTML = `
         @keyframes blink {
             0% { opacity: 1; }
-            50% { opacity: 0; }
+            50% { opacity: 0.2; }
             100% { opacity: 1; }
         }
     `;
