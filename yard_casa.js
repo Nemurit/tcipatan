@@ -118,7 +118,7 @@
                 const firstTd = row.insertCell();
                 firstTd.textContent = rowData[0]; // Location
 
-                // Aggiungi il pallino verde se il Tractor è presente
+                // Aggiungi il pallino verde accanto alla Location se il Tractor è presente
                 if (rowData[2]) {
                     const dot = document.createElement('span');
                     dot.style.display = 'inline-block';
