@@ -103,7 +103,6 @@
                 filteredSummary[lane][location].containers.push({ containerId, contentCount });
             }
         });
-    }
     
         const sortedSummary = {};
         Object.keys(filteredSummary).forEach(lane => {
@@ -124,31 +123,6 @@
                 }, {});
         });
     
-        if (isVisible) {
-            displayTable(sortedSummary);
-        }
-    }
-    
-
-        const sortedSummary = {};
-        Object.keys(filteredSummary).forEach(lane => {
-            const laneSummary = filteredSummary[lane];
-            sortedSummary[lane] = Object.keys(laneSummary)
-                .sort((a, b) => {
-                    const numA = parseBufferNumber(a);
-                    const numB = parseBufferNumber(b);
-
-                    if (numA === numB) {
-                        return a.localeCompare(b);
-                    }
-                    return numA - numB;
-                })
-                .reduce((acc, location) => {
-                    acc[location] = laneSummary[location];
-                    return acc;
-                }, {});
-        });
-
         if (isVisible) {
             displayTable(sortedSummary);
         }
@@ -161,15 +135,15 @@
 
     function displayTable(sortedSummary) {
         $('#contentContainer').remove();
-    
-        const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 600px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
-    
+
+        const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
+
         if (Object.keys(sortedSummary).length === 0) {
             return;
         }
-    
+
         const table = $('<table id="bufferSummaryTable" class="performance"></table>');
-    
+
         const thead = $('<thead></thead>');
         thead.append(`
             <tr>
@@ -181,26 +155,24 @@
                 </th>
             </tr>
         `);
-    
+
         thead.append(`
             <tr>
                 <th>Buffer</th>
                 <th>Totale Container</th>
-                <th>Container ID</th> <!-- Nuova colonna -->
-                <th>Content Count</th> <!-- Nuova colonna -->
             </tr>
         `);
-    
+
         const tbody = $('<tbody></tbody>');
         let totalContainers = 0;
-    
+
         Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
             let laneTotal = 0;
-    
+
             Object.entries(laneSummary).forEach(([location, data]) => {
                 laneTotal += data.count;
             });
-    
+
             let laneColor = '';
             if (laneTotal <= 10) {
                 laneColor = 'green';
@@ -209,21 +181,22 @@
             } else {
                 laneColor = 'red';
             }
-    
+
             const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-                <td colspan="4" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
+                <td colspan="2" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
             </tr>`);
-    
+
             laneRow.on('click', function() {
                 const nextRows = $(this).nextUntil('.laneRow');
                 nextRows.toggle();
             });
-    
+
             tbody.append(laneRow);
-    
+
             Object.entries(laneSummary).forEach(([location, data]) => {
                 const row = $('<tr class="locationRow"></tr>');
                 const count = data.count;
+
                 let color = '';
                 if (count <= 10) {
                     color = 'green';
@@ -232,48 +205,40 @@
                 } else {
                     color = 'red';
                 }
-    
+
                 row.append(`<td>${location}</td>`);
                 row.append(`<td style="color: ${color};">${count}</td>`);
-    
-                // Aggiungi le informazioni Container ID e Content Count
-                const containerIds = data.containers.map(c => c.containerId).join(', ');
-                const contentCounts = data.containers.map(c => c.contentCount).join(', ');
-    
-                row.append(`<td>${containerIds}</td>`); // Visualizza i Container ID
-                row.append(`<td>${contentCounts}</td>`); // Visualizza i Content Count
-    
                 tbody.append(row);
             });
-    
+
             totalContainers += laneTotal;
         });
-    
+
         const tfoot = $('<tfoot></tfoot>');
-        const globalTotalRow = $('<tr><td colspan="4" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
+        const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
         tfoot.append(globalTotalRow);
-    
+
         table.append(thead);
         table.append(tbody);
         table.append(tfoot);
         contentContainer.append(table);
-    
+
         $('body').append(contentContainer);
-    
+
         $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function(event) {
             if (event.key === "Enter") {
                 selectedBufferFilter = $(this).val();
                 fetchBufferSummary();
             }
         });
-    
+
         $('#laneFilterInput').val(selectedLaneFilters.join(', ')).on('keydown', function(event) {
             if (event.key === "Enter") {
                 selectedLaneFilters = $(this).val().split(',').map(filter => filter.trim());
                 fetchBufferSummary();
             }
         });
-    
+
         GM_addStyle(`
             #bufferSummaryTable {
                 table-layout: auto;
@@ -303,7 +268,6 @@
             }
         `);
     }
-    
 
     function addToggleButton() {
         const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
