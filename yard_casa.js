@@ -35,19 +35,21 @@
                     const col1 = row.querySelector('td.col1'); // Location
                     const col9 = row.querySelector('td.col9'); // Tipo di Transfer
                     const col11 = row.querySelector('td.col11'); // Note da mostrare
+                    const tractorIcon = row.querySelector('.yard-asset-icon.yard-asset-icon-TRACTOR'); // Icona del Tractor
 
                     // Se col1, col9 e col11 esistono
                     if (col1 && col9 && col11) {
                         const location = col1.innerText.trim(); // Testo della colonna Location
                         const note = col11.innerText.trim(); // Testo della colonna Note (col11)
+                        const isTractorPresent = tractorIcon !== null; // Verifica se l'icona Tractor è presente
 
                         // Caso 1: Se col9 contiene "TransfersCarts", aggiungi la riga con la location e la nota
                         if (/TransfersCarts/i.test(col9.innerText)) {
-                            data.push([location, note]); // Aggiungi Location e Note
+                            data.push([location, note, isTractorPresent]); // Aggiungi Location, Note e presenza del Tractor
 
                         // Caso 2: Se col9 contiene "Transfer" ma non "TransfersCarts", aggiungi la riga solo se "Ricarica" è nelle note
                         } else if (/Transfers/i.test(col9.innerText) && /Ricarica/i.test(note)) {
-                            data.push([location, note]); // Aggiungi Location e Note
+                            data.push([location, note, isTractorPresent]); // Aggiungi Location, Note e presenza del Tractor
                         }
                     }
                 });
@@ -57,7 +59,7 @@
 
                 // Rimuove l'iframe dopo l'elaborazione
                 iframe.remove();
-            }, 5000); // Aspetta 7 secondi
+            }, 5000); // Aspetta 5 secondi
         };
 
         document.body.appendChild(iframe);
@@ -123,6 +125,19 @@
                     td.style.border = '1px solid #ddd';
                     td.style.whiteSpace = 'nowrap'; // Impedisce il wrapping
                 });
+
+                // Aggiungi un pallino verde lampeggiante se il Tractor è presente
+                if (rowData[2]) {
+                    const dot = document.createElement('span');
+                    dot.style.display = 'inline-block';
+                    dot.style.width = '10px';
+                    dot.style.height = '10px';
+                    dot.style.borderRadius = '50%';
+                    dot.style.backgroundColor = 'green';
+                    dot.style.marginLeft = '10px';
+                    dot.style.animation = 'blink 1s infinite';
+                    lastTd.appendChild(dot);
+                }
             });
         }
 
@@ -181,6 +196,17 @@
     dataContainer.style.padding = '10px';
     dataContainer.style.display = 'none';
     dataContainer.style.zIndex = '999';
+
+    // Aggiungi l'animazione per il lampeggio del pallino verde
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.2; }
+            100% { opacity: 1; }
+        }
+    `;
+    document.head.appendChild(style);
 
     button.addEventListener('click', toggleDataDisplay);
 
