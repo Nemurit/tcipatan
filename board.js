@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    const nodeId = 'MXP6';
+    const nodeId = 'MXP6'; // ID del nodo da cui estrarre i dati
     let isVisible = false;
 
     function fetchBufferSummary() {
@@ -33,7 +33,7 @@
                     const data = JSON.parse(response.responseText);
                     if (data.ret && data.ret.getContainersDetailByCriteriaOutput) {
                         const containers = data.ret.getContainersDetailByCriteriaOutput.containerDetails[0].containerDetails;
-                        calculateAndDisplayTotal(containers);
+                        calculateTotalBufferPackages(containers);
                     } else {
                         console.warn("Nessun dato trovato nella risposta API.");
                     }
@@ -47,13 +47,16 @@
         });
     }
 
-    function calculateAndDisplayTotal(containers) {
+    function calculateTotalBufferPackages(containers) {
         let totalPackages = 0;
 
-        // Calcola il totale dei pacchi
+        // Calcola il totale dei pacchi nei buffer
         containers.forEach(container => {
-            const contentCount = container.contentCount || 0;
-            totalPackages += contentCount;
+            const location = container.location || '';
+            if (location.toUpperCase().startsWith("BUFFER")) {
+                const contentCount = container.contentCount || 0;
+                totalPackages += contentCount;
+            }
         });
 
         // Determina lo stato della congestione
