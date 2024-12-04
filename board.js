@@ -76,9 +76,6 @@
         });
     }
 
- function processAndDisplay(containers) {
-    const filteredSummary = {};
-
     containers.forEach(container => {
         const location = container.location || '';
         const stackingFilter = container.stackingFilter || 'N/A';
@@ -86,6 +83,9 @@
         
         // Gestione di Contentcount (pacchi)
         const pacchi = parseInt(container.Contentcount, 10) || 0;  // Se non è valido, imposta 0
+        
+        // Log per verificare il valore di pacchi e location
+        console.log(`Processing container: location = ${location}, stackingFilter = ${stackingFilter}, lane = ${lane}, pacchi = ${pacchi}`);
     
         // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
         if (
@@ -93,18 +93,29 @@
             (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
             (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
         ) {
+            console.log(`Container ${location} matches filters.`);
+    
             if (!filteredSummary[lane]) {
                 filteredSummary[lane] = {};
+                console.log(`Created new lane entry: ${lane}`);
             }
     
             if (!filteredSummary[lane][location]) {
                 filteredSummary[lane][location] = { count: 0, totalPacchi: 0 };  // Aggiungi totalPacchi
+                console.log(`Created new location entry: ${location} for lane: ${lane}`);
             }
     
             filteredSummary[lane][location].count++;
             filteredSummary[lane][location].totalPacchi += pacchi;  // Somma i pacchi
+            console.log(`Updated ${location} in lane ${lane}: count = ${filteredSummary[lane][location].count}, totalPacchi = ${filteredSummary[lane][location].totalPacchi}`);
+        } else {
+            console.log(`Container ${location} does not match filters.`);
         }
     });
+    
+    // Log per visualizzare filteredSummary prima dell'ordinamento
+    console.log("Filtered Summary before sorting:");
+    console.log(filteredSummary);
     
     const sortedSummary = {};
     Object.keys(filteredSummary).forEach(lane => {
@@ -125,10 +136,15 @@
             }, {});
     });
     
+    // Log per visualizzare sortedSummary dopo l'ordinamento
+    console.log("Sorted Summary:");
+    console.log(sortedSummary);
+    
     if (isVisible) {
         displayTable(sortedSummary);
     }
     
+
 }
 
 // Funzione che confronta il numero esatto nel nome del buffer con il filtro
