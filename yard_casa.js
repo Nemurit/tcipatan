@@ -114,19 +114,11 @@
             data.forEach(rowData => {
                 const row = tbody.insertRow();
 
+                // Cella Location
                 const firstTd = row.insertCell();
                 firstTd.textContent = rowData[0]; // Location
 
-                const lastTd = row.insertCell();
-                lastTd.textContent = rowData[1]; // Note (col11)
-
-                [firstTd, lastTd].forEach(td => {
-                    td.style.padding = '8px';
-                    td.style.border = '1px solid #ddd';
-                    td.style.whiteSpace = 'nowrap'; // Impedisce il wrapping
-                });
-
-                // Aggiungi un pallino verde lampeggiante se il Tractor è presente
+                // Aggiungi il pallino verde se il Tractor è presente
                 if (rowData[2]) {
                     const dot = document.createElement('span');
                     dot.style.display = 'inline-block';
@@ -136,8 +128,18 @@
                     dot.style.backgroundColor = 'green';
                     dot.style.marginLeft = '10px';
                     dot.style.animation = 'blink 1s infinite';
-                    lastTd.appendChild(dot);
+                    firstTd.appendChild(dot);
                 }
+
+                // Cella Note
+                const lastTd = row.insertCell();
+                lastTd.textContent = rowData[1]; // Note (col11)
+
+                [firstTd, lastTd].forEach(td => {
+                    td.style.padding = '8px';
+                    td.style.border = '1px solid #ddd';
+                    td.style.whiteSpace = 'nowrap'; // Impedisce il wrapping
+                });
             });
         }
 
