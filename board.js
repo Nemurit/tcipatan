@@ -103,6 +103,7 @@
                 filteredSummary[lane][location].containers.push({ containerId, contentCount });
             }
         });
+    }
     
         const sortedSummary = {};
         Object.keys(filteredSummary).forEach(lane => {
