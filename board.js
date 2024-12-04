@@ -1,4 +1,4 @@
-(function () {
+(function() {
     'use strict';
 
     const nodeId = 'MXP6';
@@ -12,7 +12,7 @@
         GM_xmlhttpRequest({
             method: "GET",
             url: stackingFilterMapUrl,
-            onload: function (response) {
+            onload: function(response) {
                 try {
                     const laneData = JSON.parse(response.responseText);
 
@@ -27,7 +27,7 @@
                     console.error("Errore nel parsing della mappa JSON:", error);
                 }
             },
-            onerror: function (error) {
+            onerror: function(error) {
                 console.error("Errore nel caricamento del file JSON:", error);
             }
         });
@@ -57,13 +57,11 @@
         GM_xmlhttpRequest({
             method: "GET",
             url: `${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })}`,
-            onload: function (response) {
+            onload: function(response) {
                 try {
                     const data = JSON.parse(response.responseText);
-                    console.log("Risposta API completa:", data); // Log della risposta per debug
                     if (data.ret && data.ret.getContainersDetailByCriteriaOutput) {
                         const containers = data.ret.getContainersDetailByCriteriaOutput.containerDetails[0].containerDetails;
-                        console.log("Dettagli dei container:", containers); // Log dei dettagli per debug
                         processAndDisplay(containers);
                     } else {
                         console.warn("Nessun dato trovato nella risposta API.");
@@ -72,7 +70,7 @@
                     console.error("Errore nella risposta API:", error);
                 }
             },
-            onerror: function (error) {
+            onerror: function(error) {
                 console.error("Errore nella chiamata API:", error);
             }
         });
@@ -80,14 +78,14 @@
 
     function processAndDisplay(containers) {
         const filteredSummary = {};
-        let totalChildCount = 0;
-
+    
         containers.forEach(container => {
             const location = container.location || '';
             const stackingFilter = container.stackingFilter || 'N/A';
             const lane = stackingToLaneMap[stackingFilter] || 'N/A';
-            const childCount = container.childCount || 0; // Conteggio dei pacchi (childCount)
-
+            const containerId = container.containerId || 'N/A'; // Recupera il Container ID
+            const contentCount = container.contentCount || 0; // Recupera il Content count
+    
             if (
                 location.toUpperCase().startsWith("BUFFER") &&
                 (selectedBufferFilter === '' || location.toUpperCase().includes(selectedBufferFilter.toUpperCase())) &&
@@ -96,70 +94,220 @@
                 if (!filteredSummary[lane]) {
                     filteredSummary[lane] = {};
                 }
-
+    
                 if (!filteredSummary[lane][location]) {
-                    filteredSummary[lane][location] = { count: 0, childCount: 0 };
+                    filteredSummary[lane][location] = { count: 0, containers: [] };
                 }
-
+    
                 filteredSummary[lane][location].count++;
-                filteredSummary[lane][location].childCount += childCount;
-                totalChildCount += childCount;
+                filteredSummary[lane][location].containers.push({ containerId, contentCount });
             }
         });
+    
+        const sortedSummary = {};
+        Object.keys(filteredSummary).forEach(lane => {
+            const laneSummary = filteredSummary[lane];
+            sortedSummary[lane] = Object.keys(laneSummary)
+                .sort((a, b) => {
+                    const numA = parseBufferNumber(a);
+                    const numB = parseBufferNumber(b);
+    
+                    if (numA === numB) {
+                        return a.localeCompare(b);
+                    }
+                    return numA - numB;
+                })
+                .reduce((acc, location) => {
+                    acc[location] = laneSummary[location];
+                    return acc;
+                }, {});
+        });
+    
+        if (isVisible) {
+            displayTable(sortedSummary);
+        }
+    }
+    
 
-        displayTable(filteredSummary, totalChildCount);
+        const sortedSummary = {};
+        Object.keys(filteredSummary).forEach(lane => {
+            const laneSummary = filteredSummary[lane];
+            sortedSummary[lane] = Object.keys(laneSummary)
+                .sort((a, b) => {
+                    const numA = parseBufferNumber(a);
+                    const numB = parseBufferNumber(b);
+
+                    if (numA === numB) {
+                        return a.localeCompare(b);
+                    }
+                    return numA - numB;
+                })
+                .reduce((acc, location) => {
+                    acc[location] = laneSummary[location];
+                    return acc;
+                }, {});
+        });
+
+        if (isVisible) {
+            displayTable(sortedSummary);
+        }
     }
 
-    function displayTable(sortedSummary, totalChildCount) {
+    function parseBufferNumber(bufferName) {
+        const match = bufferName.match(/(\d+)/);
+        return match ? parseInt(match[0], 10) : 0;
+    }
+
+    function displayTable(sortedSummary) {
         $('#contentContainer').remove();
-
+    
         const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 600px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
-
+    
         if (Object.keys(sortedSummary).length === 0) {
             return;
         }
-
+    
         const table = $('<table id="bufferSummaryTable" class="performance"></table>');
-
+    
         const thead = $('<thead></thead>');
+        thead.append(`
+            <tr>
+                <th>
+                    <input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                </th>
+                <th>
+                    <input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                </th>
+            </tr>
+        `);
+    
         thead.append(`
             <tr>
                 <th>Buffer</th>
                 <th>Totale Container</th>
-                <th>Totale Pacchi</th>
+                <th>Container ID</th> <!-- Nuova colonna -->
+                <th>Content Count</th> <!-- Nuova colonna -->
             </tr>
         `);
-
+    
         const tbody = $('<tbody></tbody>');
+        let totalContainers = 0;
+    
         Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
+            let laneTotal = 0;
+    
             Object.entries(laneSummary).forEach(([location, data]) => {
-                const row = $('<tr></tr>');
+                laneTotal += data.count;
+            });
+    
+            let laneColor = '';
+            if (laneTotal <= 10) {
+                laneColor = 'green';
+            } else if (laneTotal <= 30) {
+                laneColor = 'orange';
+            } else {
+                laneColor = 'red';
+            }
+    
+            const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
+                <td colspan="4" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
+            </tr>`);
+    
+            laneRow.on('click', function() {
+                const nextRows = $(this).nextUntil('.laneRow');
+                nextRows.toggle();
+            });
+    
+            tbody.append(laneRow);
+    
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                const row = $('<tr class="locationRow"></tr>');
                 const count = data.count;
-                const childCount = data.childCount;
-
+                let color = '';
+                if (count <= 10) {
+                    color = 'green';
+                } else if (count <= 30) {
+                    color = 'orange';
+                } else {
+                    color = 'red';
+                }
+    
                 row.append(`<td>${location}</td>`);
-                row.append(`<td>${count}</td>`);
-                row.append(`<td>${childCount}</td>`);
+                row.append(`<td style="color: ${color};">${count}</td>`);
+    
+                // Aggiungi le informazioni Container ID e Content Count
+                const containerIds = data.containers.map(c => c.containerId).join(', ');
+                const contentCounts = data.containers.map(c => c.contentCount).join(', ');
+    
+                row.append(`<td>${containerIds}</td>`); // Visualizza i Container ID
+                row.append(`<td>${contentCounts}</td>`); // Visualizza i Content Count
+    
                 tbody.append(row);
             });
+    
+            totalContainers += laneTotal;
         });
-
+    
         const tfoot = $('<tfoot></tfoot>');
-        const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Pacchi: ' + totalChildCount + '</td></tr>');
+        const globalTotalRow = $('<tr><td colspan="4" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
         tfoot.append(globalTotalRow);
-
+    
         table.append(thead);
         table.append(tbody);
         table.append(tfoot);
         contentContainer.append(table);
-
+    
         $('body').append(contentContainer);
+    
+        $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function(event) {
+            if (event.key === "Enter") {
+                selectedBufferFilter = $(this).val();
+                fetchBufferSummary();
+            }
+        });
+    
+        $('#laneFilterInput').val(selectedLaneFilters.join(', ')).on('keydown', function(event) {
+            if (event.key === "Enter") {
+                selectedLaneFilters = $(this).val().split(',').map(filter => filter.trim());
+                fetchBufferSummary();
+            }
+        });
+    
+        GM_addStyle(`
+            #bufferSummaryTable {
+                table-layout: auto;
+                margin: 20px 0;
+                border-collapse: collapse;
+                width: 100%;
+            }
+            #bufferSummaryTable th, #bufferSummaryTable td {
+                border: 1px solid #ddd;
+                padding: 10px;
+                text-align: left;
+            }
+            #bufferSummaryTable th {
+                background-color: #f4f4f4;
+                font-weight: bold;
+            }
+            #bufferSummaryTable tfoot {
+                background-color: #f4f4f4;
+            }
+            #bufferSummaryTable input {
+                font-size: 14px;
+                padding: 5px;
+                margin: 0;
+            }
+            .locationRow {
+                display: none;
+            }
+        `);
     }
+    
 
     function addToggleButton() {
         const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
 
-        toggleButton.on('click', function () {
+        toggleButton.on('click', function() {
             isVisible = !isVisible;
             if (isVisible) {
                 fetchBufferSummary();
@@ -173,7 +321,7 @@
         $('body').append(toggleButton);
     }
 
-    fetchStackingFilterMap(function () {
+    fetchStackingFilterMap(function() {
         addToggleButton();
         fetchBufferSummary();
     });
