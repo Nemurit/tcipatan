@@ -76,7 +76,7 @@
         });
     }
 
-   function processAndDisplay(containers) {
+ function processAndDisplay(containers) {
     const filteredSummary = {};
 
     containers.forEach(container => {
@@ -87,7 +87,7 @@
         // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
         if (
             location.toUpperCase().startsWith("BUFFER") &&
-            (selectedBufferFilter === '' || matchesBufferNumber(location, selectedBufferFilter)) &&
+            (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
             (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
         ) {
             if (!filteredSummary[lane]) {
@@ -126,13 +126,13 @@
     }
 }
 
-// Funzione che confronta il numero nel nome del buffer con il filtro
-function matchesBufferNumber(location, filter) {
+// Funzione che confronta il numero esatto nel nome del buffer con il filtro
+function matchesExactBufferNumber(location, filter) {
     const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
     if (match) {
         const bufferNumber = match[1];  // Estrae il numero
         // Verifica che il numero estratto corrisponda esattamente al filtro
-        return bufferNumber.startsWith(filter);  
+        return bufferNumber === filter;  
     }
     return false;
 }
@@ -142,6 +142,7 @@ function parseBufferNumber(bufferName) {
     const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
     return match ? parseInt(match[1], 10) : 0;  // Estrae solo il numero
 }
+
 
 
     function displayTable(sortedSummary) {
