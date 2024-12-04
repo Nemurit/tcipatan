@@ -121,7 +121,7 @@
                 // Aggiungi l'icona del Tractor verde lampeggiante accanto alla Location
                 if (rowData[2]) {
                     const tractorIcon = document.createElement('img');
-                    tractorIcon.src = "https://creazilla.com/it/media/silhouette/840/motrice"; // URL dell'icona del Tractor verde
+                    tractorIcon.src = "https://cdn.creazilla.com/silhouettes/840/tractor-unit-silhouette-4edd69-xl.png"; // URL dell'icona del Tractor verde
                     tractorIcon.style.width = '20px';
                     tractorIcon.style.height = '20px';
                     tractorIcon.style.marginLeft = '10px';
