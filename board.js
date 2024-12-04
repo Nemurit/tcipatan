@@ -1,4 +1,4 @@
-(function() {
+(function () {
     'use strict';
 
     const nodeId = 'MXP6';
@@ -12,7 +12,7 @@
         GM_xmlhttpRequest({
             method: "GET",
             url: stackingFilterMapUrl,
-            onload: function(response) {
+            onload: function (response) {
                 try {
                     const laneData = JSON.parse(response.responseText);
 
@@ -27,7 +27,7 @@
                     console.error("Errore nel parsing della mappa JSON:", error);
                 }
             },
-            onerror: function(error) {
+            onerror: function (error) {
                 console.error("Errore nel caricamento del file JSON:", error);
             }
         });
@@ -57,11 +57,13 @@
         GM_xmlhttpRequest({
             method: "GET",
             url: `${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })}`,
-            onload: function(response) {
+            onload: function (response) {
                 try {
                     const data = JSON.parse(response.responseText);
+                    console.log("Risposta API completa:", data); // Log della risposta per debug
                     if (data.ret && data.ret.getContainersDetailByCriteriaOutput) {
                         const containers = data.ret.getContainersDetailByCriteriaOutput.containerDetails[0].containerDetails;
+                        console.log("Dettagli dei container:", containers); // Log dei dettagli per debug
                         processAndDisplay(containers);
                     } else {
                         console.warn("Nessun dato trovato nella risposta API.");
@@ -70,7 +72,7 @@
                     console.error("Errore nella risposta API:", error);
                 }
             },
-            onerror: function(error) {
+            onerror: function (error) {
                 console.error("Errore nella chiamata API:", error);
             }
         });
@@ -78,22 +80,19 @@
 
     function processAndDisplay(containers) {
         const filteredSummary = {};
-        let totalPackageCount = 0; // Per calcolare il totale dei pacchi
+        let totalPackages = 0;
 
         containers.forEach(container => {
             const location = container.location || '';
             const stackingFilter = container.stackingFilter || 'N/A';
             const lane = stackingToLaneMap[stackingFilter] || 'N/A';
-
-            const contentCount = container.contentCount || 0; // Numero pacchi da Content count
+            const contentCount = container.contentCount || 0; // Assicuriamoci che il conteggio dei pacchi venga preso
 
             if (
                 location.toUpperCase().startsWith("BUFFER") &&
                 (selectedBufferFilter === '' || location.toUpperCase().includes(selectedBufferFilter.toUpperCase())) &&
                 (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
             ) {
-                totalPackageCount += contentCount; // Somma totale pacchi
-
                 if (!filteredSummary[lane]) {
                     filteredSummary[lane] = {};
                 }
@@ -103,17 +102,18 @@
                 }
 
                 filteredSummary[lane][location].count++;
-                filteredSummary[lane][location].packages += contentCount; // Conteggio pacchi
+                filteredSummary[lane][location].packages += contentCount;
+                totalPackages += contentCount;
             }
         });
 
-        displayTable(filteredSummary, totalPackageCount);
+        displayTable(filteredSummary, totalPackages);
     }
 
-    function displayTable(sortedSummary, totalPackageCount) {
+    function displayTable(sortedSummary, totalPackages) {
         $('#contentContainer').remove();
 
-        const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
+        const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 600px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
 
         if (Object.keys(sortedSummary).length === 0) {
             return;
@@ -131,44 +131,21 @@
         `);
 
         const tbody = $('<tbody></tbody>');
-        let totalContainers = 0;
-
         Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
-            let laneTotal = 0;
-            let lanePackages = 0;
-
             Object.entries(laneSummary).forEach(([location, data]) => {
-                laneTotal += data.count;
-                lanePackages += data.packages;
-            });
+                const row = $('<tr></tr>');
+                const count = data.count;
+                const packages = data.packages;
 
-            const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-                <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: ${laneTotal} Container, ${lanePackages} Pacchi</td>
-            </tr>`);
-
-            laneRow.on('click', function() {
-                const nextRows = $(this).nextUntil('.laneRow');
-                nextRows.toggle();
-            });
-
-            tbody.append(laneRow);
-
-            Object.entries(laneSummary).forEach(([location, data]) => {
-                const row = $('<tr class="locationRow"></tr>');
                 row.append(`<td>${location}</td>`);
-                row.append(`<td>${data.count}</td>`);
-                row.append(`<td>${data.packages}</td>`);
+                row.append(`<td>${count}</td>`);
+                row.append(`<td>${packages}</td>`);
                 tbody.append(row);
             });
-
-            totalContainers += laneTotal;
         });
 
         const tfoot = $('<tfoot></tfoot>');
-        const globalTotalRow = $(`<tr>
-            <td colspan="2" style="font-weight: bold;">Totale Globale:</td>
-            <td>${totalPackageCount} Pacchi</td>
-        </tr>`);
+        const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Pacchi: ' + totalPackages + '</td></tr>');
         tfoot.append(globalTotalRow);
 
         table.append(thead);
@@ -182,7 +159,7 @@
     function addToggleButton() {
         const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
 
-        toggleButton.on('click', function() {
+        toggleButton.on('click', function () {
             isVisible = !isVisible;
             if (isVisible) {
                 fetchBufferSummary();
@@ -196,7 +173,7 @@
         $('body').append(toggleButton);
     }
 
-    fetchStackingFilterMap(function() {
+    fetchStackingFilterMap(function () {
         addToggleButton();
         fetchBufferSummary();
     });
