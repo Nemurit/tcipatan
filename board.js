@@ -131,7 +131,8 @@ function matchesBufferNumber(location, filter) {
     const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
     if (match) {
         const bufferNumber = match[1];  // Estrae il numero
-        return bufferNumber.includes(filter);  // Verifica se il numero contiene il filtro
+        // Verifica che il numero estratto corrisponda esattamente al filtro
+        return bufferNumber.startsWith(filter);  
     }
     return false;
 }
