@@ -76,7 +76,7 @@
         });
     }
 
-    function processAndDisplay(containers) {
+   function processAndDisplay(containers) {
     const filteredSummary = {};
 
     containers.forEach(container => {
@@ -84,9 +84,10 @@
         const stackingFilter = container.stackingFilter || 'N/A';
         const lane = stackingToLaneMap[stackingFilter] || 'N/A';
 
+        // Aggiungi il controllo per i numeri che iniziano con il valore del filtro
         if (
             location.toUpperCase().startsWith("BUFFER") &&
-            (selectedBufferFilter === '' || new RegExp(`\\b${selectedBufferFilter}\\b`, 'i').test(location)) &&  // Modifica qui
+            (selectedBufferFilter === '' || startsWithBufferNumber(location, selectedBufferFilter)) &&
             (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
         ) {
             if (!filteredSummary[lane]) {
@@ -125,11 +126,20 @@
     }
 }
 
-
-    function parseBufferNumber(bufferName) {
-        const match = bufferName.match(/(\d+)/);
-        return match ? parseInt(match[0], 10) : 0;
+// Funzione per verificare se il numero nel nome del buffer inizia con il numero inserito dall'utente
+function startsWithBufferNumber(location, filter) {
+    const match = location.match(/BUFFER\s*(\d+)/);
+    if (match) {
+        const bufferNumber = match[1];  // Numero estratto dal nome del buffer
+        return bufferNumber.startsWith(filter);  // Verifica se inizia con il filtro
     }
+    return false;
+}
+
+function parseBufferNumber(bufferName) {
+    const match = bufferName.match(/(\d+)/);
+    return match ? parseInt(match[0], 10) : 0;
+}
 
     function displayTable(sortedSummary) {
         $('#contentContainer').remove();
