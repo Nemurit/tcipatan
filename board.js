@@ -40,12 +40,10 @@
         const location = container.location || '';
         const stackingFilter = container.stackingFilter || 'N/A';
         const lane = stackingToLaneMap[stackingFilter] || 'N/A';
-        const containerId = container.containerId || 'N/A'; // Recupera il Container ID
-        const contentCount = container.contentCount || 0; // Recupera il Content count
 
         if (
             location.toUpperCase().startsWith("BUFFER") &&
-            (selectedBufferFilter === '' || location.toUpperCase().includes(selectedBufferFilter.toUpperCase())) &&
+            (selectedBufferFilter === '' || new RegExp(`\\b${selectedBufferFilter}\\b`, 'i').test(location)) &&  // Modifica qui
             (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
         ) {
             if (!filteredSummary[lane]) {
@@ -53,11 +51,10 @@
             }
 
             if (!filteredSummary[lane][location]) {
-                filteredSummary[lane][location] = { count: 0, containers: [] };
+                filteredSummary[lane][location] = { count: 0 };
             }
 
             filteredSummary[lane][location].count++;
-            filteredSummary[lane][location].containers.push({ containerId, contentCount });
         }
     });
 
@@ -85,151 +82,147 @@
     }
 }
 
-function displayTable(sortedSummary) {
-    $('#contentContainer').remove();
 
-    const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
-
-    if (Object.keys(sortedSummary).length === 0) {
-        return;
+    function parseBufferNumber(bufferName) {
+        const match = bufferName.match(/(\d+)/);
+        return match ? parseInt(match[0], 10) : 0;
     }
 
-    const table = $('<table id="bufferSummaryTable" class="performance"></table>');
+    function displayTable(sortedSummary) {
+        $('#contentContainer').remove();
 
-    const thead = $('<thead></thead>');
-    thead.append(`
-        <tr>
-            <th>
-                <input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="width: 100%; padding: 5px; box-sizing: border-box;">
-            </th>
-            <th>
-                <input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="width: 100%; padding: 5px; box-sizing: border-box;">
-            </th>
-        </tr>
-    `);
+        const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
 
-    thead.append(`
-        <tr>
-            <th>Buffer</th>
-            <th>Totale Container</th>
-            <th>Container ID</th> <!-- Colonna aggiunta per Container ID -->
-            <th>Content Count</th> <!-- Colonna aggiunta per Content Count -->
-        </tr>
-    `);
-
-    const tbody = $('<tbody></tbody>');
-    let totalContainers = 0;
-
-    Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
-        let laneTotal = 0;
-
-        Object.entries(laneSummary).forEach(([location, data]) => {
-            laneTotal += data.count;
-        });
-
-        let laneColor = '';
-        if (laneTotal <= 10) {
-            laneColor = 'green';
-        } else if (laneTotal <= 30) {
-            laneColor = 'orange';
-        } else {
-            laneColor = 'red';
+        if (Object.keys(sortedSummary).length === 0) {
+            return;
         }
 
-        const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-            <td colspan="4" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
-        </tr>`);
+        const table = $('<table id="bufferSummaryTable" class="performance"></table>');
 
-        laneRow.on('click', function() {
-            const nextRows = $(this).nextUntil('.laneRow');
-            nextRows.toggle();
-        });
+        const thead = $('<thead></thead>');
+        thead.append(`
+            <tr>
+                <th>
+                    <input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                </th>
+                <th>
+                    <input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                </th>
+            </tr>
+        `);
 
-        tbody.append(laneRow);
+        thead.append(`
+            <tr>
+                <th>Buffer</th>
+                <th>Totale Container</th>
+            </tr>
+        `);
 
-        Object.entries(laneSummary).forEach(([location, data]) => {
-            const row = $('<tr class="locationRow"></tr>');
-            const count = data.count;
+        const tbody = $('<tbody></tbody>');
+        let totalContainers = 0;
 
-            let color = '';
-            if (count <= 10) {
-                color = 'green';
-            } else if (count <= 30) {
-                color = 'orange';
+        Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
+            let laneTotal = 0;
+
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                laneTotal += data.count;
+            });
+
+            let laneColor = '';
+            if (laneTotal <= 10) {
+                laneColor = 'green';
+            } else if (laneTotal <= 30) {
+                laneColor = 'orange';
             } else {
-                color = 'red';
+                laneColor = 'red';
             }
 
-            row.append(`<td>${location}</td>`);
-            row.append(`<td style="color: ${color};">${count}</td>`);
+            const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
+                <td colspan="2" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
+            </tr>`);
 
-            // Aggiungi le informazioni Container ID e Content Count
-            const containerIds = data.containers.map(c => c.containerId).join(', ');
-            const contentCounts = data.containers.map(c => c.contentCount).join(', ');
+            laneRow.on('click', function() {
+                const nextRows = $(this).nextUntil('.laneRow');
+                nextRows.toggle();
+            });
 
-            row.append(`<td>${containerIds}</td>`); // Visualizza i Container ID
-            row.append(`<td>${contentCounts}</td>`); // Visualizza i Content Count
+            tbody.append(laneRow);
 
-            tbody.append(row);
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                const row = $('<tr class="locationRow"></tr>');
+                const count = data.count;
+
+                let color = '';
+                if (count <= 10) {
+                    color = 'green';
+                } else if (count <= 30) {
+                    color = 'orange';
+                } else {
+                    color = 'red';
+                }
+
+                row.append(`<td>${location}</td>`);
+                row.append(`<td style="color: ${color};">${count}</td>`);
+                tbody.append(row);
+            });
+
+            totalContainers += laneTotal;
         });
 
-        totalContainers += laneTotal;
-    });
+        const tfoot = $('<tfoot></tfoot>');
+        const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
+        tfoot.append(globalTotalRow);
 
-    const tfoot = $('<tfoot></tfoot>');
-    const globalTotalRow = $('<tr><td colspan="4" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
-    tfoot.append(globalTotalRow);
+        table.append(thead);
+        table.append(tbody);
+        table.append(tfoot);
+        contentContainer.append(table);
 
-    table.append(thead);
-    table.append(tbody);
-    table.append(tfoot);
-    contentContainer.append(table);
+        $('body').append(contentContainer);
 
-    $('body').append(contentContainer);
+        $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function(event) {
+            if (event.key === "Enter") {
+                selectedBufferFilter = $(this).val();
+                fetchBufferSummary();
+            }
+        });
 
-    $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function(event) {
-        if (event.key === "Enter") {
-            selectedBufferFilter = $(this).val();
-            fetchBufferSummary();
-        }
-    });
+        $('#laneFilterInput').val(selectedLaneFilters.join(', ')).on('keydown', function(event) {
+            if (event.key === "Enter") {
+                selectedLaneFilters = $(this).val().split(',').map(filter => filter.trim());
+                fetchBufferSummary();
+            }
+        });
 
-    $('#laneFilterInput').val(selectedLaneFilters.join(', ')).on('keydown', function(event) {
-        if (event.key === "Enter") {
-            selectedLaneFilters = $(this).val().split(',').map(filter => filter.trim());
-            fetchBufferSummary();
-        }
-    });
-
-    GM_addStyle(`
-        #bufferSummaryTable {
-            table-layout: auto;
-            margin: 20px 0;
-            border-collapse: collapse;
-            width: 100%;
-        }
-        #bufferSummaryTable th, #bufferSummaryTable td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: left;
-        }
-        #bufferSummaryTable th {
-            background-color: #f4f4f4;
-            font-weight: bold;
-        }
-        #bufferSummaryTable tfoot {
-            background-color: #f4f4f4;
-        }
-        #bufferSummaryTable input {
-            font-size: 14px;
-            padding: 5px;
-            margin: 0;
-        }
-        .locationRow {
-            display: none;
-        }
-    `);
-}
+        GM_addStyle(`
+            #bufferSummaryTable {
+                table-layout: auto;
+                margin: 20px 0;
+                border-collapse: collapse;
+                width: 100%;
+            }
+            #bufferSummaryTable th, #bufferSummaryTable td {
+                border: 1px solid #ddd;
+                padding: 10px;
+                text-align: left;
+            }
+            #bufferSummaryTable th {
+                background-color: #f4f4f4;
+                font-weight: bold;
+            }
+            #bufferSummaryTable tfoot {
+                background-color: #f4f4f4;
+            }
+            #bufferSummaryTable input {
+                font-size: 14px;
+                padding: 5px;
+                margin: 0;
+            }
+            .locationRow {
+                display: none;
+            }
+        `);
+    }
 
     function addToggleButton() {
         const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
@@ -254,6 +247,6 @@ function displayTable(sortedSummary) {
     });
 
     // Aggiorna i dati ogni 5 minuti
-    setInterval(fetchBufferSummary, 300000); // 300,000 ms = 5 minuti
+    setInterval(fetchBufferSummary, 200000); // 200,000 ms = 3 minuti
 
 })();
