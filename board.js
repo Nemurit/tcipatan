@@ -84,7 +84,7 @@
         const stackingFilter = container.stackingFilter || 'N/A';
         const lane = stackingToLaneMap[stackingFilter] || 'N/A';
 
-        // Aggiungi il controllo per i numeri che iniziano con il valore del filtro
+        // Modifica per gestire correttamente la ricerca dei buffer con lettere e numeri
         if (
             location.toUpperCase().startsWith("BUFFER") &&
             (selectedBufferFilter === '' || startsWithBufferNumber(location, selectedBufferFilter)) &&
@@ -126,19 +126,19 @@
     }
 }
 
-// Funzione per verificare se il numero nel nome del buffer inizia con il numero inserito dall'utente
+// Funzione che estrae il numero dal nome del buffer (combinazione lettera + numero) e lo confronta con il filtro
 function startsWithBufferNumber(location, filter) {
-    const match = location.match(/BUFFER\s*(\d+)/);
+    const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova il numero che segue una lettera in "BUFFER"
     if (match) {
-        const bufferNumber = match[1];  // Numero estratto dal nome del buffer
-        return bufferNumber.startsWith(filter);  // Verifica se inizia con il filtro
+        const bufferNumber = match[1];  // Numero estratto dal nome del buffer (dopo la lettera)
+        return bufferNumber.startsWith(filter);  // Verifica se il numero inizia con il filtro
     }
     return false;
 }
 
 function parseBufferNumber(bufferName) {
-    const match = bufferName.match(/(\d+)/);
-    return match ? parseInt(match[0], 10) : 0;
+    const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
+    return match ? parseInt(match[1], 10) : 0;  // Estrae solo il numero
 }
 
     function displayTable(sortedSummary) {
