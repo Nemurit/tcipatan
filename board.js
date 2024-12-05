@@ -3,13 +3,34 @@
 
     const nodeId = 'MXP6';
     const stackingFilterMapUrl = 'https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/stacking_filter_map.json';
+    const bufferJsonUrl = 'https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/buffer.json';
     let selectedBufferFilter = '';
     let selectedLaneFilters = [];
     let stackingToLaneMap = {};
-    let isTableVisible = false;
-    let isChartVisible = false;
-    let chart = null;
+    let bufferMacroAreas = {};
+    let isVisible = false;
 
+    // Carica la mappa dei buffer e la mappa delle macro aree
+    function fetchBufferData(callback) {
+        GM_xmlhttpRequest({
+            method: "GET",
+            url: bufferJsonUrl,
+            onload: function(response) {
+                try {
+                    bufferMacroAreas = JSON.parse(response.responseText);
+                    console.log("Macro aree buffer caricate:", bufferMacroAreas);
+                    if (callback) callback();
+                } catch (error) {
+                    console.error("Errore nel parsing del file buffer.json:", error);
+                }
+            },
+            onerror: function(error) {
+                console.error("Errore nel caricamento del file buffer.json:", error);
+            }
+        });
+    }
+
+    // Funzione per caricare la mappa dei filtri di stacking
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
             method: "GET",
@@ -35,6 +56,7 @@
         });
     }
 
+    // Funzione per ottenere i dati dei contenitori
     function fetchBufferSummary() {
         const endTime = new Date().getTime();
         const startTime = endTime - 24 * 60 * 60 * 1000;
@@ -78,6 +100,7 @@
         });
     }
 
+    // Funzione per processare e visualizzare i dati
     function processAndDisplay(containers) {
         const filteredSummary = {};
 
@@ -86,6 +109,7 @@
             const stackingFilter = container.stackingFilter || 'N/A';
             const lane = stackingToLaneMap[stackingFilter] || 'N/A';
 
+            // Filtra solo i buffer
             if (
                 location.toUpperCase().startsWith("BUFFER") &&
                 (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
@@ -103,268 +127,103 @@
             }
         });
 
-        const sortedSummary = {};
-        Object.keys(filteredSummary).forEach(lane => {
-            const laneSummary = filteredSummary[lane];
-            sortedSummary[lane] = Object.keys(laneSummary)
-                .sort((a, b) => {
-                    const numA = parseBufferNumber(a);
-                    const numB = parseBufferNumber(b);
+        const macroAreaData = {};
 
-                    if (numA === numB) {
-                        return a.localeCompare(b);
+        // Mappiamo i buffer nelle macro aree
+        Object.entries(filteredSummary).forEach(([lane, laneSummary]) => {
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                const macroArea = getMacroAreaForBuffer(location);
+                if (macroArea) {
+                    if (!macroAreaData[macroArea]) {
+                        macroAreaData[macroArea] = 0;
                     }
-                    return numA - numB;
-                })
-                .reduce((acc, location) => {
-                    acc[location] = laneSummary[location];
-                    return acc;
-                }, {});
-        });
-
-        if (isTableVisible) {
-            displayTable(sortedSummary);
-        }
-
-        if (isChartVisible) {
-            displayChart(sortedSummary);
-        }
-    }
-
-    function matchesExactBufferNumber(location, filter) {
-        const match = location.match(/BUFFER\s*[A-Za-z](\d+)/);
-        if (match) {
-            const bufferNumber = match[1];
-            return bufferNumber === filter;
-        }
-        return false;
-    }
-
-    function parseBufferNumber(bufferName) {
-        const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
-        return match ? parseInt(match[1], 10) : 0;
-    }
-
-    function displayTable(sortedSummary) {
-        $('#contentContainer').remove();
-
-        const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
-
-        if (Object.keys(sortedSummary).length === 0) {
-            return;
-        }
-
-        const table = $('<table id="bufferSummaryTable" class="performance"></table>');
-
-        const thead = $('<thead></thead>');
-        thead.append(`
-            <tr>
-                <th>
-                    <input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="width: 100%; padding: 5px; box-sizing: border-box;">
-                </th>
-                <th>
-                    <input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="width: 100%; padding: 5px; box-sizing: border-box;">
-                </th>
-            </tr>
-        `);
-
-        thead.append(`
-            <tr>
-                <th>Buffer</th>
-                <th>Totale Container</th>
-            </tr>
-        `);
-
-        const tbody = $('<tbody></tbody>');
-        let totalContainers = 0;
-
-        Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
-            let laneTotal = 0;
-
-            Object.entries(laneSummary).forEach(([location, data]) => {
-                laneTotal += data.count;
-            });
-
-            let laneColor = '';
-            if (laneTotal <= 10) {
-                laneColor = 'green';
-            } else if (laneTotal <= 30) {
-                laneColor = 'orange';
-            } else {
-                laneColor = 'red';
-            }
-
-            const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-                <td colspan="2" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
-            </tr>`);
-
-            laneRow.on('click', function() {
-                const nextRows = $(this).nextUntil('.laneRow');
-                nextRows.toggle();
-            });
-
-            tbody.append(laneRow);
-
-            Object.entries(laneSummary).forEach(([location, data]) => {
-                const row = $('<tr class="locationRow"></tr>');
-                const count = data.count;
-
-                let color = '';
-                if (count <= 10) {
-                    color = 'green';
-                } else if (count <= 30) {
-                    color = 'orange';
-                } else {
-                    color = 'red';
+                    macroAreaData[macroArea] += data.count;
                 }
-
-                row.append(`<td>${location}</td>`);
-                row.append(`<td style="color: ${color};">${count}</td>`);
-                tbody.append(row);
             });
-
-            totalContainers += laneTotal;
         });
 
-        const tfoot = $('<tfoot></tfoot>');
-        const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
-        tfoot.append(globalTotalRow);
-
-        table.append(thead);
-        table.append(tbody);
-        table.append(tfoot);
-        contentContainer.append(table);
-
-        $('body').append(contentContainer);
-
-        $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedBufferFilter = $(this).val();
-                fetchBufferSummary();
-            }
-        });
-
-        $('#laneFilterInput').val(selectedLaneFilters.join(', ')).on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedLaneFilters = $(this).val().split(',').map(filter => filter.trim());
-                fetchBufferSummary();
-            }
-        });
-
-        GM_addStyle(`
-            #bufferSummaryTable {
-                table-layout: auto;
-                margin: 20px 0;
-                border-collapse: collapse;
-                width: 100%;
-            }
-            #bufferSummaryTable th, #bufferSummaryTable td {
-                border: 1px solid #ddd;
-                padding: 10px;
-                text-align: left;
-            }
-            #bufferSummaryTable th {
-                background-color: #f4f4f4;
-                font-weight: bold;
-            }
-            #bufferSummaryTable tfoot {
-                background-color: #f4f4f4;
-            }
-            #bufferSummaryTable input {
-                font-size: 14px;
-                padding: 5px;
-                margin: 0;
-            }
-            .locationRow {
-                display: none;
-            }
-        `);
+        // Ora possiamo visualizzare il grafico
+        displayChart(macroAreaData);
     }
 
-    // Aggiungi funzione per il grafico
- function displayChart(sortedSummary) {
-    // Se il grafico esiste già, distruggilo
-    if (chart) {
-        chart.destroy();
+    // Funzione per ottenere la macro area del buffer
+    function getMacroAreaForBuffer(location) {
+        for (const [macroArea, buffers] of Object.entries(bufferMacroAreas)) {
+            if (buffers.includes(location)) {
+                return macroArea;
+            }
+        }
+        return null; // Se non troviamo la macro area, restituiamo null
     }
 
-    const laneLabels = Object.keys(sortedSummary);
-    const laneData = laneLabels.map(lane => {
-        return Object.values(sortedSummary[lane]).reduce((sum, data) => sum + data.count, 0);
-    });
-
-    console.log("Lane Labels:", laneLabels);
-    console.log("Lane Data:", laneData);
-
-    // Creazione del canvas
-   const ctx = document.createElement('canvas');
-document.body.appendChild(ctx);
-
-// Imposta le dimensioni del canvas
-ctx.style.width = '80%';
-ctx.style.height = '400px'; // Puoi modificarlo in base alle tue necessità
-
-
-    // Creazione del grafico
-    chart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: laneLabels,
+    // Funzione per visualizzare il grafico a torta
+    function displayChart(macroAreaData) {
+        const ctx = document.getElementById('chartContainer').getContext('2d');
+        const data = {
+            labels: Object.keys(macroAreaData),
             datasets: [{
-                label: 'Totale Container per Lane',
-                data: laneData,
-                backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1
+                label: 'Numero di Container per Macro Area',
+                data: Object.values(macroAreaData),
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#F7464A'],
+                hoverBackgroundColor: ['#FF4384', '#36A2EB', '#FFCE56', '#4BC0C0', '#F7464A']
             }]
-        },
-        options: {
-            scales: {
-                y: {
-                    beginAtZero: true
+        };
+
+        new Chart(ctx, {
+            type: 'pie',
+            data: data,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                return `${tooltipItem.label}: ${tooltipItem.raw} container(s)`;
+                            }
+                        }
+                    }
                 }
-            }
-        }
-    });
+            });
+        });
+    }
 
-    console.log("Grafico creato:", chart);
-}
+    // Aggiungi il contenitore per il grafico
+    function addChartContainer() {
+        const chartContainer = $('<div id="chartContainer" style="position: fixed; top: 100px; right: 10px; width: 300px; height: 300px; background: white; padding: 10px; border: 1px solid #ddd;"></div>');
+        chartContainer.append('<canvas id="chartCanvas" width="300" height="300"></canvas>');
+        $('body').append(chartContainer);
+    }
 
-    function addToggleButtons() {
-        const tableToggleButton = $('<button id="toggleTableButton" style="position: fixed; top: 10px; left: 10px; padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Tabella</button>');
-        const chartToggleButton = $('<button id="toggleChartButton" style="position: fixed; top: 40px; left: 10px; padding: 4px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Grafico</button>');
-        
-        tableToggleButton.on('click', function() {
-            isTableVisible = !isTableVisible;
-            if (isTableVisible) {
+    // Funzione per aggiungere il pulsante per attivare i recuperi
+    function addToggleButton() {
+        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
+
+        toggleButton.on('click', function() {
+            isVisible = !isVisible;
+            if (isVisible) {
                 fetchBufferSummary();
-                $(this).text("Nascondi Tabella");
+                $(this).text("Nascondi Recuperi");
             } else {
                 $('#contentContainer').remove();
-                $(this).text("Mostra Tabella");
+                $(this).text("Mostra Recuperi");
             }
         });
 
-      chartToggleButton.on('click', function() {
-    isChartVisible = !isChartVisible;
-    if (isChartVisible) {
-        fetchBufferSummary();
-        $(this).text("Nascondi Grafico");
-    } else {
-        $('canvas').remove(); // Rimuove il grafico
-        $(this).text("Mostra Grafico");
-    }
-});
-
-
-        $('body').append(tableToggleButton);
-        $('body').append(chartToggleButton);
+        $('body').append(toggleButton);
     }
 
-    fetchStackingFilterMap(function() {
-        addToggleButtons();
-        fetchBufferSummary();
+    // Inizializzazione
+    fetchBufferData(function() {
+        fetchStackingFilterMap(function() {
+            addToggleButton();
+            addChartContainer();
+            fetchBufferSummary();
+        });
     });
 
-    setInterval(fetchBufferSummary, 200000); // 200,000 ms = 3 minuti
+    // Aggiorna i dati ogni 5 minuti
+    setInterval(fetchBufferSummary, 5 * 60 * 1000);
 })();
