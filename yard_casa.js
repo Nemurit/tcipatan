@@ -147,11 +147,6 @@
                     td.style.border = '1px solid #ddd';
                     td.style.whiteSpace = 'nowrap'; // Impedisce il wrapping
                 });
-
-                // Se il valore di col8 è "DSSMITH", non mostrare la colonna 8
-                if (rowData[3]) {
-                    row.style.display = 'none'; // Nasconde la riga se col8 contiene DSSMITH
-                }
             });
         }
 
