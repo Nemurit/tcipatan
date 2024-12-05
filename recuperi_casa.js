@@ -128,14 +128,27 @@
 
 // Funzione che confronta il numero esatto nel nome del buffer con il filtro
 function matchesExactBufferNumber(location, filter) {
-    const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
+    const match = location.match(/BUFFER\s*([A-Za-z])(\d+)/); // Trova la lettera seguita dal numero
     if (match) {
-        const bufferNumber = match[1];  // Estrae il numero
-        // Verifica che il numero estratto corrisponda esattamente al filtro
-        return bufferNumber === filter;  
+        const letter = match[1];  // Estrae la lettera
+        const number = match[2];  // Estrae il numero
+        
+        // Caso 1: Se il filtro è una singola lettera, confronta solo la lettera
+        if (/^[A-Za-z]$/.test(filter)) {
+            return letter.toUpperCase() === filter.toUpperCase();
+        }
+        
+        // Caso 2: Se il filtro è un numero, confronta solo il numero
+        if (/^\d+$/.test(filter)) {
+            return number === filter;
+        }
+        
+        // Caso 3: Se il filtro è la stringa completa, confronta sia la lettera che il numero
+        return location.toUpperCase() === filter.toUpperCase();
     }
     return false;
 }
+
 
 // Funzione che estrae il numero dal nome del buffer per ordinarlo
 function parseBufferNumber(bufferName) {
