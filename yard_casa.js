@@ -5,7 +5,6 @@
     let dataContainer; // Variabile per il container
     let isDataLoaded = false; // Flag per sapere se i dati sono stati caricati
 
-    // Funzione per caricare i dati come già definito prima
     function loadYardPageAndExtractData(callback) {
         // Rimuovi eventuali iframe esistenti
         const existingIframe = document.querySelector('iframe[data-yard="true"]');
@@ -173,18 +172,15 @@
         tableVisible = !tableVisible;
     }
 
-    // Funzione di stampa del container
-    function printContainer() {
-        const printWindow = window.open('', '', 'height=600,width=800');
-        printWindow.document.write('<html><head><title>Stampa Container</title>');
-        printWindow.document.write('</head><body>');
-        printWindow.document.write(dataContainer.innerHTML); // Stampa solo il contenuto del container
-        printWindow.document.write('</body></html>');
-        printWindow.document.close();
-        printWindow.print();
-    }
+    setInterval(() => {
+        if (tableVisible) {
+            console.log("Esecuzione auto-refresh");
+            loadYardPageAndExtractData(function (data) {
+                displayData(data);
+            });
+        }
+    }, 10 * 60 * 1000); // 10 minuti
 
-    // Crea i pulsanti
     const button = document.createElement('button');
     button.textContent = "Mostra Scarichi";
     button.style.position = 'fixed';
@@ -198,22 +194,6 @@
     button.style.cursor = 'pointer';
     button.style.zIndex = '1000';
 
-    const printButton = document.createElement('button');
-    const printIcon = document.createElement('i');
-    printIcon.classList.add('fas', 'fa-print'); // FontAwesome print icon
-    printButton.appendChild(printIcon);
-    printButton.style.position = 'fixed';
-    printButton.style.top = '550px';
-    printButton.style.left = '120px';
-    printButton.style.padding = '10px';
-    printButton.style.backgroundColor = '#28a745';
-    printButton.style.color = 'white';
-    printButton.style.border = 'none';
-    printButton.style.borderRadius = '5px';
-    printButton.style.cursor = 'pointer';
-    printButton.style.zIndex = '1000';
-
-    // Crea il container
     dataContainer = document.createElement('div');
     dataContainer.style.position = 'fixed';
     dataContainer.style.top = '600px';
@@ -226,11 +206,19 @@
     dataContainer.style.display = 'none';
     dataContainer.style.zIndex = '999';
 
-    // Aggiungi gli eventi
-    button.addEventListener('click', toggleDataDisplay);
-    printButton.addEventListener('click', printContainer);
+    // Aggiungi l'animazione per il lampeggio del pallino verde
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.2; }
+            100% { opacity: 1; }
+        }
+    `;
+    document.head.appendChild(style);
 
-    // Aggiungi i pulsanti al body
+    button.addEventListener('click', toggleDataDisplay);
+
     document.body.appendChild(button);
-    document.body.appendChild(printButton);
+    document.body.appendChild(dataContainer);
 })();
