@@ -1,54 +1,41 @@
-(function () {
+(function() {
     'use strict';
 
     const nodeId = 'MXP6';
     const stackingFilterMapUrl = 'https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/stacking_filter_map.json';
-    let stackingToLaneMap = {};
     let selectedBufferFilter = '';
     let selectedLaneFilters = [];
-    let isTableVisible = true; // Default visibilità della tabella
-    let isChartVisible = true; // Default visibilità del grafico
-    let currentPage = 1; // Pagina corrente della tabella
-    let rowsPerPage = 10; // Numero di righe per pagina
+    let stackingToLaneMap = {};
+    let isTableVisible = false;
+    let isChartVisible = false;
     let chart = null;
 
-    console.log("Script inizializzato...");
-
-    // Carica Chart.js
-    const script = document.createElement('script');
-    script.src = "https://cdn.jsdelivr.net/npm/chart.js";
-    script.onload = () => console.log("Chart.js caricato correttamente.");
-    document.head.appendChild(script);
-
-    // Carica la mappa dei filtri di stacking
     function fetchStackingFilterMap(callback) {
-        console.log("Caricamento mappa stacking...");
         GM_xmlhttpRequest({
             method: "GET",
             url: stackingFilterMapUrl,
-            onload: function (response) {
+            onload: function(response) {
                 try {
                     const laneData = JSON.parse(response.responseText);
+
                     for (const [lane, stackingFilters] of Object.entries(laneData)) {
                         stackingFilters.forEach(filter => {
                             stackingToLaneMap[filter] = lane.split('[')[0];
                         });
                     }
-                    console.log("Mappa stacking caricata con successo:", stackingToLaneMap);
+
                     if (callback) callback();
                 } catch (error) {
                     console.error("Errore nel parsing della mappa JSON:", error);
                 }
             },
-            onerror: function (error) {
+            onerror: function(error) {
                 console.error("Errore nel caricamento del file JSON:", error);
             }
         });
     }
 
-    // Recupera i dati dei buffer
     function fetchBufferSummary() {
-        console.log("Inizio recupero dati dei buffer...");
         const endTime = new Date().getTime();
         const startTime = endTime - 24 * 60 * 60 * 1000;
 
@@ -72,12 +59,11 @@
         GM_xmlhttpRequest({
             method: "GET",
             url: `${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })}`,
-            onload: function (response) {
+            onload: function(response) {
                 try {
                     const data = JSON.parse(response.responseText);
                     if (data.ret && data.ret.getContainersDetailByCriteriaOutput) {
                         const containers = data.ret.getContainersDetailByCriteriaOutput.containerDetails[0].containerDetails;
-                        console.log("Dati recuperati:", containers);
                         processAndDisplay(containers);
                     } else {
                         console.warn("Nessun dato trovato nella risposta API.");
@@ -86,13 +72,12 @@
                     console.error("Errore nella risposta API:", error);
                 }
             },
-            onerror: function (error) {
+            onerror: function(error) {
                 console.error("Errore nella chiamata API:", error);
             }
         });
     }
 
-    // Elaborazione e visualizzazione dei dati
     function processAndDisplay(containers) {
         const filteredSummary = {};
 
@@ -118,13 +103,31 @@
             }
         });
 
-        const macroAreaSummary = createMacroAreaSummary(filteredSummary);
-        displayFilters(); // Mostra i filtri per aggiornare la UI
+        const sortedSummary = {};
+        Object.keys(filteredSummary).forEach(lane => {
+            const laneSummary = filteredSummary[lane];
+            sortedSummary[lane] = Object.keys(laneSummary)
+                .sort((a, b) => {
+                    const numA = parseBufferNumber(a);
+                    const numB = parseBufferNumber(b);
+
+                    if (numA === numB) {
+                        return a.localeCompare(b);
+                    }
+                    return numA - numB;
+                })
+                .reduce((acc, location) => {
+                    acc[location] = laneSummary[location];
+                    return acc;
+                }, {});
+        });
+
         if (isTableVisible) {
-            displayTable(filteredSummary);
+            displayTable(sortedSummary);
         }
+
         if (isChartVisible) {
-            displayChart(macroAreaSummary);
+            displayChart(sortedSummary);
         }
     }
 
@@ -137,160 +140,217 @@
         return false;
     }
 
-    // Crea un sommario per le macro aree
-    function createMacroAreaSummary(summary) {
-        const macroAreas = {
-            "A Dispari": 0,
-            "A Pari": 0,
-            "B Dispari": 0,
-            "B Pari": 0,
-            "Colonne 13": 0,
-            "Colonne 14": 0,
-            "Colonne 15": 0
-        };
-
-        Object.values(summary).forEach(laneSummary => {
-            Object.keys(laneSummary).forEach(location => {
-                if (location.match(/\*3-\*3/)) {
-                    macroAreas["A Dispari"] += laneSummary[location].count;
-                } else if (location.match(/\*4-\*4/)) {
-                    macroAreas["A Pari"] += laneSummary[location].count;
-                } else if (location.match(/b4-b13/)) {
-                    macroAreas["B Dispari"] += laneSummary[location].count;
-                } else if (location.match(/e4-e13/)) {
-                    macroAreas["B Pari"] += laneSummary[location].count;
-                } else if (location.match(/\*13-\*13/)) {
-                    macroAreas["Colonne 13"] += laneSummary[location].count;
-                } else if (location.match(/\*14-\*14/)) {
-                    macroAreas["Colonne 14"] += laneSummary[location].count;
-                } else if (location.match(/\*15-\*15/)) {
-                    macroAreas["Colonne 15"] += laneSummary[location].count;
-                }
-            });
-        });
-
-        return macroAreas;
+    function parseBufferNumber(bufferName) {
+        const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
+        return match ? parseInt(match[1], 10) : 0;
     }
 
-    // Visualizza i filtri
-    function displayFilters() {
-        console.log("Mostro i filtri...");
-        $('#filtersContainer').remove();
-
-        const filtersContainer = $('<div id="filtersContainer" style="position: fixed; top: 10px; left: 10px; background: white; padding: 10px; border: 1px solid #ddd; z-index: 1000;"></div>');
-
-        const bufferInput = $('<input type="text" id="bufferFilter" placeholder="Filtra per buffer">');
-        const applyButton = $('<button>Applica</button>');
-        const tableToggleButton = $('<button>Mostra/Nascondi Tabella</button>');
-        const chartToggleButton = $('<button>Mostra/Nascondi Grafico</button>');
-
-        applyButton.on('click', () => {
-            selectedBufferFilter = bufferInput.val();
-            fetchBufferSummary();
-        });
-
-        tableToggleButton.on('click', () => {
-            isTableVisible = !isTableVisible;
-            fetchBufferSummary();
-        });
-
-        chartToggleButton.on('click', () => {
-            isChartVisible = !isChartVisible;
-            fetchBufferSummary();
-        });
-
-        filtersContainer.append(bufferInput);
-        filtersContainer.append(applyButton);
-        filtersContainer.append(tableToggleButton);
-        filtersContainer.append(chartToggleButton);
-        $('body').append(filtersContainer);
-    }
-
-    // Funzione per visualizzare la tabella con impaginazione
-    function displayTable(summary) {
-        console.log("Mostro la tabella...");
+    function displayTable(sortedSummary) {
         $('#contentContainer').remove();
 
-        const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 100px; left: 10px; width: 400px; height: 90vh; overflow-y: auto; background: white; padding: 10px; border: 1px solid #ddd;"></div>');
-        const table = $('<table id="bufferSummaryTable" class="performance"></table>');
-        const thead = $('<thead><tr><th>Buffer</th><th>Totale</th></tr></thead>');
-        const tbody = $('<tbody></tbody>');
+        const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
 
-        Object.keys(summary).forEach(lane => {
-            Object.keys(summary[lane]).forEach(location => {
-                const tr = $('<tr></tr>');
-                tr.append(`<td>${location}</td>`);
-                tr.append(`<td>${summary[lane][location].count}</td>`);
-                tbody.append(tr);
+        if (Object.keys(sortedSummary).length === 0) {
+            return;
+        }
+
+        const table = $('<table id="bufferSummaryTable" class="performance"></table>');
+
+        const thead = $('<thead></thead>');
+        thead.append(`
+            <tr>
+                <th>
+                    <input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                </th>
+                <th>
+                    <input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                </th>
+            </tr>
+        `);
+
+        thead.append(`
+            <tr>
+                <th>Buffer</th>
+                <th>Totale Container</th>
+            </tr>
+        `);
+
+        const tbody = $('<tbody></tbody>');
+        let totalContainers = 0;
+
+        Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
+            let laneTotal = 0;
+
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                laneTotal += data.count;
             });
+
+            let laneColor = '';
+            if (laneTotal <= 10) {
+                laneColor = 'green';
+            } else if (laneTotal <= 30) {
+                laneColor = 'orange';
+            } else {
+                laneColor = 'red';
+            }
+
+            const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
+                <td colspan="2" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
+            </tr>`);
+
+            laneRow.on('click', function() {
+                const nextRows = $(this).nextUntil('.laneRow');
+                nextRows.toggle();
+            });
+
+            tbody.append(laneRow);
+
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                const row = $('<tr class="locationRow"></tr>');
+                const count = data.count;
+
+                let color = '';
+                if (count <= 10) {
+                    color = 'green';
+                } else if (count <= 30) {
+                    color = 'orange';
+                } else {
+                    color = 'red';
+                }
+
+                row.append(`<td>${location}</td>`);
+                row.append(`<td style="color: ${color};">${count}</td>`);
+                tbody.append(row);
+            });
+
+            totalContainers += laneTotal;
         });
+
+        const tfoot = $('<tfoot></tfoot>');
+        const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
+        tfoot.append(globalTotalRow);
 
         table.append(thead);
         table.append(tbody);
+        table.append(tfoot);
         contentContainer.append(table);
+
         $('body').append(contentContainer);
 
-        createPagination(Object.keys(summary).length); // Aggiungi impaginazione
+        $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function(event) {
+            if (event.key === "Enter") {
+                selectedBufferFilter = $(this).val();
+                fetchBufferSummary();
+            }
+        });
+
+        $('#laneFilterInput').val(selectedLaneFilters.join(', ')).on('keydown', function(event) {
+            if (event.key === "Enter") {
+                selectedLaneFilters = $(this).val().split(',').map(filter => filter.trim());
+                fetchBufferSummary();
+            }
+        });
+
+        GM_addStyle(`
+            #bufferSummaryTable {
+                table-layout: auto;
+                margin: 20px 0;
+                border-collapse: collapse;
+                width: 100%;
+            }
+            #bufferSummaryTable th, #bufferSummaryTable td {
+                border: 1px solid #ddd;
+                padding: 10px;
+                text-align: left;
+            }
+            #bufferSummaryTable th {
+                background-color: #f4f4f4;
+                font-weight: bold;
+            }
+            #bufferSummaryTable tfoot {
+                background-color: #f4f4f4;
+            }
+            #bufferSummaryTable input {
+                font-size: 14px;
+                padding: 5px;
+                margin: 0;
+            }
+            .locationRow {
+                display: none;
+            }
+        `);
     }
 
-    // Funzione per visualizzare il grafico
-    function displayChart(macroAreaSummary) {
-        console.log("Mostro il grafico...");
-        $('#chartContainer').remove();
-        const chartContainer = $('<div id="chartContainer" style="position: fixed; top: 100px; left: 450px; width: 400px; background: white; padding: 10px; border: 1px solid #ddd;"></div>');
-        const canvas = $('<canvas id="bufferChart"></canvas>');
-        chartContainer.append(canvas);
-        $('body').append(chartContainer);
-
-        const ctx = document.getElementById('bufferChart').getContext('2d');
-
+    // Aggiungi funzione per il grafico
+    function displayChart(sortedSummary) {
         if (chart) {
             chart.destroy();
         }
 
+        const laneLabels = Object.keys(sortedSummary);
+        const laneData = laneLabels.map(lane => {
+            return Object.values(sortedSummary[lane]).reduce((sum, data) => sum + data.count, 0);
+        });
+
+        const ctx = document.createElement('canvas');
+        document.body.appendChild(ctx);
+
         chart = new Chart(ctx, {
-            type: 'pie',
+            type: 'bar',
             data: {
-                labels: Object.keys(macroAreaSummary),
+                labels: laneLabels,
                 datasets: [{
-                    data: Object.values(macroAreaSummary),
-                    backgroundColor: ['red', 'blue', 'green', 'yellow', 'orange', 'purple', 'pink']
+                    label: 'Totale Container per Lane',
+                    data: laneData,
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
                 }]
             },
             options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    },
-                    title: {
-                        display: true,
-                        text: 'Distribuzione dei Buffer per Macro Area'
+                scales: {
+                    y: {
+                        beginAtZero: true
                     }
                 }
             }
         });
     }
 
-    // Funzione di paginazione (per la tabella)
-    function createPagination(totalItems) {
-        const totalPages = Math.ceil(totalItems / rowsPerPage);
-        const paginationContainer = $('<div id="paginationContainer" style="position: fixed; top: 60px; left: 10px; background: white; padding: 10px; border: 1px solid #ddd; z-index: 1000;"></div>');
-
-        for (let i = 1; i <= totalPages; i++) {
-            const pageButton = $(`<button>${i}</button>`);
-            pageButton.on('click', () => {
-                currentPage = i;
+    function addToggleButtons() {
+        const tableToggleButton = $('<button id="toggleTableButton" style="position: fixed; top: 10px; left: 10px; padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Tabella</button>');
+        const chartToggleButton = $('<button id="toggleChartButton" style="position: fixed; top: 40px; left: 10px; padding: 4px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Grafico</button>');
+        
+        tableToggleButton.on('click', function() {
+            isTableVisible = !isTableVisible;
+            if (isTableVisible) {
                 fetchBufferSummary();
-            });
-            paginationContainer.append(pageButton);
-        }
+                $(this).text("Nascondi Tabella");
+            } else {
+                $('#contentContainer').remove();
+                $(this).text("Mostra Tabella");
+            }
+        });
 
-        $('body').append(paginationContainer);
+        chartToggleButton.on('click', function() {
+            isChartVisible = !isChartVisible;
+            if (isChartVisible) {
+                fetchBufferSummary();
+                $(this).text("Nascondi Grafico");
+            } else {
+                $('canvas').remove();
+                $(this).text("Mostra Grafico");
+            }
+        });
+
+        $('body').append(tableToggleButton);
+        $('body').append(chartToggleButton);
     }
 
-    // Carica i filtri e la tabella iniziale
-    fetchStackingFilterMap(() => {
+    fetchStackingFilterMap(function() {
+        addToggleButtons();
         fetchBufferSummary();
     });
+
+    setInterval(fetchBufferSummary, 200000); // 200,000 ms = 3 minuti
 })();
