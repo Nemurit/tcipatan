@@ -41,21 +41,22 @@
                     // Se col1, col9 e col11 esistono
                     if (col1 && col9 && col11) {
                         const location = col1.innerText.trim(); // Testo della colonna Location
-                        const note = col11.innerText.trim(); // Testo della colonna Note (col11)
+                        let note = col11.innerText.trim(); // Testo della colonna Note (col11)
                         const isTractorPresent = tractorIcon !== null; // Verifica se l'icona Tractor è presente
 
                         // Caso 1: Se col9 contiene "TransfersCarts", aggiungi la riga con la location e la nota
                         if (/TransfersCarts/i.test(col9.innerText)) {
-                            data.push([location, note, isTractorPresent, col8, true]); // Aggiungi Location, Note, presenza del Tractor e col8
+                            data.push([location, note, isTractorPresent, false]); // Aggiungi Location, Note, presenza del Tractor
 
                         // Caso 2: Se col9 contiene "Transfer" ma non "TransfersCarts", aggiungi la riga solo se "Ricarica" è nelle note
                         } else if (/Transfers/i.test(col9.innerText) && /Ricarica/i.test(note)) {
-                            data.push([location, note, isTractorPresent, col8, false]); // Aggiungi Location, Note, presenza del Tractor e col8
+                            data.push([location, note, isTractorPresent, false]); // Aggiungi Location, Note, presenza del Tractor
                         }
 
                         // Caso 3: Se col8 contiene "DSSMITH", cambia le note in "Non Inventory"
                         if (col8 && /DSSMITH/i.test(col8.innerText)) {
-                            data.push([location, "Non Inventory", isTractorPresent, null, false]); // Nasconde col8 e cambia le note
+                            note = "Non Inventory"; // Cambia le note in "Non Inventory"
+                            data.push([location, note, isTractorPresent, true]); // Aggiungi Location e le nuove note, ignorando la col8
                         }
                     }
                 });
@@ -147,8 +148,8 @@
                     td.style.whiteSpace = 'nowrap'; // Impedisce il wrapping
                 });
 
-                // Nascondi la colonna 8 se presente
-                if (!rowData[3]) {
+                // Se il valore di col8 è "DSSMITH", non mostrare la colonna 8
+                if (rowData[3]) {
                     row.style.display = 'none'; // Nasconde la riga se col8 contiene DSSMITH
                 }
             });
