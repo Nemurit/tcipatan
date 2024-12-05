@@ -9,7 +9,7 @@
     let isTableVisible = false;
     let isChartVisible = false;
     let chart = null;
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
             method: "GET",
@@ -282,40 +282,53 @@
     }
 
     // Aggiungi funzione per il grafico
-    function displayChart(sortedSummary) {
-        if (chart) {
-            chart.destroy();
-        }
+ function displayChart(sortedSummary) {
+    // Se il grafico esiste già, distruggilo
+    if (chart) {
+        chart.destroy();
+    }
 
-        const laneLabels = Object.keys(sortedSummary);
-        const laneData = laneLabels.map(lane => {
-            return Object.values(sortedSummary[lane]).reduce((sum, data) => sum + data.count, 0);
-        });
+    const laneLabels = Object.keys(sortedSummary);
+    const laneData = laneLabels.map(lane => {
+        return Object.values(sortedSummary[lane]).reduce((sum, data) => sum + data.count, 0);
+    });
 
-        const ctx = document.createElement('canvas');
-        document.body.appendChild(ctx);
+    console.log("Lane Labels:", laneLabels);
+    console.log("Lane Data:", laneData);
 
-        chart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: laneLabels,
-                datasets: [{
-                    label: 'Totale Container per Lane',
-                    data: laneData,
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
+    // Creazione del canvas
+   const ctx = document.createElement('canvas');
+document.body.appendChild(ctx);
+
+// Imposta le dimensioni del canvas
+ctx.style.width = '80%';
+ctx.style.height = '400px'; // Puoi modificarlo in base alle tue necessità
+
+
+    // Creazione del grafico
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: laneLabels,
+            datasets: [{
+                label: 'Totale Container per Lane',
+                data: laneData,
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
                 }
             }
-        });
-    }
+        }
+    });
+
+    console.log("Grafico creato:", chart);
+}
 
     function addToggleButtons() {
         const tableToggleButton = $('<button id="toggleTableButton" style="position: fixed; top: 10px; left: 10px; padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Tabella</button>');
@@ -332,16 +345,17 @@
             }
         });
 
-        chartToggleButton.on('click', function() {
-            isChartVisible = !isChartVisible;
-            if (isChartVisible) {
-                fetchBufferSummary();
-                $(this).text("Nascondi Grafico");
-            } else {
-                $('canvas').remove();
-                $(this).text("Mostra Grafico");
-            }
-        });
+      chartToggleButton.on('click', function() {
+    isChartVisible = !isChartVisible;
+    if (isChartVisible) {
+        fetchBufferSummary();
+        $(this).text("Nascondi Grafico");
+    } else {
+        $('canvas').remove(); // Rimuove il grafico
+        $(this).text("Mostra Grafico");
+    }
+});
+
 
         $('body').append(tableToggleButton);
         $('body').append(chartToggleButton);
