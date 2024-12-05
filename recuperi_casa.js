@@ -76,59 +76,74 @@
         });
     }
 
-    function processAndDisplay(containers) {
-        const filteredSummary = {};
+ function processAndDisplay(containers) {
+    const filteredSummary = {};
 
-        containers.forEach(container => {
-            const location = container.location || '';
-            const stackingFilter = container.stackingFilter || 'N/A';
-            const lane = stackingToLaneMap[stackingFilter] || 'N/A';
+    containers.forEach(container => {
+        const location = container.location || '';
+        const stackingFilter = container.stackingFilter || 'N/A';
+        const lane = stackingToLaneMap[stackingFilter] || 'N/A';
 
-            if (
-                location.toUpperCase().startsWith("BUFFER") &&
-                (selectedBufferFilter === '' || location.toUpperCase().includes(selectedBufferFilter.toUpperCase())) &&
-                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
-            ) {
-                if (!filteredSummary[lane]) {
-                    filteredSummary[lane] = {};
-                }
-
-                if (!filteredSummary[lane][location]) {
-                    filteredSummary[lane][location] = { count: 0 };
-                }
-
-                filteredSummary[lane][location].count++;
+        // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
+        if (
+            location.toUpperCase().startsWith("BUFFER") &&
+            (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
+            (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
+        ) {
+            if (!filteredSummary[lane]) {
+                filteredSummary[lane] = {};
             }
-        });
 
-        const sortedSummary = {};
-        Object.keys(filteredSummary).forEach(lane => {
-            const laneSummary = filteredSummary[lane];
-            sortedSummary[lane] = Object.keys(laneSummary)
-                .sort((a, b) => {
-                    const numA = parseBufferNumber(a);
-                    const numB = parseBufferNumber(b);
+            if (!filteredSummary[lane][location]) {
+                filteredSummary[lane][location] = { count: 0 };
+            }
 
-                    if (numA === numB) {
-                        return a.localeCompare(b);
-                    }
-                    return numA - numB;
-                })
-                .reduce((acc, location) => {
-                    acc[location] = laneSummary[location];
-                    return acc;
-                }, {});
-        });
-
-        if (isVisible) {
-            displayTable(sortedSummary);
+            filteredSummary[lane][location].count++;
         }
-    }
+    });
 
-    function parseBufferNumber(bufferName) {
-        const match = bufferName.match(/(\d+)/);
-        return match ? parseInt(match[0], 10) : 0;
+    const sortedSummary = {};
+    Object.keys(filteredSummary).forEach(lane => {
+        const laneSummary = filteredSummary[lane];
+        sortedSummary[lane] = Object.keys(laneSummary)
+            .sort((a, b) => {
+                const numA = parseBufferNumber(a);
+                const numB = parseBufferNumber(b);
+
+                if (numA === numB) {
+                    return a.localeCompare(b);
+                }
+                return numA - numB;
+            })
+            .reduce((acc, location) => {
+                acc[location] = laneSummary[location];
+                return acc;
+            }, {});
+    });
+
+    if (isVisible) {
+        displayTable(sortedSummary);
     }
+}
+
+// Funzione che confronta il numero esatto nel nome del buffer con il filtro
+function matchesExactBufferNumber(location, filter) {
+    const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
+    if (match) {
+        const bufferNumber = match[1];  // Estrae il numero
+        // Verifica che il numero estratto corrisponda esattamente al filtro
+        return bufferNumber === filter;  
+    }
+    return false;
+}
+
+// Funzione che estrae il numero dal nome del buffer per ordinarlo
+function parseBufferNumber(bufferName) {
+    const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
+    return match ? parseInt(match[1], 10) : 0;  // Estrae solo il numero
+}
+
+
 
     function displayTable(sortedSummary) {
         $('#contentContainer').remove();
