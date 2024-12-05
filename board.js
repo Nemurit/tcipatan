@@ -13,7 +13,6 @@
     // Carica Chart.js
     const script = document.createElement('script');
     script.src = "https://cdn.jsdelivr.net/npm/chart.js";
-    script.onload = () => console.log("Chart.js caricato correttamente");
     document.head.appendChild(script);
 
     function fetchStackingFilterMap(callback) {
@@ -108,6 +107,7 @@
         });
 
         const macroAreaSummary = createMacroAreaSummary(filteredSummary);
+        displayFilters(); // Mostra i filtri per aggiornare la UI
         if (isTableVisible) {
             displayTable(filteredSummary);
         }
@@ -159,10 +159,26 @@
         return macroAreas;
     }
 
+    function displayFilters() {
+        const filtersContainer = $('<div id="filtersContainer" style="position: fixed; top: 10px; left: 10px; background: white; padding: 10px; border: 1px solid #ddd; z-index: 1000;"></div>');
+
+        const bufferInput = $('<input type="text" id="bufferFilter" placeholder="Filtra per buffer">');
+        const applyButton = $('<button>Applica</button>');
+
+        applyButton.on('click', () => {
+            selectedBufferFilter = bufferInput.val();
+            fetchBufferSummary();
+        });
+
+        filtersContainer.append(bufferInput);
+        filtersContainer.append(applyButton);
+        $('body').append(filtersContainer);
+    }
+
     function displayTable(summary) {
         $('#contentContainer').remove();
 
-        const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; left: 10px; width: 400px; height: 90vh; overflow-y: auto; background: white; padding: 10px; border: 1px solid #ddd;"></div>');
+        const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 100px; left: 10px; width: 400px; height: 90vh; overflow-y: auto; background: white; padding: 10px; border: 1px solid #ddd;"></div>');
         const table = $('<table id="bufferSummaryTable" class="performance"></table>');
         const thead = $('<thead><tr><th>Buffer</th><th>Totale</th></tr></thead>');
         const tbody = $('<tbody></tbody>');
@@ -200,49 +216,25 @@
                 labels: Object.keys(summary),
                 datasets: [{
                     data: Object.values(summary),
-                    backgroundColor: Object.keys(summary).map(() => `hsl(${Math.random() * 360}, 70%, 70%)`),
+                    backgroundColor: ['red', 'blue', 'green', 'yellow', 'orange', 'purple', 'pink']
                 }]
             },
             options: {
                 responsive: true,
                 plugins: {
-                    legend: { position: 'top' }
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Distribuzione dei Buffer per Macro Area'
+                    }
                 }
             }
         });
     }
 
-    function addButtons() {
-        const tableButton = $('<button id="tableButton" style="position: fixed; top: 10px; left: 10px; background-color: #007bff; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer;">Mostra Tabella</button>');
-        const chartButton = $('<button id="chartButton" style="position: fixed; top: 50px; left: 10px; background-color: #28a745; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer;">Mostra Grafico</button>');
-
-        tableButton.on('click', function () {
-            isTableVisible = !isTableVisible;
-            if (isTableVisible) {
-                fetchBufferSummary();
-                $(this).text("Nascondi Tabella");
-            } else {
-                $('#contentContainer').remove();
-                $(this).text("Mostra Tabella");
-            }
-        });
-
-        chartButton.on('click', function () {
-            isChartVisible = !isChartVisible;
-            if (isChartVisible) {
-                fetchBufferSummary();
-                $(this).text("Nascondi Grafico");
-            } else {
-                $('#chartContainer').remove();
-                $(this).text("Mostra Grafico");
-            }
-        });
-
-        $('body').append(tableButton);
-        $('body').append(chartButton);
-    }
-
     fetchStackingFilterMap(() => {
-        addButtons();
+        fetchBufferSummary();
     });
 })();
