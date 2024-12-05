@@ -33,6 +33,7 @@
 
                 rows.forEach(row => {
                     const col1 = row.querySelector('td.col1'); // Location
+                    const col8 = row.querySelector('td.col8'); // DSSMITH check
                     const col9 = row.querySelector('td.col9'); // Tipo di Transfer
                     const col11 = row.querySelector('td.col11'); // Note da mostrare
                     const tractorIcon = row.querySelector('.yard-asset-icon.yard-asset-icon-TRACTOR'); // Icona del Tractor
@@ -45,11 +46,16 @@
 
                         // Caso 1: Se col9 contiene "TransfersCarts", aggiungi la riga con la location e la nota
                         if (/TransfersCarts/i.test(col9.innerText)) {
-                            data.push([location, note, isTractorPresent]); // Aggiungi Location, Note e presenza del Tractor
+                            data.push([location, note, isTractorPresent, col8, true]); // Aggiungi Location, Note, presenza del Tractor e col8
 
                         // Caso 2: Se col9 contiene "Transfer" ma non "TransfersCarts", aggiungi la riga solo se "Ricarica" è nelle note
                         } else if (/Transfers/i.test(col9.innerText) && /Ricarica/i.test(note)) {
-                            data.push([location, note, isTractorPresent]); // Aggiungi Location, Note e presenza del Tractor
+                            data.push([location, note, isTractorPresent, col8, false]); // Aggiungi Location, Note, presenza del Tractor e col8
+                        }
+
+                        // Caso 3: Se col8 contiene "DSSMITH", cambia le note in "Non Inventory"
+                        if (col8 && /DSSMITH/i.test(col8.innerText)) {
+                            data.push([location, "Non Inventory", isTractorPresent, null, false]); // Nasconde col8 e cambia le note
                         }
                     }
                 });
@@ -133,13 +139,18 @@
 
                 // Cella Note
                 const lastTd = row.insertCell();
-                lastTd.textContent = rowData[1]; // Note (col11)
+                lastTd.textContent = rowData[1]; // Note (col11) o "Non Inventory" se DSSMITH
 
                 [firstTd, lastTd].forEach(td => {
                     td.style.padding = '8px';
                     td.style.border = '1px solid #ddd';
                     td.style.whiteSpace = 'nowrap'; // Impedisce il wrapping
                 });
+
+                // Nascondi la colonna 8 se presente
+                if (!rowData[3]) {
+                    row.style.display = 'none'; // Nasconde la riga se col8 contiene DSSMITH
+                }
             });
         }
 
