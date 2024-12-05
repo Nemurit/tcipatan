@@ -187,7 +187,6 @@
                     }
                 }
             });
-        });
     }
 
     // Aggiungi il contenitore per il grafico
