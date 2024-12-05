@@ -200,7 +200,7 @@
 
     const printButton = document.createElement('button');
     const printIcon = document.createElement('i');
-    printIcon.classList.add('🖨️'); // FontAwesome print icon
+    printIcon.classList.add('fas', 'fa-print'); // FontAwesome print icon
     printButton.appendChild(printIcon);
     printButton.style.position = 'fixed';
     printButton.style.top = '550px';
@@ -213,6 +213,7 @@
     printButton.style.cursor = 'pointer';
     printButton.style.zIndex = '1000';
 
+    // Crea il container
     dataContainer = document.createElement('div');
     dataContainer.style.position = 'fixed';
     dataContainer.style.top = '600px';
@@ -232,5 +233,4 @@
     // Aggiungi i pulsanti al body
     document.body.appendChild(button);
     document.body.appendChild(printButton);
-
 })();
