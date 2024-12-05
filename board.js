@@ -76,6 +76,37 @@
         });
     }
 
+    GM_xmlhttpRequest({
+    method: "GET",
+    url: `${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })}`,
+    onload: function(response) {
+        try {
+            const data = JSON.parse(response.responseText);
+            if (data.ret && data.ret.getContainersDetailByCriteriaOutput) {
+                const containers = data.ret.getContainersDetailByCriteriaOutput.containerDetails[0].containerDetails;
+
+                // Cerca il contenitore specifico
+                const specificContainer = containers.find(container => container.location === 'CART_00jw9edr_S');
+                if (specificContainer) {
+                    console.log("Dettagli del contenitore specifico trovato:", specificContainer);
+                } else {
+                    console.warn("Il contenitore specificato non è stato trovato nella risposta.");
+                }
+
+                processAndDisplay(containers);
+            } else {
+                console.warn("Nessun dato trovato nella risposta API.");
+            }
+        } catch (error) {
+            console.error("Errore nella risposta API:", error);
+        }
+    },
+    onerror: function(error) {
+        console.error("Errore nella chiamata API:", error);
+    }
+});
+
+
     containers.forEach(container => {
         const location = container.location || '';
         const stackingFilter = container.stackingFilter || 'N/A';
