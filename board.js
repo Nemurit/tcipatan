@@ -8,14 +8,6 @@
     let stackingToLaneMap = {};
     let isVisible = false;
 
-    // Caricamento di Chart.js (aggiunto per il grafico a torta)
-    const chartJsScript = document.createElement('script');
-    chartJsScript.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-    chartJsScript.onload = function () {
-        console.log('Chart.js library loaded successfully.');
-    };
-    document.head.appendChild(chartJsScript);
-
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
             method: "GET",
@@ -84,74 +76,74 @@
         });
     }
 
-    function processAndDisplay(containers) {
-        const filteredSummary = {};
-        const bufferCategories = ['3', '4', 'B', 'E', '13', '14', '15'];  // Buffer che vogliamo analizzare
-        const bufferCounts = {};
+ function processAndDisplay(containers) {
+    const filteredSummary = {};
 
-        containers.forEach(container => {
-            const location = container.location || '';
-            const stackingFilter = container.stackingFilter || 'N/A';
-            const lane = stackingToLaneMap[stackingFilter] || 'N/A';
+    containers.forEach(container => {
+        const location = container.location || '';
+        const stackingFilter = container.stackingFilter || 'N/A';
+        const lane = stackingToLaneMap[stackingFilter] || 'N/A';
 
-            if (
-                location.toUpperCase().startsWith("BUFFER") &&
-                (selectedBufferFilter === '' || location.toUpperCase().includes(selectedBufferFilter.toUpperCase())) &&
-                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
-            ) {
-                bufferCategories.forEach(category => {
-                    if (location.toUpperCase().includes(category)) {
-                        if (!bufferCounts[category]) {
-                            bufferCounts[category] = 0;
-                        }
-                        bufferCounts[category]++;
-                    }
-                });
+        // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
+        if (
+            location.toUpperCase().startsWith("BUFFER") &&
+            (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
+            (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
+        ) {
+            if (!filteredSummary[lane]) {
+                filteredSummary[lane] = {};
             }
-        });
 
-        createPieChart(bufferCounts);
-    }
+            if (!filteredSummary[lane][location]) {
+                filteredSummary[lane][location] = { count: 0 };
+            }
 
-    function createPieChart(bufferCounts) {
-        // Crea il grafico a torta
-        const labels = Object.keys(bufferCounts);
-        const data = Object.values(bufferCounts);
-
-        const canvas = $('<canvas id="bufferPieChart" style="width: 100%; height: 300px;"></canvas>');
-        $('#contentContainer').append(canvas);
-
-        // Verifica se Chart.js è caricato prima di creare il grafico
-        if (typeof Chart !== 'undefined') {
-            new Chart(canvas[0], {
-                type: 'pie',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: ['#FF5733', '#33FF57', '#3357FF', '#FF33A6', '#FF8C33', '#33FFF5', '#8E33FF'],
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(tooltipItem) {
-                                    return `${tooltipItem.label}: ${tooltipItem.raw} containers`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        } else {
-            console.error("Chart.js non è stato caricato correttamente.");
+            filteredSummary[lane][location].count++;
         }
+    });
+
+    const sortedSummary = {};
+    Object.keys(filteredSummary).forEach(lane => {
+        const laneSummary = filteredSummary[lane];
+        sortedSummary[lane] = Object.keys(laneSummary)
+            .sort((a, b) => {
+                const numA = parseBufferNumber(a);
+                const numB = parseBufferNumber(b);
+
+                if (numA === numB) {
+                    return a.localeCompare(b);
+                }
+                return numA - numB;
+            })
+            .reduce((acc, location) => {
+                acc[location] = laneSummary[location];
+                return acc;
+            }, {});
+    });
+
+    if (isVisible) {
+        displayTable(sortedSummary);
     }
+}
+
+// Funzione che confronta il numero esatto nel nome del buffer con il filtro
+function matchesExactBufferNumber(location, filter) {
+    const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
+    if (match) {
+        const bufferNumber = match[1];  // Estrae il numero
+        // Verifica che il numero estratto corrisponda esattamente al filtro
+        return bufferNumber === filter;  
+    }
+    return false;
+}
+
+// Funzione che estrae il numero dal nome del buffer per ordinarlo
+function parseBufferNumber(bufferName) {
+    const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
+    return match ? parseInt(match[1], 10) : 0;  // Estrae solo il numero
+}
+
+
 
     function displayTable(sortedSummary) {
         $('#contentContainer').remove();
@@ -311,7 +303,101 @@
         fetchBufferSummary();
     });
 
+    function displayChart(data) {
+        $('#chartContainer').remove(); // Rimuove il vecchio grafico se esiste
+    
+        const chartContainer = $('<div id="chartContainer" style="position: fixed; top: 120px; right: 10px; width: 400px; height: 400px; background: white; padding: 10px; border: 1px solid #ddd; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);"></div>');
+        const canvas = $('<canvas id="bufferChart" width="400" height="400"></canvas>');
+        chartContainer.append(canvas);
+        $('body').append(chartContainer);
+    
+        const ctx = document.getElementById('bufferChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Totale Recuperi per Buffer',
+                    data: data.values,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(255, 206, 86, 0.2)',
+                        'rgba(75, 192, 192, 0.2)',
+                        'rgba(153, 102, 255, 0.2)',
+                        'rgba(255, 159, 64, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                return `${tooltipItem.label}: ${tooltipItem.raw} recuperi`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    function processAndDisplay(containers) {
+        const filteredSummary = {};
+        const chartData = { labels: [], values: [] };
+    
+        containers.forEach(container => {
+            const location = container.location || '';
+            const stackingFilter = container.stackingFilter || 'N/A';
+            const lane = stackingToLaneMap[stackingFilter] || 'N/A';
+    
+            if (
+                location.toUpperCase().startsWith("BUFFER") &&
+                (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
+                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
+            ) {
+                if (!filteredSummary[location]) {
+                    filteredSummary[location] = 0;
+                }
+                filteredSummary[location]++;
+            }
+        });
+    
+        Object.entries(filteredSummary).forEach(([location, count]) => {
+            chartData.labels.push(location);
+            chartData.values.push(count);
+        });
+    
+        if (isVisible) {
+            displayTable(filteredSummary);
+            displayChart(chartData); // Crea il grafico
+        }
+    }
+    function() {
+        const chartJsScript = document.createElement('script');
+        chartJsScript.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+        chartJsScript.onload = function() {
+            console.log('Chart.js loaded successfully');
+        };
+        document.head.appendChild(chartJsScript);
+    })();
+        
+
     // Aggiorna i dati ogni 5 minuti
-    setInterval(fetchBufferSummary, 300000); // 300,000 ms = 5 minuti
+    setInterval(fetchBufferSummary, 200000); // 200,000 ms = 3 minuti
 
 })();
