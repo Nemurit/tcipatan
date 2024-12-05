@@ -387,7 +387,7 @@ function parseBufferNumber(bufferName) {
             displayChart(chartData); // Crea il grafico
         }
     }
-    function() {
+    (function loadChartJs() {
         const chartJsScript = document.createElement('script');
         chartJsScript.src = 'https://cdn.jsdelivr.net/npm/chart.js';
         chartJsScript.onload = function() {
@@ -395,6 +395,7 @@ function parseBufferNumber(bufferName) {
         };
         document.head.appendChild(chartJsScript);
     })();
+    
         
 
     // Aggiorna i dati ogni 5 minuti
