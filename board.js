@@ -9,7 +9,7 @@
     let isTableVisible = false;
     let isChartVisible = false;
     let chart = null;
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
             method: "GET",
