@@ -8,6 +8,14 @@
     let stackingToLaneMap = {};
     let isVisible = false;
 
+    // Caricamento di Chart.js (aggiunto per il grafico a torta)
+    const chartJsScript = document.createElement('script');
+    chartJsScript.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+    chartJsScript.onload = function () {
+        console.log('Chart.js library loaded successfully.');
+    };
+    document.head.appendChild(chartJsScript);
+
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
             method: "GET",
@@ -78,6 +86,8 @@
 
     function processAndDisplay(containers) {
         const filteredSummary = {};
+        const bufferCategories = ['3', '4', 'B', 'E', '13', '14', '15'];  // Buffer che vogliamo analizzare
+        const bufferCounts = {};
 
         containers.forEach(container => {
             const location = container.location || '';
@@ -89,45 +99,58 @@
                 (selectedBufferFilter === '' || location.toUpperCase().includes(selectedBufferFilter.toUpperCase())) &&
                 (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
             ) {
-                if (!filteredSummary[lane]) {
-                    filteredSummary[lane] = {};
-                }
-
-                if (!filteredSummary[lane][location]) {
-                    filteredSummary[lane][location] = { count: 0 };
-                }
-
-                filteredSummary[lane][location].count++;
+                bufferCategories.forEach(category => {
+                    if (location.toUpperCase().includes(category)) {
+                        if (!bufferCounts[category]) {
+                            bufferCounts[category] = 0;
+                        }
+                        bufferCounts[category]++;
+                    }
+                });
             }
         });
 
-        const sortedSummary = {};
-        Object.keys(filteredSummary).forEach(lane => {
-            const laneSummary = filteredSummary[lane];
-            sortedSummary[lane] = Object.keys(laneSummary)
-                .sort((a, b) => {
-                    const numA = parseBufferNumber(a);
-                    const numB = parseBufferNumber(b);
-
-                    if (numA === numB) {
-                        return a.localeCompare(b);
-                    }
-                    return numA - numB;
-                })
-                .reduce((acc, location) => {
-                    acc[location] = laneSummary[location];
-                    return acc;
-                }, {});
-        });
-
-        if (isVisible) {
-            displayTable(sortedSummary);
-        }
+        createPieChart(bufferCounts);
     }
 
-    function parseBufferNumber(bufferName) {
-        const match = bufferName.match(/(\d+)/);
-        return match ? parseInt(match[0], 10) : 0;
+    function createPieChart(bufferCounts) {
+        // Crea il grafico a torta
+        const labels = Object.keys(bufferCounts);
+        const data = Object.values(bufferCounts);
+
+        const canvas = $('<canvas id="bufferPieChart" style="width: 100%; height: 300px;"></canvas>');
+        $('#contentContainer').append(canvas);
+
+        // Verifica se Chart.js è caricato prima di creare il grafico
+        if (typeof Chart !== 'undefined') {
+            new Chart(canvas[0], {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: ['#FF5733', '#33FF57', '#3357FF', '#FF33A6', '#FF8C33', '#33FFF5', '#8E33FF'],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    return `${tooltipItem.label}: ${tooltipItem.raw} containers`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            console.error("Chart.js non è stato caricato correttamente.");
+        }
     }
 
     function displayTable(sortedSummary) {
