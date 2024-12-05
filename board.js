@@ -54,27 +54,7 @@
             containerTypes: ["PALLET", "GAYLORD", "CART"]
         };
 
-        GM_xmlhttpRequest({
-            method: "GET",
-            url: `${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })}`,
-            onload: function(response) {
-                try {
-                    const data = JSON.parse(response.responseText);
-                    if (data.ret && data.ret.getContainersDetailByCriteriaOutput) {
-                        const containers = data.ret.getContainersDetailByCriteriaOutput.containerDetails[0].containerDetails;
-                        processAndDisplay(containers);
-                    } else {
-                        console.warn("Nessun dato trovato nella risposta API.");
-                    }
-                } catch (error) {
-                    console.error("Errore nella risposta API:", error);
-                }
-            },
-            onerror: function(error) {
-                console.error("Errore nella chiamata API:", error);
-            }
-        });
-    }
+    
 
     GM_xmlhttpRequest({
     method: "GET",
