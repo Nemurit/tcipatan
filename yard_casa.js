@@ -6,7 +6,6 @@
     let isDataLoaded = false; // Flag per sapere se i dati sono stati caricati
 
     // Funzione per caricare i dati come già definito prima
-
     function loadYardPageAndExtractData(callback) {
         // Rimuovi eventuali iframe esistenti
         const existingIframe = document.querySelector('iframe[data-yard="true"]');
@@ -185,15 +184,7 @@
         printWindow.print();
     }
 
-    setInterval(() => {
-        if (tableVisible) {
-            console.log("Esecuzione auto-refresh");
-            loadYardPageAndExtractData(function (data) {
-                displayData(data);
-            });
-        }
-    }, 10 * 60 * 1000); // 10 minuti
-
+    // Crea i pulsanti
     const button = document.createElement('button');
     button.textContent = "Mostra Scarichi";
     button.style.position = 'fixed';
@@ -208,10 +199,12 @@
     button.style.zIndex = '1000';
 
     const printButton = document.createElement('button');
-    printButton.innerHTML = '<i class="fas fa-print"></i> Stampa';
+    const printIcon = document.createElement('i');
+    printIcon.classList.add('fas', 'fa-print'); // FontAwesome print icon
+    printButton.appendChild(printIcon);
     printButton.style.position = 'fixed';
-    printButton.style.top = '620px';
-    printButton.style.left = '10px';
+    printButton.style.top = '550px';
+    printButton.style.left = '130px'; // Accanto al primo pulsante
     printButton.style.padding = '10px';
     printButton.style.backgroundColor = '#28a745';
     printButton.style.color = 'white';
@@ -220,21 +213,17 @@
     printButton.style.cursor = 'pointer';
     printButton.style.zIndex = '1000';
 
-    dataContainer = document.createElement('div');
-    dataContainer.style.position = 'fixed';
-    dataContainer.style.top = '600px';
-    dataContainer.style.left = '10px';
-    dataContainer.style.backgroundColor = 'white';
-    dataContainer.style.border = '1px solid #ddd';
-    dataContainer.style.borderRadius = '5px';
-    dataContainer.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
-    dataContainer.style.padding = '10px';
-    dataContainer.style.display = 'none';
-    dataContainer.style.zIndex = '999';
-
+    // Aggiungi gli eventi
+    button.addEventListener('click', toggleDataDisplay);
     printButton.addEventListener('click', printContainer);
 
+    // Aggiungi i pulsanti al body
     document.body.appendChild(button);
     document.body.appendChild(printButton);
+
+    // Crea un div per contenere la tabella
+    dataContainer = document.createElement('div');
+    dataContainer.style.display = 'none'; // Nascondi inizialmente
     document.body.appendChild(dataContainer);
+
 })();
