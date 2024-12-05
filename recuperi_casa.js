@@ -76,87 +76,84 @@
         });
     }
 
- function processAndDisplay(containers) {
-    const filteredSummary = {};
+    function processAndDisplay(containers) {
+        const filteredSummary = {};
 
-    containers.forEach(container => {
-        const location = container.location || '';
-        const stackingFilter = container.stackingFilter || 'N/A';
-        const lane = stackingToLaneMap[stackingFilter] || 'N/A';
+        containers.forEach(container => {
+            const location = container.location || '';
+            const stackingFilter = container.stackingFilter || 'N/A';
+            const lane = stackingToLaneMap[stackingFilter] || 'N/A';
 
-        // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
-        if (
-            location.toUpperCase().startsWith("BUFFER") &&
-            (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
-            (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
-        ) {
-            if (!filteredSummary[lane]) {
-                filteredSummary[lane] = {};
-            }
-
-            if (!filteredSummary[lane][location]) {
-                filteredSummary[lane][location] = { count: 0 };
-            }
-
-            filteredSummary[lane][location].count++;
-        }
-    });
-
-    const sortedSummary = {};
-    Object.keys(filteredSummary).forEach(lane => {
-        const laneSummary = filteredSummary[lane];
-        sortedSummary[lane] = Object.keys(laneSummary)
-            .sort((a, b) => {
-                const numA = parseBufferNumber(a);
-                const numB = parseBufferNumber(b);
-
-                if (numA === numB) {
-                    return a.localeCompare(b);
+            // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
+            if (
+                location.toUpperCase().startsWith("BUFFER") &&
+                (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
+                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
+            ) {
+                if (!filteredSummary[lane]) {
+                    filteredSummary[lane] = {};
                 }
-                return numA - numB;
-            })
-            .reduce((acc, location) => {
-                acc[location] = laneSummary[location];
-                return acc;
-            }, {});
-    });
 
-    if (isVisible) {
-        displayTable(sortedSummary);
-    }
-}
+                if (!filteredSummary[lane][location]) {
+                    filteredSummary[lane][location] = { count: 0 };
+                }
 
-// Funzione che confronta il numero esatto nel nome del buffer con il filtro
-function matchesExactBufferNumber(location, filter) {
-    const match = location.match(/BUFFER\s*([A-Za-z])(\d+)/); // Trova la lettera seguita dal numero
-    if (match) {
-        const letter = match[1];  // Estrae la lettera
-        const number = match[2];  // Estrae il numero
-        
-        // Caso 1: Se il filtro è una singola lettera, confronta solo la lettera
-        if (/^[A-Za-z]$/.test(filter)) {
-            return letter.toUpperCase() === filter.toUpperCase();
+                filteredSummary[lane][location].count++;
+            }
+        });
+
+        const sortedSummary = {};
+        Object.keys(filteredSummary).forEach(lane => {
+            const laneSummary = filteredSummary[lane];
+            sortedSummary[lane] = Object.keys(laneSummary)
+                .sort((a, b) => {
+                    const numA = parseBufferNumber(a);
+                    const numB = parseBufferNumber(b);
+
+                    if (numA === numB) {
+                        return a.localeCompare(b);
+                    }
+                    return numA - numB;
+                })
+                .reduce((acc, location) => {
+                    acc[location] = laneSummary[location];
+                    return acc;
+                }, {});
+        });
+
+        if (isVisible) {
+            displayTable(sortedSummary);
         }
-        
-        // Caso 2: Se il filtro è un numero, confronta solo il numero
-        if (/^\d+$/.test(filter)) {
-            return number === filter;
-        }
-        
-        // Caso 3: Se il filtro è la stringa completa, confronta sia la lettera che il numero
-        return location.toUpperCase() === filter.toUpperCase();
     }
-    return false;
-}
 
+    // Funzione che confronta il numero esatto nel nome del buffer con il filtro
+    function matchesExactBufferNumber(location, filter) {
+        const match = location.match(/BUFFER\s*([A-Za-z])(\d+)/); // Trova la lettera seguita dal numero
+        if (match) {
+            const letter = match[1];  // Estrae la lettera
+            const number = match[2];  // Estrae il numero
 
-// Funzione che estrae il numero dal nome del buffer per ordinarlo
-function parseBufferNumber(bufferName) {
-    const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
-    return match ? parseInt(match[1], 10) : 0;  // Estrae solo il numero
-}
+            // Caso 1: Se il filtro è una singola lettera, confronta solo la lettera
+            if (/^[A-Za-z]$/.test(filter)) {
+                return letter.toUpperCase() === filter.toUpperCase();
+            }
 
+            // Caso 2: Se il filtro è un numero, confronta solo il numero
+            if (/^\d+$/.test(filter)) {
+                return number === filter;
+            }
 
+            // Caso 3: Se il filtro è la stringa completa, confronta sia la lettera che il numero
+            return location.toUpperCase() === filter.toUpperCase();
+        }
+        return false;
+    }
+
+    // Funzione che estrae il numero dal nome del buffer per ordinarlo
+    function parseBufferNumber(bufferName) {
+        const match = bufferName.match(/BUFFER\s*([A-Za-z])(\d+)/);
+        return match ? parseInt(match[2], 10) : 0;  // Estrae solo il numero
+    }
 
     function displayTable(sortedSummary) {
         $('#contentContainer').remove();
@@ -257,66 +254,14 @@ function parseBufferNumber(bufferName) {
             }
         });
 
-        $('#laneFilterInput').val(selectedLaneFilters.join(', ')).on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedLaneFilters = $(this).val().split(',').map(filter => filter.trim());
-                fetchBufferSummary();
-            }
+        $('#laneFilterInput').on('input', function(event) {
+            selectedLaneFilters = $(this).val().split(',').map(filter => filter.trim());
+            fetchBufferSummary();
         });
 
-        GM_addStyle(`
-            #bufferSummaryTable {
-                table-layout: auto;
-                margin: 20px 0;
-                border-collapse: collapse;
-                width: 100%;
-            }
-            #bufferSummaryTable th, #bufferSummaryTable td {
-                border: 1px solid #ddd;
-                padding: 10px;
-                text-align: left;
-            }
-            #bufferSummaryTable th {
-                background-color: #f4f4f4;
-                font-weight: bold;
-            }
-            #bufferSummaryTable tfoot {
-                background-color: #f4f4f4;
-            }
-            #bufferSummaryTable input {
-                font-size: 14px;
-                padding: 5px;
-                margin: 0;
-            }
-            .locationRow {
-                display: none;
-            }
-        `);
+        isVisible = true;
     }
 
-    function addToggleButton() {
-        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
-
-        toggleButton.on('click', function() {
-            isVisible = !isVisible;
-            if (isVisible) {
-                fetchBufferSummary();
-                $(this).text("Nascondi Recuperi");
-            } else {
-                $('#contentContainer').remove();
-                $(this).text("Mostra Recuperi");
-            }
-        });
-
-        $('body').append(toggleButton);
-    }
-
-    fetchStackingFilterMap(function() {
-        addToggleButton();
-        fetchBufferSummary();
-    });
-
-    // Aggiorna i dati ogni 5 minuti
-    setInterval(fetchBufferSummary, 200000); // 200,000 ms = 3 minuti
+    fetchStackingFilterMap(fetchBufferSummary);
 
 })();
