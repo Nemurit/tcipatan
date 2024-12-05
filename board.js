@@ -8,6 +8,8 @@
     let selectedLaneFilters = [];
     let isTableVisible = true; // Default visibilità della tabella
     let isChartVisible = true; // Default visibilità del grafico
+    let currentPage = 1; // Pagina corrente della tabella
+    let rowsPerPage = 10; // Numero di righe per pagina
     let chart = null;
 
     console.log("Script inizializzato...");
@@ -18,6 +20,7 @@
     script.onload = () => console.log("Chart.js caricato correttamente.");
     document.head.appendChild(script);
 
+    // Carica la mappa dei filtri di stacking
     function fetchStackingFilterMap(callback) {
         console.log("Caricamento mappa stacking...");
         GM_xmlhttpRequest({
@@ -43,6 +46,7 @@
         });
     }
 
+    // Recupera i dati dei buffer
     function fetchBufferSummary() {
         console.log("Inizio recupero dati dei buffer...");
         const endTime = new Date().getTime();
@@ -88,6 +92,7 @@
         });
     }
 
+    // Elaborazione e visualizzazione dei dati
     function processAndDisplay(containers) {
         const filteredSummary = {};
 
@@ -132,6 +137,7 @@
         return false;
     }
 
+    // Crea un sommario per le macro aree
     function createMacroAreaSummary(summary) {
         const macroAreas = {
             "A Dispari": 0,
@@ -166,6 +172,7 @@
         return macroAreas;
     }
 
+    // Visualizza i filtri
     function displayFilters() {
         console.log("Mostro i filtri...");
         $('#filtersContainer').remove();
@@ -174,17 +181,32 @@
 
         const bufferInput = $('<input type="text" id="bufferFilter" placeholder="Filtra per buffer">');
         const applyButton = $('<button>Applica</button>');
+        const tableToggleButton = $('<button>Mostra/Nascondi Tabella</button>');
+        const chartToggleButton = $('<button>Mostra/Nascondi Grafico</button>');
 
         applyButton.on('click', () => {
             selectedBufferFilter = bufferInput.val();
             fetchBufferSummary();
         });
 
+        tableToggleButton.on('click', () => {
+            isTableVisible = !isTableVisible;
+            fetchBufferSummary();
+        });
+
+        chartToggleButton.on('click', () => {
+            isChartVisible = !isChartVisible;
+            fetchBufferSummary();
+        });
+
         filtersContainer.append(bufferInput);
         filtersContainer.append(applyButton);
+        filtersContainer.append(tableToggleButton);
+        filtersContainer.append(chartToggleButton);
         $('body').append(filtersContainer);
     }
 
+    // Funzione per visualizzare la tabella con impaginazione
     function displayTable(summary) {
         console.log("Mostro la tabella...");
         $('#contentContainer').remove();
@@ -194,12 +216,12 @@
         const thead = $('<thead><tr><th>Buffer</th><th>Totale</th></tr></thead>');
         const tbody = $('<tbody></tbody>');
 
-        Object.entries(summary).forEach(([lane, laneSummary]) => {
-            Object.entries(laneSummary).forEach(([location, data]) => {
-                const row = $('<tr></tr>');
-                row.append(`<td>${location}</td>`);
-                row.append(`<td>${data.count}</td>`);
-                tbody.append(row);
+        Object.keys(summary).forEach(lane => {
+            Object.keys(summary[lane]).forEach(location => {
+                const tr = $('<tr></tr>');
+                tr.append(`<td>${location}</td>`);
+                tr.append(`<td>${summary[lane][location].count}</td>`);
+                tbody.append(tr);
             });
         });
 
@@ -207,30 +229,31 @@
         table.append(tbody);
         contentContainer.append(table);
         $('body').append(contentContainer);
+
+        createPagination(Object.keys(summary).length); // Aggiungi impaginazione
     }
 
-    function displayChart(summary) {
+    // Funzione per visualizzare il grafico
+    function displayChart(macroAreaSummary) {
         console.log("Mostro il grafico...");
         $('#chartContainer').remove();
-
-        const ctx = $('<canvas id="bufferChart" width="400" height="400"></canvas>');
-        const chartContainer = $('<div id="chartContainer" style="position: fixed; top: 10px; right: 10px; width: 400px; height: 400px; background: white; padding: 10px; border: 1px solid #ddd;"></div>');
-        chartContainer.append(ctx);
+        const chartContainer = $('<div id="chartContainer" style="position: fixed; top: 100px; left: 450px; width: 400px; background: white; padding: 10px; border: 1px solid #ddd;"></div>');
+        const canvas = $('<canvas id="bufferChart"></canvas>');
+        chartContainer.append(canvas);
         $('body').append(chartContainer);
 
-        const data = Object.values(summary);
-        const labels = Object.keys(summary);
+        const ctx = document.getElementById('bufferChart').getContext('2d');
 
         if (chart) {
             chart.destroy();
         }
 
-        chart = new Chart(ctx[0].getContext('2d'), {
+        chart = new Chart(ctx, {
             type: 'pie',
             data: {
-                labels,
+                labels: Object.keys(macroAreaSummary),
                 datasets: [{
-                    data,
+                    data: Object.values(macroAreaSummary),
                     backgroundColor: ['red', 'blue', 'green', 'yellow', 'orange', 'purple', 'pink']
                 }]
             },
@@ -249,6 +272,24 @@
         });
     }
 
+    // Funzione di paginazione (per la tabella)
+    function createPagination(totalItems) {
+        const totalPages = Math.ceil(totalItems / rowsPerPage);
+        const paginationContainer = $('<div id="paginationContainer" style="position: fixed; top: 60px; left: 10px; background: white; padding: 10px; border: 1px solid #ddd; z-index: 1000;"></div>');
+
+        for (let i = 1; i <= totalPages; i++) {
+            const pageButton = $(`<button>${i}</button>`);
+            pageButton.on('click', () => {
+                currentPage = i;
+                fetchBufferSummary();
+            });
+            paginationContainer.append(pageButton);
+        }
+
+        $('body').append(paginationContainer);
+    }
+
+    // Carica i filtri e la tabella iniziale
     fetchStackingFilterMap(() => {
         fetchBufferSummary();
     });
