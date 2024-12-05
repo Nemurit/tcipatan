@@ -6,16 +6,20 @@
     let stackingToLaneMap = {};
     let selectedBufferFilter = '';
     let selectedLaneFilters = [];
-    let isTableVisible = false;
-    let isChartVisible = false;
+    let isTableVisible = true; // Default visibilità della tabella
+    let isChartVisible = true; // Default visibilità del grafico
     let chart = null;
+
+    console.log("Script inizializzato...");
 
     // Carica Chart.js
     const script = document.createElement('script');
     script.src = "https://cdn.jsdelivr.net/npm/chart.js";
+    script.onload = () => console.log("Chart.js caricato correttamente.");
     document.head.appendChild(script);
 
     function fetchStackingFilterMap(callback) {
+        console.log("Caricamento mappa stacking...");
         GM_xmlhttpRequest({
             method: "GET",
             url: stackingFilterMapUrl,
@@ -27,6 +31,7 @@
                             stackingToLaneMap[filter] = lane.split('[')[0];
                         });
                     }
+                    console.log("Mappa stacking caricata con successo:", stackingToLaneMap);
                     if (callback) callback();
                 } catch (error) {
                     console.error("Errore nel parsing della mappa JSON:", error);
@@ -39,6 +44,7 @@
     }
 
     function fetchBufferSummary() {
+        console.log("Inizio recupero dati dei buffer...");
         const endTime = new Date().getTime();
         const startTime = endTime - 24 * 60 * 60 * 1000;
 
@@ -67,6 +73,7 @@
                     const data = JSON.parse(response.responseText);
                     if (data.ret && data.ret.getContainersDetailByCriteriaOutput) {
                         const containers = data.ret.getContainersDetailByCriteriaOutput.containerDetails[0].containerDetails;
+                        console.log("Dati recuperati:", containers);
                         processAndDisplay(containers);
                     } else {
                         console.warn("Nessun dato trovato nella risposta API.");
@@ -160,6 +167,9 @@
     }
 
     function displayFilters() {
+        console.log("Mostro i filtri...");
+        $('#filtersContainer').remove();
+
         const filtersContainer = $('<div id="filtersContainer" style="position: fixed; top: 10px; left: 10px; background: white; padding: 10px; border: 1px solid #ddd; z-index: 1000;"></div>');
 
         const bufferInput = $('<input type="text" id="bufferFilter" placeholder="Filtra per buffer">');
@@ -176,6 +186,7 @@
     }
 
     function displayTable(summary) {
+        console.log("Mostro la tabella...");
         $('#contentContainer').remove();
 
         const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 100px; left: 10px; width: 400px; height: 90vh; overflow-y: auto; background: white; padding: 10px; border: 1px solid #ddd;"></div>');
@@ -199,12 +210,16 @@
     }
 
     function displayChart(summary) {
+        console.log("Mostro il grafico...");
         $('#chartContainer').remove();
 
         const ctx = $('<canvas id="bufferChart" width="400" height="400"></canvas>');
         const chartContainer = $('<div id="chartContainer" style="position: fixed; top: 10px; right: 10px; width: 400px; height: 400px; background: white; padding: 10px; border: 1px solid #ddd;"></div>');
         chartContainer.append(ctx);
         $('body').append(chartContainer);
+
+        const data = Object.values(summary);
+        const labels = Object.keys(summary);
 
         if (chart) {
             chart.destroy();
@@ -213,9 +228,9 @@
         chart = new Chart(ctx[0].getContext('2d'), {
             type: 'pie',
             data: {
-                labels: Object.keys(summary),
+                labels,
                 datasets: [{
-                    data: Object.values(summary),
+                    data,
                     backgroundColor: ['red', 'blue', 'green', 'yellow', 'orange', 'purple', 'pink']
                 }]
             },
