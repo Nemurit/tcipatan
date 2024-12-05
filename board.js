@@ -63,15 +63,8 @@
                     if (data.ret && data.ret.getContainersDetailByCriteriaOutput) {
                         const containers = data.ret.getContainersDetailByCriteriaOutput.containerDetails[0].containerDetails;
 
-                        // Cerca il contenitore specifico
-                        const specificContainer = containers.find(container => container.location === 'CART_00jw9edr_S');
-                        if (specificContainer) {
-                            console.log("Dettagli del contenitore specifico trovato:", specificContainer);
-                        } else {
-                            console.warn("Il contenitore specificato non è stato trovato nella risposta.");
-                        }
-
-                        processAndDisplay(containers);
+                        // Passa i dati alla nuova funzione per sommare i valori
+                        processAndSumContentCounts(containers);
                     } else {
                         console.warn("Nessun dato trovato nella risposta API.");
                     }
@@ -85,92 +78,54 @@
         });
     }
 
-    function processAndDisplay(containers) {
-        const filteredSummary = {};
+    function processAndSumContentCounts(containers) {
+        let totalContentCount = 0; // Variabile per tenere traccia della somma totale.
 
         containers.forEach(container => {
-            const location = container.location || '';
-            const stackingFilter = container.stackingFilter || 'N/A';
-            const lane = stackingToLaneMap[stackingFilter] || 'N/A';
-            
-            const pacchi = parseInt(container.Contentcount, 10) || 0;
-            console.log(`Processing container: location = ${location}, stackingFilter = ${stackingFilter}, lane = ${lane}, pacchi = ${pacchi}`);
-        
-            if (
-                location.toUpperCase().startsWith("BUFFER") &&
-                (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
-                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
-            ) {
-                console.log(`Container ${location} matches filters.`);
-        
-                if (!filteredSummary[lane]) {
-                    filteredSummary[lane] = {};
-                    console.log(`Created new lane entry: ${lane}`);
-                }
-        
-                if (!filteredSummary[lane][location]) {
-                    filteredSummary[lane][location] = { count: 0, totalPacchi: 0 };
-                    console.log(`Created new location entry: ${location} for lane: ${lane}`);
-                }
-        
-                filteredSummary[lane][location].count++;
-                filteredSummary[lane][location].totalPacchi += pacchi;
-                console.log(`Updated ${location} in lane ${lane}: count = ${filteredSummary[lane][location].count}, totalPacchi = ${filteredSummary[lane][location].totalPacchi}`);
-            } else {
-                console.log(`Container ${location} does not match filters.`);
-            }
+            const location = container.location || ''; // Ottieni il valore del `container.location`.
+            const contentCount = container.contentCount || 0; // Supponiamo che `contentCount` sia la proprietà corretta.
+
+            // Accumula il conteggio totale
+            totalContentCount += contentCount;
         });
 
-        console.log("Filtered Summary before sorting:");
-        console.log(filteredSummary);
+        console.log("Totale Conteggio dei Contenuti per tutti i Container:");
+        console.log(totalContentCount);
 
-        const sortedSummary = {};
-        Object.keys(filteredSummary).forEach(lane => {
-            const laneSummary = filteredSummary[lane];
-            sortedSummary[lane] = Object.keys(laneSummary)
-                .sort((a, b) => {
-                    const numA = parseBufferNumber(a);
-                    const numB = parseBufferNumber(b);
-        
-                    if (numA === numB) {
-                        return a.localeCompare(b);
-                    }
-                    return numA - numB;
-                })
-                .reduce((acc, location) => {
-                    acc[location] = laneSummary[location];
-                    return acc;
-                }, {});
-        });
-
-        console.log("Sorted Summary:");
-        console.log(sortedSummary);
-
+        // Se desideri anche mostrare i dati nella tabella:
         if (isVisible) {
-            displayTable(sortedSummary);
+            displayTotalContentCount(totalContentCount);
         }
     }
 
-    function matchesExactBufferNumber(location, filter) {
-        const match = location.match(/BUFFER\s*[A-Za-z](\d+)/);
-        if (match) {
-            const bufferNumber = match[1];
-            return bufferNumber === filter;  
-        }
-        return false;
-    }
+    function displayTotalContentCount(totalContentCount) {
+        $('#contentContainer').remove();
 
-    function parseBufferNumber(bufferName) {
-        const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
-        return match ? parseInt(match[1], 10) : 0;
-    }
+        const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
 
-    function displayTable(sortedSummary) {
-        // Implementazione come prima...
+        const totalCountDiv = $(`<div style="font-size: 18px; font-weight: bold; text-align: center; margin-top: 20px;">
+            Totale Conteggio Contenuti: ${totalContentCount}
+        </div>`);
+
+        contentContainer.append(totalCountDiv);
+        $('body').append(contentContainer);
     }
 
     function addToggleButton() {
-        // Implementazione come prima...
+        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
+
+        toggleButton.on('click', function() {
+            isVisible = !isVisible;
+            if (isVisible) {
+                fetchBufferSummary();
+                $(this).text("Nascondi Recuperi");
+            } else {
+                $('#contentContainer').remove();
+                $(this).text("Mostra Recuperi");
+            }
+        });
+
+        $('body').append(toggleButton);
     }
 
     fetchStackingFilterMap(function() {
@@ -178,5 +133,7 @@
         fetchBufferSummary();
     });
 
-    setInterval(fetchBufferSummary, 200000);
+    // Aggiorna i dati ogni 5 minuti
+    setInterval(fetchBufferSummary, 300000); // 300,000 ms = 5 minuti
+
 })();
