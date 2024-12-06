@@ -77,57 +77,41 @@
         });
     }
 
-  function processAndDisplay(containers) {
+function processAndDisplay(containers) {
     const filteredSummary = {};
+    let totalContainers = 0;
 
     containers.forEach(container => {
         const location = container.location || '';
         const stackingFilter = container.stackingFilter || 'N/A';
         const lane = stackingToLaneMap[stackingFilter] || 'N/A';
-        const cpt = container.cpt || 'N/A';  // Assuming 'cpt' is the property in the container data.
+        const cpt = container.cpt || 'N/A';  // Campo CPT
 
-        // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
         if (
             location.toUpperCase().startsWith("BUFFER") &&
             (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
             (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
-            (selectedCptFilter === '' || cpt.toUpperCase().includes(selectedCptFilter.toUpperCase()))  // Filtro CPT
+            (selectedCptFilter === '' || cpt.toUpperCase().includes(selectedCptFilter.toUpperCase()))
         ) {
             if (!filteredSummary[lane]) {
-                filteredSummary[lane] = {};
+                filteredSummary[lane] = { cpt: formatDateCPT(cpt), total: 0 };
             }
 
-            if (!filteredSummary[lane][location]) {
-                filteredSummary[lane][location] = { count: 0, cpt: cpt };
-            }
-
-            filteredSummary[lane][location].count++;
+            filteredSummary[lane].total += 1;
+            totalContainers += 1;
         }
     });
 
     const sortedSummary = {};
     Object.keys(filteredSummary).forEach(lane => {
-        const laneSummary = filteredSummary[lane];
-        sortedSummary[lane] = Object.keys(laneSummary)
-            .sort((a, b) => {
-                const numA = parseBufferNumber(a);
-                const numB = parseBufferNumber(b);
-
-                if (numA === numB) {
-                    return a.localeCompare(b);
-                }
-                return numA - numB;
-            })
-            .reduce((acc, location) => {
-                acc[location] = laneSummary[location];
-                return acc;
-            }, {});
+        sortedSummary[lane] = filteredSummary[lane];
     });
 
     if (isVisible) {
-        displayTable(sortedSummary);
+        displayTable(sortedSummary, totalContainers);
     }
 }
+
 
 function displayTable(sortedSummary) {
     $('#contentContainer').remove();
