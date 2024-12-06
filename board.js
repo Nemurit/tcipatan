@@ -84,79 +84,58 @@
             const stackingFilter = container.stackingFilter || 'N/A';
             const lane = stackingToLaneMap[stackingFilter] || 'N/A';
 
-            // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
             if (
                 location.toUpperCase().startsWith("BUFFER") &&
                 (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
                 (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
             ) {
                 if (!filteredSummary[lane]) {
-                    filteredSummary[lane] = {};
-                }
-
-                if (!filteredSummary[lane][location]) {
-                    filteredSummary[lane][location] = { 
-                        count: 0,
-                        cpts: [],
-                        totalContentCount: 0 
+                    filteredSummary[lane] = {
+                        totalContainers: 0,
+                        cpts: new Set(), // Per evitare duplicati negli orari
+                        locations: {}
                     };
                 }
 
-                // Incrementa i valori
-                filteredSummary[lane][location].count++;
+                // Aggiorna i dati per la lane
+                filteredSummary[lane].totalContainers++;
                 if (container.cpt) {
-                    filteredSummary[lane][location].cpts.push(container.cpt);
+                    filteredSummary[lane].cpts.add(container.cpt);
                 }
-                filteredSummary[lane][location].totalContentCount += container.contentcount || 0;
+
+                // Aggiorna i dati per la location
+                if (!filteredSummary[lane].locations[location]) {
+                    filteredSummary[lane].locations[location] = { count: 0 };
+                }
+                filteredSummary[lane].locations[location].count++;
             }
         });
 
-        const sortedSummary = {};
-        Object.keys(filteredSummary).forEach(lane => {
-            const laneSummary = filteredSummary[lane];
-            sortedSummary[lane] = Object.keys(laneSummary)
-                .sort((a, b) => {
-                    const numA = parseBufferNumber(a);
-                    const numB = parseBufferNumber(b);
-
-                    if (numA === numB) {
-                        return a.localeCompare(b);
-                    }
-                    return numA - numB;
-                })
-                .reduce((acc, location) => {
-                    acc[location] = laneSummary[location];
-                    return acc;
-                }, {});
+        // Converti i Set di `cpts` in array ordinati
+        Object.values(filteredSummary).forEach(laneData => {
+            laneData.cpts = Array.from(laneData.cpts).sort();
         });
 
         if (isVisible) {
-            displayTable(sortedSummary);
+            displayTable(filteredSummary);
         }
     }
 
-    // Funzione che confronta il numero esatto nel nome del buffer con il filtro
     function matchesExactBufferNumber(location, filter) {
-        const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
+        const match = location.match(/BUFFER\s*[A-Za-z](\d+)/);
         if (match) {
-            const bufferNumber = match[1];  // Estrae il numero
-            return bufferNumber === filter;  
+            const bufferNumber = match[1];
+            return bufferNumber === filter;
         }
         return false;
     }
 
-    // Funzione che estrae il numero dal nome del buffer per ordinarlo
-    function parseBufferNumber(bufferName) {
-        const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
-        return match ? parseInt(match[1], 10) : 0;  // Estrae solo il numero
-    }
-
-    function displayTable(sortedSummary) {
+    function displayTable(filteredSummary) {
         $('#contentContainer').remove();
 
         const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
 
-        if (Object.keys(sortedSummary).length === 0) {
+        if (Object.keys(filteredSummary).length === 0) {
             return;
         }
 
@@ -165,34 +144,35 @@
         const thead = $('<thead></thead>');
         thead.append(`
             <tr>
-                <th>Buffer</th>
+                <th>Lane</th>
                 <th>Totale Container</th>
                 <th>Orari (CPT)</th>
             </tr>
         `);
 
         const tbody = $('<tbody></tbody>');
-        let totalContainers = 0;
+        Object.entries(filteredSummary).forEach(([lane, laneData]) => {
+            const row = $('<tr></tr>');
+            const totalContainers = laneData.totalContainers;
+            const cpts = laneData.cpts.join(', ');
 
-        Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
-            Object.entries(laneSummary).forEach(([location, data]) => {
-                const row = $('<tr class="locationRow"></tr>');
-                const count = data.count;
-                const cpts = data.cpts.join(', ');
+            row.append(`<td>${lane}</td>`);
+            row.append(`<td>${totalContainers}</td>`);
+            row.append(`<td>${cpts}</td>`);
 
-                row.append(`<td>${location}</td>`);
-                row.append(`<td>${count}</td>`);
-                row.append(`<td>${cpts}</td>`);
-                tbody.append(row);
+            tbody.append(row);
 
-                totalContainers += count;
+            Object.entries(laneData.locations).forEach(([location, data]) => {
+                const subRow = $('<tr class="locationRow"></tr>');
+                subRow.append(`<td style="padding-left: 20px;">${location}</td>`);
+                subRow.append(`<td>${data.count}</td>`);
+                subRow.append(`<td>-</td>`); // Nessun CPT specifico per la location
+                tbody.append(subRow);
             });
         });
 
         const tfoot = $('<tfoot></tfoot>');
-        const globalTotalRow = $('<tr><td colspan="3" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
-        tfoot.append(globalTotalRow);
-
+        tfoot.append(`<tr><td colspan="3" style="text-align:right; font-weight: bold;">Totale Lane: ${Object.keys(filteredSummary).length}</td></tr>`);
         table.append(thead);
         table.append(tbody);
         table.append(tfoot);
@@ -223,7 +203,6 @@
         fetchBufferSummary();
     });
 
-    // Aggiorna i dati ogni 5 minuti
-    setInterval(fetchBufferSummary, 200000); // 200,000 ms = 3 minuti
+    setInterval(fetchBufferSummary, 200000);
 
 })();
