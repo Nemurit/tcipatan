@@ -97,34 +97,17 @@
                 (selectedCptFilter === '' || cpt.toUpperCase().includes(selectedCptFilter.toUpperCase()))  // Aggiungiamo il filtro per CPT
             ) {
                 if (!filteredSummary[lane]) {
-                    filteredSummary[lane] = {};
+                    filteredSummary[lane] = { cpt: cpt, buffers: [] }; // Aggiungiamo la lista di buffer per lane
                 }
 
-                if (!filteredSummary[lane][location]) {
-                    filteredSummary[lane][location] = { count: 0, cpt };  // Aggiungiamo il CPT alle informazioni
-                }
-
-                filteredSummary[lane][location].count++;
+                filteredSummary[lane].buffers.push({ location: location, cpt: cpt });
             }
         });
 
         const sortedSummary = {};
         Object.keys(filteredSummary).forEach(lane => {
             const laneSummary = filteredSummary[lane];
-            sortedSummary[lane] = Object.keys(laneSummary)
-                .sort((a, b) => {
-                    const numA = parseBufferNumber(a);
-                    const numB = parseBufferNumber(b);
-
-                    if (numA === numB) {
-                        return a.localeCompare(b);
-                    }
-                    return numA - numB;
-                })
-                .reduce((acc, location) => {
-                    acc[location] = laneSummary[location];
-                    return acc;
-                }, {});
+            sortedSummary[lane] = laneSummary;
         });
 
         if (isVisible) {
@@ -141,12 +124,6 @@
             return bufferNumber === filter;  
         }
         return false;
-    }
-
-    // Funzione che estrae il numero dal nome del buffer per ordinarlo
-    function parseBufferNumber(bufferName) {
-        const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
-        return match ? parseInt(match[1], 10) : 0;  // Estrae solo il numero
     }
 
     // Funzione per visualizzare la tabella
@@ -178,45 +155,29 @@
 
         thead.append(`
             <tr>
+                <th>Lane</th>
+                <th>CPT</th>
                 <th>Buffer</th>
-                <th>Totale Container</th>
-                <th>CPT</th>  <!-- Aggiungiamo la colonna CPT -->
             </tr>
         `);
 
         const tbody = $('<tbody></tbody>');
-        let totalContainers = 0;
 
         Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
-            let laneTotal = 0;
-
-            Object.entries(laneSummary).forEach(([location, data]) => {
-                laneTotal += data.count;
-            });
-
-            let laneColor = '';
-            if (laneTotal <= 10) {
-                laneColor = 'green';
-            } else if (laneTotal <= 30) {
-                laneColor = 'orange';
-            } else {
-                laneColor = 'red';
-            }
-
             const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-                <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor}">${laneTotal}</span></td>
+                <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - CPT: ${laneSummary.cpt}</td>
             </tr>`);
 
             tbody.append(laneRow);
 
-            Object.entries(laneSummary).forEach(([location, data]) => {
-                const row = $('<tr class="containerRow" style="display: none;"></tr>');
-                const cptText = data.cpt;
-
-                row.append(`<td>${location}</td>`);
-                row.append(`<td>${data.count}</td>`);
-                row.append(`<td>${cptText}</td>`);  <!-- Mostriamo il CPT -->
-                tbody.append(row);
+            // Aggiungi i buffer della lane
+            laneSummary.buffers.forEach(buffer => {
+                const bufferRow = $(`<tr class="containerRow" style="display: none;">
+                    <td></td>
+                    <td>${buffer.cpt}</td>
+                    <td>${buffer.location}</td>
+                </tr>`);
+                tbody.append(bufferRow);
             });
         });
 
@@ -225,6 +186,13 @@
         contentContainer.append(table);
         $('body').append(contentContainer);
 
+        // Gestire l'espansione della lane
+        $(".laneRow").on('click', function() {
+            const bufferRows = $(this).nextUntil(".laneRow");
+            bufferRows.toggle();
+        });
+
+        // Gestire i filtri
         $('#bufferFilterInput').on('input', function() {
             selectedBufferFilter = $(this).val();
             fetchBufferSummary();
@@ -236,16 +204,12 @@
         });
 
         $('#cptFilterInput').on('input', function() {
-            selectedCptFilter = $(this).val().trim();  // Aggiungiamo il filtro per CPT
+            selectedCptFilter = $(this).val().trim();
             fetchBufferSummary();
         });
     }
 
-    function toggleTable() {
-        isVisible = !isVisible;
-        fetchBufferSummary();
-    }
-
     // Attiviamo la visualizzazione della tabella
     toggleTable();
+
 })();
