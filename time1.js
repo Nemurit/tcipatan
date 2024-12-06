@@ -5,25 +5,10 @@
     const stackingFilterMapUrl = 'https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/stacking_filter_map.json';
     let selectedBufferFilter = '';
     let selectedLaneFilters = [];
+    let selectedCptFilter = '';  // Aggiungiamo il filtro per CPT
     let stackingToLaneMap = {};
     let isVisible = false;
-    let totalContainersCount = 0; // Totale generale
-    let currentPage = 1; // Impaginazione
-    const rowsPerPage = 10; // Numero di righe per pagina
 
-    // Funzione di formattazione del timestamp CPT
-    function formatCPTTimestamp(timestamp) {
-        const date = new Date(timestamp);
-        const hours = (date.getUTCHours() + 1).toString().padStart(2, '0'); // Ora in formato 2 cifre (UTC +1)
-        const minutes = date.getUTCMinutes().toString().padStart(2, '0'); // Minuti in formato 2 cifre
-        const day = date.getUTCDate().toString().padStart(2, '0'); // Giorno del mese
-        const month = (date.getUTCMonth() + 1).toString().padStart(2, '0'); // Mese (0-based, quindi +1)
-        const year = date.getUTCFullYear();
-
-        return `${hours}:${minutes} ${day}-${month}-${year}`;
-    }
-
-    // Carica la mappa dei filtri di stacking
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
             method: "GET",
@@ -49,7 +34,6 @@
         });
     }
 
-    // Recupera i dettagli dei container
     function fetchBufferSummary() {
         const endTime = new Date().getTime();
         const startTime = endTime - 24 * 60 * 60 * 1000;
@@ -93,75 +77,81 @@
         });
     }
 
-    // Elabora e mostra i dati dei container
     function processAndDisplay(containers) {
         const filteredSummary = {};
-        totalContainersCount = 0; // Reset del totale ogni volta che viene chiamata la funzione
 
         containers.forEach(container => {
             const location = container.location || '';
             const stackingFilter = container.stackingFilter || 'N/A';
             const lane = stackingToLaneMap[stackingFilter] || 'N/A';
+            const cpt = container.cpt || 'N/A';  // Aggiungiamo il campo CPT
 
             // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
             if (
                 location.toUpperCase().startsWith("BUFFER") &&
                 (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
-                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
+                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
+                (selectedCptFilter === '' || cpt.toUpperCase().includes(selectedCptFilter.toUpperCase()))  // Aggiungiamo il filtro per CPT
             ) {
                 if (!filteredSummary[lane]) {
-                    filteredSummary[lane] = { totalContainers: 0, cpts: [], buffers: [] };
+                    filteredSummary[lane] = {};
                 }
 
-                // Aggiungi il CPT
-                if (container.cpt) {
-                    const formattedCPT = formatCPTTimestamp(container.cpt); // Converte il timestamp
-                    // Aggiungi solo il primo orario per lane, evitando duplicati
-                    if (!filteredSummary[lane].cpts.includes(formattedCPT)) {
-                        filteredSummary[lane].cpts.push(formattedCPT);
-                    }
+                if (!filteredSummary[lane][location]) {
+                    filteredSummary[lane][location] = { count: 0, cpt };  // Aggiungiamo il CPT alle informazioni
                 }
 
-                // Aggiungi il buffer
-                if (!filteredSummary[lane].buffers.includes(location)) {
-                    filteredSummary[lane].buffers.push(location);
-                }
-
-                // Conta il numero di containers per lane
-                filteredSummary[lane].totalContainers++;
-                totalContainersCount++; // Incremento del totale generale
+                filteredSummary[lane][location].count++;
             }
         });
 
-        // Filtro per orario (se presente)
-        if (selectedTimeFilter) {
-            for (const lane in filteredSummary) {
-                filteredSummary[lane].cpts = filteredSummary[lane].cpts.filter(cpt => cpt.startsWith(selectedTimeFilter));
-            }
-        }
+        const sortedSummary = {};
+        Object.keys(filteredSummary).forEach(lane => {
+            const laneSummary = filteredSummary[lane];
+            sortedSummary[lane] = Object.keys(laneSummary)
+                .sort((a, b) => {
+                    const numA = parseBufferNumber(a);
+                    const numB = parseBufferNumber(b);
+
+                    if (numA === numB) {
+                        return a.localeCompare(b);
+                    }
+                    return numA - numB;
+                })
+                .reduce((acc, location) => {
+                    acc[location] = laneSummary[location];
+                    return acc;
+                }, {});
+        });
 
         if (isVisible) {
-            displayTable(filteredSummary);
+            displayTable(sortedSummary);
         }
     }
 
-    // Filtro per numero esatto di buffer
+    // Funzione che confronta il numero esatto nel nome del buffer con il filtro
     function matchesExactBufferNumber(location, filter) {
-        const match = location.match(/BUFFER\s*[A-Za-z](\d+)/);
+        const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
         if (match) {
-            const bufferNumber = match[1];
-            return bufferNumber === filter;
+            const bufferNumber = match[1];  // Estrae il numero
+            // Verifica che il numero estratto corrisponda esattamente al filtro
+            return bufferNumber === filter;  
         }
         return false;
     }
 
-    // Mostra i dati in una tabella con impaginazione
-    function displayTable(filteredSummary) {
+    // Funzione che estrae il numero dal nome del buffer per ordinarlo
+    function parseBufferNumber(bufferName) {
+        const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
+        return match ? parseInt(match[1], 10) : 0;  // Estrae solo il numero
+    }
+
+    function displayTable(sortedSummary) {
         $('#contentContainer').remove();
 
         const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
 
-        if (Object.keys(filteredSummary).length === 0) {
+        if (Object.keys(sortedSummary).length === 0) {
             return;
         }
 
@@ -170,107 +160,94 @@
         const thead = $('<thead></thead>');
         thead.append(`
             <tr>
-                <th>Lane</th>
-                <th>Totale Container</th>
+                <th>
+                    <input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                </th>
+                <th>
+                    <input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                </th>
+                <th>
+                    <input id="cptFilterInput" type="text" placeholder="Filtro per CPT" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                </th>
+            </tr>
+        `);
+
+        thead.append(`
+            <tr>
                 <th>Buffer</th>
-                <th>Orari (CPT)</th>
+                <th>Totale Container</th>
+                <th>CPT</th>  <!-- Aggiungiamo la colonna CPT -->
             </tr>
         `);
 
         const tbody = $('<tbody></tbody>');
-        const entries = Object.entries(filteredSummary);
-        const paginatedEntries = entries.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+        let totalContainers = 0;
 
-        paginatedEntries.forEach(([lane, laneData]) => {
-            const row = $('<tr></tr>');
-            const totalContainers = laneData.totalContainers;
-            const buffers = laneData.buffers.join(', '); // Buffer in formato leggibile
-            const cpts = laneData.cpts.join(', '); // Orari in formato leggibile (unico per lane)
+        Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
+            let laneTotal = 0;
 
-            row.append(`<td>${lane}</td>`);
-            row.append(`<td>${totalContainers}</td>`);
-            row.append(`<td>${buffers}</td>`);
-            row.append(`<td>${cpts}</td>`);
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                laneTotal += data.count;
+            });
 
-            tbody.append(row);
+            let laneColor = '';
+            if (laneTotal <= 10) {
+                laneColor = 'green';
+            } else if (laneTotal <= 30) {
+                laneColor = 'orange';
+            } else {
+                laneColor = 'red';
+            }
+
+            const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
+                <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
+            </tr>`);
+
+            laneRow.on('click', function() {
+                const nextRows = $(this).nextUntil('.laneRow');
+                nextRows.toggle();
+            });
+
+            tbody.append(laneRow);
+
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                const row = $('<tr class="locationRow" style="display: none;"></tr>');
+
+                const cptText = data.cpt;
+                row.append(`<td>${location}</td>`);
+                row.append(`<td>${data.count}</td>`);
+                row.append(`<td>${cptText}</td>`);  <!-- Aggiungiamo il CPT qui -->
+
+                tbody.append(row);
+            });
         });
-
-        const totalRow = $('<tr><td colspan="4" style="text-align: center;"><b>Totale generale: ' + totalContainersCount + ' container</b></td></tr>');
-        tbody.append(totalRow);
 
         table.append(thead);
         table.append(tbody);
         contentContainer.append(table);
-
-        // Aggiungi i controlli di impaginazione
-        const pagination = $('<div id="pagination" style="text-align: center; margin-top: 10px;"></div>');
-        const totalPages = Math.ceil(entries.length / rowsPerPage);
-
-        if (currentPage > 1) {
-            pagination.append(`<button class="page-button" id="prevPage">← Precedente</button>`);
-        }
-        if (currentPage < totalPages) {
-            pagination.append(`<button class="page-button" id="nextPage">Successivo →</button>`);
-        }
-
-        contentContainer.append(pagination);
         $('body').append(contentContainer);
 
-        $('#prevPage').on('click', function() {
-            currentPage--;
+        $('#bufferFilterInput').on('input', function() {
+            selectedBufferFilter = $(this).val();
             fetchBufferSummary();
         });
 
-        $('#nextPage').on('click', function() {
-            currentPage++;
+        $('#laneFilterInput').on('input', function() {
+            selectedLaneFilters = $(this).val().split(',').map(item => item.trim()).filter(item => item.length > 0);
+            fetchBufferSummary();
+        });
+
+        $('#cptFilterInput').on('input', function() {
+            selectedCptFilter = $(this).val().trim();  // Aggiungiamo il filtro per CPT
             fetchBufferSummary();
         });
     }
 
-    // Aggiungi i filtri per lane e buffer
-    function addFilters() {
-        const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per Lane" style="position: fixed; top: 90px; right: 10px; padding: 5px; box-sizing: border-box;">');
-        const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per Buffer" style="position: fixed; top: 130px; right: 10px; padding: 5px; box-sizing: border-box;">');
-        
-        laneFilterInput.on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedLaneFilters = $(this).val().split(',');
-                currentPage = 1; // Reset della pagina quando viene applicato un filtro
-                fetchBufferSummary();
-            }
-        });
-
-        bufferFilterInput.on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedBufferFilter = $(this).val();
-                currentPage = 1; // Reset della pagina quando viene applicato un filtro
-                fetchBufferSummary();
-            }
-        });
-
-        $('body').append(laneFilterInput);
-        $('body').append(bufferFilterInput);
+    function toggleTable() {
+        isVisible = !isVisible;
+        fetchBufferSummary();
     }
 
-    // Aggiungi il pulsante di toggle per mostrare/nascondere la tabella
-    function addToggleButton() {
-        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 120px; right: 10px; padding: 10px;">Mostra/Nascondi</button>');
-
-        toggleButton.on('click', function() {
-            isVisible = !isVisible;
-            fetchBufferSummary();
-        });
-
-        $('body').append(toggleButton);
-    }
-
-    // Funzione di avvio
-    function init() {
-        fetchStackingFilterMap(function() {
-            addFilters();
-            addToggleButton();
-        });
-    }
-
-    init();
+    // Attiviamo la visualizzazione della tabella
+    toggleTable();
 })();
