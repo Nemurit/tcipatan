@@ -190,13 +190,21 @@
 
         Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
             const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-                <td colspan="3" style="font-weight: bold; text-align: left;">${lane} (Totale: ${laneSummary.total} containers)</td>
+                <td colspan="3" style="font-weight: bold; text-align: left;">${lane} (Totale: ${laneSummary.total} containers) <span class="toggleLane">[+]</span></td>
             </tr>`);
+
+            // Funzione per estendere o comprimere la lane
+            laneRow.on('click', function() {
+                $(this).next('.bufferRow').toggle();
+                $(this).find('.toggleLane').text(function(_, text) {
+                    return text === '[+]' ? '[-]' : '[+]';
+                });
+            });
 
             tbody.append(laneRow);
 
             laneSummary.buffers.forEach(buffer => {
-                const bufferRow = $(`<tr class="bufferRow">
+                const bufferRow = $(`<tr class="bufferRow" style="display: none;">
                     <td></td>
                     <td>${laneSummary.cpt}</td>
                     <td>${buffer.location}</td>
