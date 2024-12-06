@@ -114,7 +114,10 @@
                 // Aggiungi il CPT
                 if (container.cpt) {
                     const formattedCPT = formatCPTTimestamp(container.cpt); // Converte il timestamp
-                    filteredSummary[lane].cpts.push(formattedCPT);
+                    // Aggiungi solo il primo orario per lane, evitando duplicati
+                    if (!filteredSummary[lane].cpts.includes(formattedCPT)) {
+                        filteredSummary[lane].cpts.push(formattedCPT);
+                    }
                 }
 
                 // Conta il numero di containers per lane
@@ -169,7 +172,7 @@
         Object.entries(filteredSummary).forEach(([lane, laneData]) => {
             const row = $('<tr></tr>');
             const totalContainers = laneData.totalContainers;
-            const cpts = laneData.cpts.join(', '); // Orari in formato leggibile
+            const cpts = laneData.cpts.join(', '); // Orari in formato leggibile (unico per lane)
 
             row.append(`<td>${lane}</td>`);
             row.append(`<td>${totalContainers}</td>`);
@@ -216,7 +219,7 @@
         $('body').append(toggleButton);
     }
 
-    // Aggiungi i filtri
+    // Aggiungi i filtri per lane
     function addFilters() {
         const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per Lane" style="position: fixed; top: 90px; right: 10px; padding: 5px; box-sizing: border-box;">');
         
