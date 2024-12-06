@@ -1,77 +1,38 @@
-(function () {
+(function() {
     'use strict';
 
     const nodeId = 'MXP6';
     const stackingFilterMapUrl = 'https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/stacking_filter_map.json';
-    const bufferJsonUrl = 'https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/buffer.json';
     let selectedBufferFilter = '';
     let selectedLaneFilters = [];
     let stackingToLaneMap = {};
-    let bufferMacroAreas = {};
     let isVisible = false;
 
-    // Creazione pulsanti
-    function createButtons() {
-        const container = document.createElement('div');
-        container.style.position = 'fixed';
-        container.style.bottom = '10px';
-        container.style.right = '10px';
-        container.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-        container.style.padding = '10px';
-        container.style.borderRadius = '5px';
-        container.style.color = 'white';
-        container.style.zIndex = '10000';
-
-        // Bottone per mostrare/aggiornare il grafico
-        const showChartButton = document.createElement('button');
-        showChartButton.innerText = 'Mostra Grafico';
-        showChartButton.style.margin = '5px';
-        showChartButton.onclick = () => {
-            isVisible = true;
-            fetchBufferSummary();
-        };
-
-        // Bottone per nascondere il grafico
-        const hideChartButton = document.createElement('button');
-        hideChartButton.innerText = 'Nascondi Grafico';
-        hideChartButton.style.margin = '5px';
-        hideChartButton.onclick = () => {
-            isVisible = false;
-            const canvas = document.getElementById('chartCanvas');
-            if (canvas) {
-                canvas.remove(); // Rimuove il canvas
-            }
-        };
-
-        // Append bottoni al contenitore
-        container.appendChild(showChartButton);
-        container.appendChild(hideChartButton);
-
-        // Aggiungi il contenitore al body
-        document.body.appendChild(container);
-    }
-
-    // Funzione per caricare le macro aree
-    function fetchBufferData(callback) {
+    function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
             method: "GET",
-            url: bufferJsonUrl,
-            onload: function (response) {
+            url: stackingFilterMapUrl,
+            onload: function(response) {
                 try {
-                    bufferMacroAreas = JSON.parse(response.responseText);
-                    console.log("Macro aree buffer caricate:", bufferMacroAreas);
+                    const laneData = JSON.parse(response.responseText);
+
+                    for (const [lane, stackingFilters] of Object.entries(laneData)) {
+                        stackingFilters.forEach(filter => {
+                            stackingToLaneMap[filter] = lane.split('[')[0];
+                        });
+                    }
+
                     if (callback) callback();
                 } catch (error) {
-                    console.error("Errore nel parsing del file buffer.json:", error);
+                    console.error("Errore nel parsing della mappa JSON:", error);
                 }
             },
-            onerror: function (error) {
-                console.error("Errore nel caricamento del file buffer.json:", error);
+            onerror: function(error) {
+                console.error("Errore nel caricamento del file JSON:", error);
             }
         });
     }
 
-    // Funzione per ottenere i dati dei contenitori
     function fetchBufferSummary() {
         const endTime = new Date().getTime();
         const startTime = endTime - 24 * 60 * 60 * 1000;
@@ -96,12 +57,11 @@
         GM_xmlhttpRequest({
             method: "GET",
             url: `${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })}`,
-            onload: function (response) {
+            onload: function(response) {
                 try {
                     const data = JSON.parse(response.responseText);
                     if (data.ret && data.ret.getContainersDetailByCriteriaOutput) {
                         const containers = data.ret.getContainersDetailByCriteriaOutput.containerDetails[0].containerDetails;
-                        console.log("Dati ricevuti dai contenitori:", containers);
                         processAndDisplay(containers);
                     } else {
                         console.warn("Nessun dato trovato nella risposta API.");
@@ -110,112 +70,160 @@
                     console.error("Errore nella risposta API:", error);
                 }
             },
-            onerror: function (error) {
+            onerror: function(error) {
                 console.error("Errore nella chiamata API:", error);
             }
         });
     }
 
-    // Funzione per ottenere la macro area di un buffer
-function getMacroAreaForBuffer(location) {
-    // Assumendo che bufferMacroAreas sia una mappa delle relazioni buffer -> macro area
-    if (bufferMacroAreas && bufferMacroAreas[location]) {
-        return bufferMacroAreas[location].macroArea || null;
-    }
-    return null; // Se non c'è corrispondenza, restituisce null
-}
-
-
-    // Processa i dati e genera la tabella e il grafico
     function processAndDisplay(containers) {
         const filteredSummary = {};
 
-        try {
-            containers.forEach(container => {
-                const location = container.location || '';
-                const stackingFilter = container.stackingFilter || 'N/A';
-                const lane = stackingToLaneMap[stackingFilter] || 'N/A';
+        containers.forEach(container => {
+            const location = container.location || '';
+            const stackingFilter = container.stackingFilter || 'N/A';
+            const lane = stackingToLaneMap[stackingFilter] || 'N/A';
 
-                if (location.toUpperCase().startsWith("BUFFER")) {
-                    if (!filteredSummary[lane]) {
-                        filteredSummary[lane] = {};
-                    }
-                    if (!filteredSummary[lane][location]) {
-                        filteredSummary[lane][location] = { count: 0 };
-                    }
-                    filteredSummary[lane][location].count++;
+            // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
+            if (
+                location.toUpperCase().startsWith("BUFFER") &&
+                (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
+                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
+            ) {
+                if (!filteredSummary[lane]) {
+                    filteredSummary[lane] = {};
                 }
-            });
 
-            const macroAreaData = {};
-            Object.entries(filteredSummary).forEach(([lane, laneSummary]) => {
-                Object.entries(laneSummary).forEach(([location, data]) => {
-                    const macroArea = getMacroAreaForBuffer(location);
-                    if (macroArea) {
-                        if (!macroAreaData[macroArea]) {
-                            macroAreaData[macroArea] = 0;
-                        }
-                        macroAreaData[macroArea] += data.count;
-                    }
-                });
-            });
-
-            console.log("Dati per macroaree:", macroAreaData);
-
-            if (isVisible) {
-                displayChart(macroAreaData);
-            }
-        } catch (error) {
-            console.error("Errore durante il processamento dei dati:", error);
-        }
-    }
-
-    // Mostra il grafico
-    function displayChart(macroAreaData) {
-        try {
-            let canvas = document.getElementById('chartCanvas');
-            if (!canvas) {
-                canvas = document.createElement('canvas');
-                canvas.id = 'chartCanvas';
-                document.body.appendChild(canvas);
-            }
-
-            const ctx = canvas.getContext('2d');
-            const data = {
-                labels: Object.keys(macroAreaData),
-                datasets: [{
-                    label: 'Numero di Container per Macro Area',
-                    data: Object.values(macroAreaData),
-                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#F7464A'],
-                    hoverBackgroundColor: ['#FF4384', '#36A2EB', '#FFCE56', '#4BC0C0', '#F7464A']
-                }]
-            };
-
-            new Chart(ctx, {
-                type: 'pie',
-                data: data,
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                        }
-                    }
+                if (!filteredSummary[lane][location]) {
+                    filteredSummary[lane][location] = { 
+                        count: 0,
+                        cpts: [],
+                        totalContentCount: 0 
+                    };
                 }
-            });
-        } catch (error) {
-            console.error("Errore durante la creazione del grafico:", error);
-        }
-    }
 
-    // Inizializza il sistema
-    function init() {
-        createButtons(); // Aggiungi pulsanti
-        fetchBufferData(function () {
-            fetchBufferSummary();
+                // Incrementa i valori
+                filteredSummary[lane][location].count++;
+                if (container.cpt) {
+                    filteredSummary[lane][location].cpts.push(container.cpt);
+                }
+                filteredSummary[lane][location].totalContentCount += container.contentcount || 0;
+            }
         });
+
+        const sortedSummary = {};
+        Object.keys(filteredSummary).forEach(lane => {
+            const laneSummary = filteredSummary[lane];
+            sortedSummary[lane] = Object.keys(laneSummary)
+                .sort((a, b) => {
+                    const numA = parseBufferNumber(a);
+                    const numB = parseBufferNumber(b);
+
+                    if (numA === numB) {
+                        return a.localeCompare(b);
+                    }
+                    return numA - numB;
+                })
+                .reduce((acc, location) => {
+                    acc[location] = laneSummary[location];
+                    return acc;
+                }, {});
+        });
+
+        if (isVisible) {
+            displayTable(sortedSummary);
+        }
     }
 
-    init();
+    // Funzione che confronta il numero esatto nel nome del buffer con il filtro
+    function matchesExactBufferNumber(location, filter) {
+        const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
+        if (match) {
+            const bufferNumber = match[1];  // Estrae il numero
+            return bufferNumber === filter;  
+        }
+        return false;
+    }
+
+    // Funzione che estrae il numero dal nome del buffer per ordinarlo
+    function parseBufferNumber(bufferName) {
+        const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
+        return match ? parseInt(match[1], 10) : 0;  // Estrae solo il numero
+    }
+
+    function displayTable(sortedSummary) {
+        $('#contentContainer').remove();
+
+        const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
+
+        if (Object.keys(sortedSummary).length === 0) {
+            return;
+        }
+
+        const table = $('<table id="bufferSummaryTable" class="performance"></table>');
+
+        const thead = $('<thead></thead>');
+        thead.append(`
+            <tr>
+                <th>Buffer</th>
+                <th>Totale Container</th>
+                <th>Orari (CPT)</th>
+            </tr>
+        `);
+
+        const tbody = $('<tbody></tbody>');
+        let totalContainers = 0;
+
+        Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                const row = $('<tr class="locationRow"></tr>');
+                const count = data.count;
+                const cpts = data.cpts.join(', ');
+
+                row.append(`<td>${location}</td>`);
+                row.append(`<td>${count}</td>`);
+                row.append(`<td>${cpts}</td>`);
+                tbody.append(row);
+
+                totalContainers += count;
+            });
+        });
+
+        const tfoot = $('<tfoot></tfoot>');
+        const globalTotalRow = $('<tr><td colspan="3" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
+        tfoot.append(globalTotalRow);
+
+        table.append(thead);
+        table.append(tbody);
+        table.append(tfoot);
+        contentContainer.append(table);
+
+        $('body').append(contentContainer);
+    }
+
+    function addToggleButton() {
+        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
+
+        toggleButton.on('click', function() {
+            isVisible = !isVisible;
+            if (isVisible) {
+                fetchBufferSummary();
+                $(this).text("Nascondi Recuperi");
+            } else {
+                $('#contentContainer').remove();
+                $(this).text("Mostra Recuperi");
+            }
+        });
+
+        $('body').append(toggleButton);
+    }
+
+    fetchStackingFilterMap(function() {
+        addToggleButton();
+        fetchBufferSummary();
+    });
+
+    // Aggiorna i dati ogni 5 minuti
+    setInterval(fetchBufferSummary, 200000); // 200,000 ms = 3 minuti
 
 })();
