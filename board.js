@@ -10,6 +10,47 @@
     let bufferMacroAreas = {};
     let isVisible = false;
 
+    // Creazione pulsanti
+    function createButtons() {
+        const container = document.createElement('div');
+        container.style.position = 'fixed';
+        container.style.bottom = '10px';
+        container.style.right = '10px';
+        container.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        container.style.padding = '10px';
+        container.style.borderRadius = '5px';
+        container.style.color = 'white';
+        container.style.zIndex = '10000';
+
+        // Bottone per mostrare/aggiornare il grafico
+        const showChartButton = document.createElement('button');
+        showChartButton.innerText = 'Mostra Grafico';
+        showChartButton.style.margin = '5px';
+        showChartButton.onclick = () => {
+            isVisible = true;
+            fetchBufferSummary();
+        };
+
+        // Bottone per nascondere il grafico
+        const hideChartButton = document.createElement('button');
+        hideChartButton.innerText = 'Nascondi Grafico';
+        hideChartButton.style.margin = '5px';
+        hideChartButton.onclick = () => {
+            isVisible = false;
+            const canvas = document.getElementById('chartCanvas');
+            if (canvas) {
+                canvas.remove(); // Rimuove il canvas
+            }
+        };
+
+        // Append bottoni al contenitore
+        container.appendChild(showChartButton);
+        container.appendChild(hideChartButton);
+
+        // Aggiungi il contenitore al body
+        document.body.appendChild(container);
+    }
+
     // Funzione per caricare le macro aree
     function fetchBufferData(callback) {
         GM_xmlhttpRequest({
@@ -122,10 +163,11 @@
     // Mostra il grafico
     function displayChart(macroAreaData) {
         try {
-            const canvas = document.getElementById('chartCanvas');
+            let canvas = document.getElementById('chartCanvas');
             if (!canvas) {
-                console.error("Canvas per il grafico non trovato!");
-                return;
+                canvas = document.createElement('canvas');
+                canvas.id = 'chartCanvas';
+                document.body.appendChild(canvas);
             }
 
             const ctx = canvas.getContext('2d');
@@ -158,6 +200,7 @@
 
     // Inizializza il sistema
     function init() {
+        createButtons(); // Aggiungi pulsanti
         fetchBufferData(function () {
             fetchBufferSummary();
         });
