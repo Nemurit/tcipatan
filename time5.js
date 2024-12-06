@@ -82,6 +82,7 @@
     // Funzione per elaborare e visualizzare i dati dei container
     function processAndDisplay(containers) {
         const filteredSummary = {};
+        let totalContainers = 0; // Totale complessivo dei container
 
         containers.forEach(container => {
             const location = container.location || '';
@@ -97,10 +98,12 @@
                 (selectedCptFilter === '' || cpt.toUpperCase().includes(selectedCptFilter.toUpperCase()))  // Aggiungiamo il filtro per CPT
             ) {
                 if (!filteredSummary[lane]) {
-                    filteredSummary[lane] = { cpt: formatDateCPT(cpt), buffers: [] }; // Aggiungiamo la data formattata per CPT
+                    filteredSummary[lane] = { cpt: formatDateCPT(cpt), buffers: [], total: 0 }; // Aggiungiamo la data formattata per CPT e un campo per il totale
                 }
 
-                filteredSummary[lane].buffers.push({ location: location, cpt: formatDateCPT(cpt) });
+                filteredSummary[lane].buffers.push({ location: location });
+                filteredSummary[lane].total += 1; // Incrementa il totale per la lane
+                totalContainers += 1; // Incrementa il totale complessivo
             }
         });
 
@@ -111,7 +114,7 @@
         });
 
         if (isVisible) {
-            displayTable(sortedSummary);
+            displayTable(sortedSummary, totalContainers);
         }
     }
 
@@ -149,7 +152,7 @@
     }
 
     // Funzione per visualizzare la tabella
-    function displayTable(sortedSummary) {
+    function displayTable(sortedSummary, totalContainers) {
         $('#contentContainer').remove();
 
         const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
@@ -167,7 +170,7 @@
                     <input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="width: 100%; padding: 5px; box-sizing: border-box;">
                 </th>
                 <th>
-                    <input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                    <input id="laneFilterInput" type="text" placeholder="Filtro per LANE (es. LANE1, LANE2)" style="width: 100%; padding: 5px; box-sizing: border-box;">
                 </th>
                 <th>
                     <input id="cptFilterInput" type="text" placeholder="Filtro per CPT" style="width: 100%; padding: 5px; box-sizing: border-box;">
@@ -187,33 +190,36 @@
 
         Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
             const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-                <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - CPT: ${laneSummary.cpt}</td>
+                <td colspan="3" style="font-weight: bold; text-align: left;">${lane} (Totale: ${laneSummary.total} containers)</td>
             </tr>`);
 
             tbody.append(laneRow);
 
-            // Aggiungi i buffer della lane
             laneSummary.buffers.forEach(buffer => {
-                const bufferRow = $(`<tr class="containerRow" style="display: none;">
+                const bufferRow = $(`<tr class="bufferRow">
                     <td></td>
-                    <td>${buffer.cpt}</td>
+                    <td>${laneSummary.cpt}</td>
                     <td>${buffer.location}</td>
                 </tr>`);
                 tbody.append(bufferRow);
             });
         });
 
-        table.append(thead);
-        table.append(tbody);
+        tbody.append(`
+            <tr>
+                <td colspan="3" style="font-weight: bold; text-align: right;">Totale complessivo: ${totalContainers} containers</td>
+            </tr>
+        `);
+
+        table.append(thead).append(tbody);
         contentContainer.append(table);
         $('body').append(contentContainer);
 
-        // Gestire l'espansione della lane
-        $(".laneRow").on('click', function() {
-            const bufferRows = $(this).nextUntil('.laneRow');
-            bufferRows.toggle();
-        });
+        setupFilters();
+    }
 
+    // Funzione per attivare i filtri al tasto "Enter"
+    function setupFilters() {
         $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function(event) {
             if (event.key === "Enter") {
                 selectedBufferFilter = $(this).val();
@@ -236,6 +242,7 @@
         });
     }
 
+    // Aggiungi il pulsante per mostrare/nascondere i recuperi
     function addToggleButton() {
         const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
 
