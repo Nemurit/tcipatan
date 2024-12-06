@@ -5,7 +5,7 @@
     const stackingFilterMapUrl = 'https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/stacking_filter_map.json';
     let selectedBufferFilter = '';
     let selectedLaneFilters = [];
-    let selectedCptFilter = '';  // Aggiungiamo il filtro per CPT
+    let selectedCptFilter = '';  // Filtro per CPT
     let stackingToLaneMap = {};
     let isVisible = false;
 
@@ -17,13 +17,11 @@
             onload: function(response) {
                 try {
                     const laneData = JSON.parse(response.responseText);
-
                     for (const [lane, stackingFilters] of Object.entries(laneData)) {
                         stackingFilters.forEach(filter => {
                             stackingToLaneMap[filter] = lane.split('[')[0];
                         });
                     }
-
                     if (callback) callback();
                 } catch (error) {
                     console.error("Errore nel parsing della mappa JSON:", error);
@@ -82,7 +80,7 @@
     // Funzione per elaborare e visualizzare i dati dei container
     function processAndDisplay(containers) {
         const filteredSummary = {};
-        let totalContainers = 0; // Totale complessivo dei container
+        let totalContainers = 0;
 
         containers.forEach(container => {
             const location = container.location || '';
@@ -90,20 +88,19 @@
             const lane = stackingToLaneMap[stackingFilter] || 'N/A';
             const cpt = container.cpt || 'N/A';  // Aggiungiamo il campo CPT
 
-            // Filtra i container in base ai criteri
             if (
                 location.toUpperCase().startsWith("BUFFER") &&
                 (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
                 (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
-                (selectedCptFilter === '' || cpt.toUpperCase().includes(selectedCptFilter.toUpperCase()))  // Aggiungiamo il filtro per CPT
+                (selectedCptFilter === '' || cpt.toUpperCase().includes(selectedCptFilter.toUpperCase()))
             ) {
                 if (!filteredSummary[lane]) {
-                    filteredSummary[lane] = { cpt: formatDateCPT(cpt), buffers: [], total: 0 }; // Aggiungiamo la data formattata per CPT e un campo per il totale
+                    filteredSummary[lane] = { cpt: formatDateCPT(cpt), buffers: [], total: 0 };
                 }
 
                 filteredSummary[lane].buffers.push({ location: location });
-                filteredSummary[lane].total += 1; // Incrementa il totale per la lane
-                totalContainers += 1; // Incrementa il totale complessivo
+                filteredSummary[lane].total += 1;
+                totalContainers += 1;
             }
         });
 
@@ -124,7 +121,6 @@
             return 'N/A';
         }
 
-        // Assumiamo che cpt sia in formato stringa ISO (e.g. '2024-12-06T15:30:00Z')
         const date = new Date(cpt);
         const options = {
             year: 'numeric',
@@ -133,7 +129,7 @@
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit',
-            timeZone: 'Europe/Rome',  // Impostiamo il fuso orario su UTC +1
+            timeZone: 'Europe/Rome',
             hour12: false
         };
 
@@ -142,11 +138,10 @@
 
     // Funzione che confronta il numero esatto nel nome del buffer con il filtro
     function matchesExactBufferNumber(location, filter) {
-        const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
+        const match = location.match(/BUFFER\s*[A-Za-z](\d+)/);
         if (match) {
-            const bufferNumber = match[1];  // Estrae il numero
-            // Verifica che il numero estratto corrisponda esattamente al filtro
-            return bufferNumber === filter;  
+            const bufferNumber = match[1];
+            return bufferNumber === filter;
         }
         return false;
     }
