@@ -92,7 +92,7 @@
                 if (!filteredSummary[lane]) {
                     filteredSummary[lane] = {
                         totalContainers: 0,
-                        cpts: new Set(), // Per evitare duplicati negli orari
+                        cpts: [], // Per mantenere il formato originale
                         locations: {}
                     };
                 }
@@ -100,7 +100,7 @@
                 // Aggiorna i dati per la lane
                 filteredSummary[lane].totalContainers++;
                 if (container.cpt) {
-                    filteredSummary[lane].cpts.add(container.cpt);
+                    filteredSummary[lane].cpts.push(container.cpt); // Mantieni l'orario così com'è
                 }
 
                 // Aggiorna i dati per la location
@@ -109,11 +109,6 @@
                 }
                 filteredSummary[lane].locations[location].count++;
             }
-        });
-
-        // Converti i Set di `cpts` in array ordinati
-        Object.values(filteredSummary).forEach(laneData => {
-            laneData.cpts = Array.from(laneData.cpts).sort();
         });
 
         if (isVisible) {
@@ -154,7 +149,7 @@
         Object.entries(filteredSummary).forEach(([lane, laneData]) => {
             const row = $('<tr></tr>');
             const totalContainers = laneData.totalContainers;
-            const cpts = laneData.cpts.join(', ');
+            const cpts = laneData.cpts.join(', '); // Mostra tutti gli orari
 
             row.append(`<td>${lane}</td>`);
             row.append(`<td>${totalContainers}</td>`);
