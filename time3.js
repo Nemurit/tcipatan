@@ -209,7 +209,29 @@
         });
     }
 
-    // Attiviamo la visualizzazione della tabella
-    toggleTable();
+    // Funzione per aggiungere il pulsante di toggle
+    function addToggleButton() {
+        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
 
+        toggleButton.on('click', function() {
+            isVisible = !isVisible;
+            if (isVisible) {
+                fetchBufferSummary();
+                $(this).text("Nascondi Recuperi");
+            } else {
+                $('#contentContainer').remove();
+                $(this).text("Mostra Recuperi");
+            }
+        });
+
+        $('body').append(toggleButton);
+    }
+
+    fetchStackingFilterMap(function() {
+        addToggleButton();
+        fetchBufferSummary();
+    });
+
+    // Aggiorna i dati ogni 3 minuti
+    setInterval(fetchBufferSummary, 180000); // 180,000 ms = 3 minuti
 })();
