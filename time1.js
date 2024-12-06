@@ -7,9 +7,8 @@
     let selectedLaneFilters = [];
     let stackingToLaneMap = {};
     let isVisible = false;
+    let selectedTimeFilter = ''; // Nuovo filtro per orario
     let totalContainersCount = 0; // Totale generale
-    let currentPage = 1; // Impaginazione
-    const rowsPerPage = 10; // Numero di righe per pagina
 
     // Funzione di formattazione del timestamp CPT
     function formatCPTTimestamp(timestamp) {
@@ -155,7 +154,7 @@
         return false;
     }
 
-    // Mostra i dati in una tabella con impaginazione
+    // Mostra i dati in una tabella
     function displayTable(filteredSummary) {
         $('#contentContainer').remove();
 
@@ -178,10 +177,7 @@
         `);
 
         const tbody = $('<tbody></tbody>');
-        const entries = Object.entries(filteredSummary);
-        const paginatedEntries = entries.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
-
-        paginatedEntries.forEach(([lane, laneData]) => {
+        Object.entries(filteredSummary).forEach(([lane, laneData]) => {
             const row = $('<tr></tr>');
             const totalContainers = laneData.totalContainers;
             const buffers = laneData.buffers.join(', '); // Buffer in formato leggibile
@@ -201,55 +197,21 @@
         table.append(thead);
         table.append(tbody);
         contentContainer.append(table);
-
-        // Aggiungi i controlli di impaginazione
-        const pagination = $('<div id="pagination" style="text-align: center; margin-top: 10px;"></div>');
-        const totalPages = Math.ceil(entries.length / rowsPerPage);
-
-        if (currentPage > 1) {
-            pagination.append(`<button class="page-button" id="prevPage">← Precedente</button>`);
-        }
-        if (currentPage < totalPages) {
-            pagination.append(`<button class="page-button" id="nextPage">Successivo →</button>`);
-        }
-
-        contentContainer.append(pagination);
         $('body').append(contentContainer);
-
-        $('#prevPage').on('click', function() {
-            currentPage--;
-            fetchBufferSummary();
-        });
-
-        $('#nextPage').on('click', function() {
-            currentPage++;
-            fetchBufferSummary();
-        });
     }
 
-    // Aggiungi i filtri per lane e buffer
-    function addFilters() {
-        const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per Lane" style="position: fixed; top: 90px; right: 10px; padding: 5px; box-sizing: border-box;">');
-        const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per Buffer" style="position: fixed; top: 130px; right: 10px; padding: 5px; box-sizing: border-box;">');
-        
-        laneFilterInput.on('keydown', function(event) {
+    // Filtro per orario (input dell'utente)
+    function addTimeFilter() {
+        const timeFilterInput = $('<input id="timeFilterInput" type="text" placeholder="Filtro per Orario (es. 08:30)" style="position: fixed; top: 50px; right: 10px; padding: 5px; box-sizing: border-box;">');
+
+        timeFilterInput.on('keydown', function(event) {
             if (event.key === "Enter") {
-                selectedLaneFilters = $(this).val().split(',');
-                currentPage = 1; // Reset della pagina quando viene applicato un filtro
+                selectedTimeFilter = $(this).val();
                 fetchBufferSummary();
             }
         });
 
-        bufferFilterInput.on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedBufferFilter = $(this).val();
-                currentPage = 1; // Reset della pagina quando viene applicato un filtro
-                fetchBufferSummary();
-            }
-        });
-
-        $('body').append(laneFilterInput);
-        $('body').append(bufferFilterInput);
+        $('body').append(timeFilterInput);
     }
 
     // Aggiungi il pulsante di toggle per mostrare/nascondere la tabella
@@ -264,10 +226,34 @@
         $('body').append(toggleButton);
     }
 
+    // Aggiungi i filtri per lane e buffer
+    function addFilters() {
+        const laneFilterInput = $('<input id="laneFilterInput" type="text" placeholder="Filtro per Lane" style="position: fixed; top: 90px; right: 10px; padding: 5px; box-sizing: border-box;">');
+        const bufferFilterInput = $('<input id="bufferFilterInput" type="text" placeholder="Filtro per Buffer" style="position: fixed; top: 130px; right: 10px; padding: 5px; box-sizing: border-box;">');
+        
+        laneFilterInput.on('keydown', function(event) {
+            if (event.key === "Enter") {
+                selectedLaneFilters = $(this).val().split(',');
+                fetchBufferSummary();
+            }
+        });
+
+        bufferFilterInput.on('keydown', function(event) {
+            if (event.key === "Enter") {
+                selectedBufferFilter = $(this).val();
+                fetchBufferSummary();
+            }
+        });
+
+        $('body').append(laneFilterInput);
+        $('body').append(bufferFilterInput);
+    }
+
     // Funzione di avvio
     function init() {
         fetchStackingFilterMap(function() {
             addFilters();
+            addTimeFilter();
             addToggleButton();
         });
     }
