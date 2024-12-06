@@ -97,10 +97,10 @@
                 (selectedCptFilter === '' || cpt.toUpperCase().includes(selectedCptFilter.toUpperCase()))  // Aggiungiamo il filtro per CPT
             ) {
                 if (!filteredSummary[lane]) {
-                    filteredSummary[lane] = { cpt: cpt, buffers: [] }; // Aggiungiamo la lista di buffer per lane
+                    filteredSummary[lane] = { cpt: formatDateCPT(cpt), buffers: [] }; // Aggiungiamo la data formattata per CPT
                 }
 
-                filteredSummary[lane].buffers.push({ location: location, cpt: cpt });
+                filteredSummary[lane].buffers.push({ location: location, cpt: formatDateCPT(cpt) });
             }
         });
 
@@ -113,6 +113,28 @@
         if (isVisible) {
             displayTable(sortedSummary);
         }
+    }
+
+    // Funzione per formattare la data CPT in UTC +1
+    function formatDateCPT(cpt) {
+        if (cpt === 'N/A') {
+            return 'N/A';
+        }
+
+        // Assumiamo che cpt sia in formato stringa ISO (e.g. '2024-12-06T15:30:00Z')
+        const date = new Date(cpt);
+        const options = {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            timeZone: 'Europe/Rome',  // Impostiamo il fuso orario su UTC +1
+            hour12: false
+        };
+
+        return new Intl.DateTimeFormat('it-IT', options).format(date);
     }
 
     // Funzione che confronta il numero esatto nel nome del buffer con il filtro
@@ -188,28 +210,32 @@
 
         // Gestire l'espansione della lane
         $(".laneRow").on('click', function() {
-            const bufferRows = $(this).nextUntil(".laneRow");
+            const bufferRows = $(this).nextUntil('.laneRow');
             bufferRows.toggle();
         });
 
-        // Gestire i filtri
-        $('#bufferFilterInput').on('input', function() {
-            selectedBufferFilter = $(this).val();
-            fetchBufferSummary();
+        $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function(event) {
+            if (event.key === "Enter") {
+                selectedBufferFilter = $(this).val();
+                fetchBufferSummary();
+            }
         });
 
-        $('#laneFilterInput').on('input', function() {
-            selectedLaneFilters = $(this).val().split(',').map(item => item.trim()).filter(item => item.length > 0);
-            fetchBufferSummary();
+        $('#laneFilterInput').val(selectedLaneFilters.join(', ')).on('keydown', function(event) {
+            if (event.key === "Enter") {
+                selectedLaneFilters = $(this).val().split(',').map(filter => filter.trim());
+                fetchBufferSummary();
+            }
         });
 
-        $('#cptFilterInput').on('input', function() {
-            selectedCptFilter = $(this).val().trim();
-            fetchBufferSummary();
+        $('#cptFilterInput').val(selectedCptFilter).on('keydown', function(event) {
+            if (event.key === "Enter") {
+                selectedCptFilter = $(this).val();
+                fetchBufferSummary();
+            }
         });
     }
 
-    // Funzione per aggiungere il pulsante di toggle
     function addToggleButton() {
         const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
 
