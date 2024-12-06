@@ -304,6 +304,6 @@ function parseBufferNumber(bufferName) {
     });
 
     // Aggiorna i dati ogni 5 minuti
-    setInterval(fetchBufferSummary, 200000); // 200,000 ms = 3 minuti
+    setInterval(fetchBufferSummary, 100000); // 100,000 ms = 1.5 minuti
 
 })();
