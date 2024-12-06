@@ -116,6 +116,16 @@
         });
     }
 
+    // Funzione per ottenere la macro area di un buffer
+function getMacroAreaForBuffer(location) {
+    // Assumendo che bufferMacroAreas sia una mappa delle relazioni buffer -> macro area
+    if (bufferMacroAreas && bufferMacroAreas[location]) {
+        return bufferMacroAreas[location].macroArea || null;
+    }
+    return null; // Se non c'è corrispondenza, restituisce null
+}
+
+
     // Processa i dati e genera la tabella e il grafico
     function processAndDisplay(containers) {
         const filteredSummary = {};
