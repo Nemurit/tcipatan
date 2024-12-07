@@ -66,6 +66,7 @@
                         processAndDisplay(containers);
                     } else {
                         console.warn("Nessun dato trovato nella risposta API.");
+                        processAndDisplay([]);
                     }
                 } catch (error) {
                     console.error("Errore nella risposta API:", error);
@@ -124,9 +125,7 @@
                 }, {});
         });
 
-        if (isVisible) {
-            displayTable(sortedSummary);
-        }
+        displayTable(sortedSummary);
     }
 
     function matchesExactBufferNumber(location, filter) {
@@ -177,10 +176,6 @@
 
         const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
 
-        if (Object.keys(sortedSummary).length === 0) {
-            return;
-        }
-
         const table = $('<table id="bufferSummaryTable" class="performance"></table>');
 
         const thead = $('<thead></thead>');
@@ -208,6 +203,7 @@
 
         const tbody = $('<tbody></tbody>');
         let totalContainers = 0;
+        let foundResults = false;
 
         Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
             let laneTotal = 0;
@@ -237,14 +233,21 @@
             tbody.append(laneRow);
 
             Object.entries(laneSummary).forEach(([location, data]) => {
-                // Visualizza il CPT solo nelle righe delle lane
-                const row = $('<tr class="locationRow"></tr>');
-                row.append(`<td>${location}</td>`);
-                row.append(`<td>${data.count}</td>`);
-                row.append(`<td>${data.cpt ? convertTimestampToLocalTime(data.cpt) : 'N/A'}</td>`);
-                tbody.append(row);
+                if (data.count > 0) {
+                    foundResults = true;
+                    const row = $('<tr class="locationRow"></tr>');
+                    row.append(`<td>${location}</td>`);
+                    row.append(`<td>${data.count}</td>`);
+                    row.append(`<td>${data.cpt ? convertTimestampToLocalTime(data.cpt) : 'N/A'}</td>`);
+                    tbody.append(row);
+                }
             });
         });
+
+        if (!foundResults) {
+            const noResultsRow = $('<tr><td colspan="3" style="text-align: center; font-weight: bold;">Nessun risultato trovato</td></tr>');
+            tbody.append(noResultsRow);
+        }
 
         table.append(thead);
         table.append(tbody);
