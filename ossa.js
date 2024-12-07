@@ -89,6 +89,12 @@
         // Log per vedere cosa ricevi come timestamp
         console.log(`CPT timestamp for container at location ${location}:`, cpt);
 
+        // Verifica se il timestamp è undefined o null
+        if (cpt === undefined || cpt === null) {
+            console.warn(`CPT timestamp is missing for container at location ${location}`);
+            return;  // Salta questo contenitore se il timestamp è mancante
+        }
+
         // Se il timestamp è una stringa, lo converto in numero
         if (typeof cpt === 'string') {
             cpt = parseInt(cpt, 10); // Converte la stringa in numero
@@ -97,6 +103,7 @@
         // Verifica che il timestamp sia un numero valido
         if (isNaN(cpt) || cpt <= 0) {
             console.warn(`Invalid CPT timestamp for container at location ${location}:`, cpt);
+            return;  // Salta questo contenitore se il timestamp è invalido
         }
 
         // Usa direttamente il timestamp senza modificarlo
@@ -137,7 +144,6 @@
         displayTable(sortedSummary);
     }
 }
-
 
 
 
