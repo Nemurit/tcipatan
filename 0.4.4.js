@@ -9,6 +9,13 @@
     let selectedTimeFilter = ''; // Aggiunta qui
     let isVisible = false;
 
+    // Add the toggle button to the page
+    function addToggleButton() {
+        const button = $('<button id="toggleTableButton" style="position: fixed; top: 10px; right: 10px; z-index: 1000; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Toggle Table</button>');
+        button.on('click', toggleTableVisibility);
+        $('body').append(button);
+    }
+
     // Fetch the stacking filter map (mapping stacking filters to lanes)
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
@@ -198,45 +205,28 @@
             </tr>
             <tr>
                 <th colspan="2">
-                    <input id="timeFilterInput" type="text" placeholder="Filtro per ORA (es. 14:00-16:00)" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                    <input id="timeFilterInput" type="text" placeholder="Filtro per ORA (es. 14:30)" style="width: 100%; padding: 5px; box-sizing: border-box;">
                 </th>
-            </tr>
-            <tr>
-                <th>Buffer</th>
-                <th>Totale Container</th>
             </tr>
         `);
 
         const tbody = $('<tbody></tbody>');
-        let totalContainers = 0;
+        Object.entries(sortedSummary).forEach(([lane, locations]) => {
+            const laneRow = $('<tr></tr>');
+            laneRow.append(`<td colspan="2"><strong>${lane}</strong></td>`);
 
-        Object.entries(sortedSummary).forEach(([lane, data]) => {
-            const laneSummary = data;
-
-            let laneTotal = 0;
-            Object.entries(laneSummary).forEach(([location, locData]) => {
-                laneTotal += locData.count;
+            Object.entries(locations).forEach(([location, data]) => {
+                tbody.append(`
+                    <tr>
+                        <td>${location}</td>
+                        <td>${data.count}</td>
+                    </tr>
+                `);
             });
 
-            let laneColor = '';
-            if (laneTotal <= 10) {
-                laneColor = 'green';
-            } else if (laneTotal <= 30) {
-                laneColor = 'orange';
-            } else {
-                laneColor = 'red';
-            }
-
-            const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-                <td colspan="2" style="font-weight: bold; text-align: left;">
-                    Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span>
-                </td>
-            </tr>`);
-
-            tbody.append(laneRow);
+            table.append(thead).append(tbody);
         });
 
-        table.append(thead).append(tbody);
         contentContainer.append(table);
         $('body').append(contentContainer);
     }
@@ -254,6 +244,6 @@
     // Initialize by fetching the stacking filter map
     fetchStackingFilterMap(() => {
         // Now fetch the buffer summary once the stacking filter map is loaded
-        fetchBufferSummary();
+        addToggleButton();
     });
 })();
