@@ -288,17 +288,24 @@
             }
         });
 
-        $('#cptFilterInput').val(selectedCptFilter).on('keydown', function(event) {
-            if (event.key === "Enter") {
-                const newFilter = $(this).val();
-                if (isValidCptFilter(newFilter)) {
-                    selectedCptFilter = newFilter;
-                    fetchBufferSummary();
-                } else {
-                    alert("Il filtro inserito non è valido. Usare valori come '16, 16:15, 16:30'.");
-                }
+       $('#cptFilterInput').val(selectedCptFilter).on('keydown', function(event) {
+    if (event.key === "Enter") {
+        const newFilter = $(this).val();
+        if (newFilter === "") {
+            // Se il filtro CPT è vuoto, resettiamo il filtro
+            selectedCptFilter = '';
+            fetchBufferSummary();
+        } else {
+            if (isValidCptFilter(newFilter)) {
+                selectedCptFilter = newFilter;
+                fetchBufferSummary();
+            } else {
+                alert("Il filtro inserito non è valido. Usare valori come '16, 16:15, 16:30'.");
             }
-        });
+        }
+    }
+});
+
         
         function isValidCptFilter(filter) {
             const parts = filter.split(',').map(f => f.trim());
