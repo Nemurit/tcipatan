@@ -361,8 +361,8 @@
     if (!chartCanvas) {
         chartCanvas = document.createElement('canvas');
         chartCanvas.id = 'myChart';
-        chartCanvas.style.width = '200px';  // Smaller canvas width
-        chartCanvas.style.height = '200px'; // Smaller canvas height
+        chartCanvas.style.width = '400px';  // Smaller canvas width
+        chartCanvas.style.height = '400px'; // Smaller canvas height
         chartCanvas.style.margin = '20px auto'; // Center the canvas
         chartCanvas.style.display = 'block'; // Ensure it is a block element to be displayed
         document.body.appendChild(chartCanvas);
