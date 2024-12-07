@@ -79,38 +79,32 @@
 
     function processAndDisplay(containers) {
         const filteredSummary = {};
-        let hasMatchingFilters = false; // Variabile per verificare se almeno un dato corrisponde ai filtri
-    
+
         containers.forEach(container => {
             const location = container.location || '';
             const stackingFilter = container.stackingFilter || 'N/A';
             const lane = stackingToLaneMap[stackingFilter] || 'N/A';
             const cpt = container.cpt || null;
-    
-            // Verifica se il container soddisfa i criteri di filtro
-            const matchesBufferFilter = selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter);
-            const matchesLaneFilter = selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()));
-            const matchesCptFilter = selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter));
-    
+
+            // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
             if (
                 location.toUpperCase().startsWith("BUFFER") &&
-                matchesBufferFilter &&
-                matchesLaneFilter &&
-                matchesCptFilter
+                (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
+                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
+                (selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter)))
             ) {
                 if (!filteredSummary[lane]) {
                     filteredSummary[lane] = {};
                 }
-    
+
                 if (!filteredSummary[lane][location]) {
                     filteredSummary[lane][location] = { count: 0, cpt: cpt };
                 }
-    
+
                 filteredSummary[lane][location].count++;
-                hasMatchingFilters = true; // Almeno un dato corrisponde ai filtri
             }
         });
-    
+
         const sortedSummary = {};
         Object.keys(filteredSummary).forEach(lane => {
             const laneSummary = filteredSummary[lane];
@@ -118,7 +112,7 @@
                 .sort((a, b) => {
                     const numA = parseBufferNumber(a);
                     const numB = parseBufferNumber(b);
-    
+
                     if (numA === numB) {
                         return a.localeCompare(b);
                     }
@@ -129,19 +123,11 @@
                     return acc;
                 }, {});
         });
-    
-        // Se nessun filtro ha prodotto risultati, lascia la tabella visibile come se non fosse applicato alcun filtro
-        if (!hasMatchingFilters) {
-            console.warn("Nessun risultato trovato, mostrando tutti i dati non filtrati.");
-            displayTable({});
-            return;
-        }
-    
+
         if (isVisible) {
             displayTable(sortedSummary);
         }
     }
-    
 
     function matchesExactBufferNumber(location, filter) {
         const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
@@ -365,64 +351,10 @@
 
         $('body').append(toggleButton);
     }
-    function addChartToggleButton() {
-        const chartToggleButton = $('<button id="chartToggleButton" style="position: fixed; top: 50px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra/Nascondi Grafico</button>');
-
-        chartToggleButton.on('click', function() {
-            isChartVisible = !isChartVisible;
-            if (isChartVisible) {
-                $('#chartContainer').show();
-                $(this).text("Nascondi Grafico");
-            } else {
-                $('#chartContainer').hide();
-                $(this).text("Mostra Grafico");
-            }
-        });
-        generatePieChart(filteredSummary);
-        $('body').append(chartToggleButton);
-    }
-    
-    function generatePieChart(filteredSummary) {
-        const labels = Object.keys(filteredSummary);
-        const data = labels.map(location => filteredSummary[location].count);
-
-        const ctx = document.getElementById('pieChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: data,
-                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#FF9F40', '#4BC0C0', '#9966FF'],
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(tooltipItem) {
-                                return tooltipItem.label + ': ' + tooltipItem.raw + ' container(s)';
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    const chartContainer = $('<div id="chartContainer" style="position: fixed; top: 10px; left: 10px; width: 400px; height: 400px;"></div>');
-        const canvas = $('<canvas id="pieChart" width="400" height="400"></canvas>');
-        chartContainer.append(canvas);
-        $('body').append(chartContainer);
 
     fetchStackingFilterMap(function() {
         addToggleButton();
         fetchBufferSummary();
-        addChartToggleButton(); 
     });
 
     // Aggiorna i dati ogni 3 minuti
