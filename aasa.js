@@ -143,15 +143,15 @@
         return match ? parseInt(match[1], 10) : 0;
     }
 
-    function convertTimestampToUTCPlusOne(timestamp) {
+    function convertTimestampToUTC(timestamp) {
         const date = new Date(timestamp);
-        date.setHours(date.getHours() + 1); // Aggiungi 1 ora per UTC+1
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        return `${hours}:${minutes} ${day}/${month}/${year}`;
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const year = date.getUTCFullYear();
+        const hours = String(date.getUTCHours()).padStart(2, '0');
+        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+        const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+        return `${hours}:${minutes}:${seconds} ${day}/${month}/${year}`;
     }
 
     function filterCpt(cpt, filter) {
@@ -239,7 +239,7 @@
 
                 row.append(`<td>${location}</td>`);
                 row.append(`<td style="color: ${color};">${count}</td>`);
-                row.append(`<td>${data.cpt ? convertTimestampToUTCPlusOne(data.cpt) : 'N/A'}</td>`);
+                row.append(`<td>${data.cpt ? convertTimestampToUTC(data.cpt) : 'N/A'}</td>`);
                 tbody.append(row);
             });
 
