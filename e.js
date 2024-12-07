@@ -130,9 +130,10 @@
                 }, {});
         });
     
-        // Se nessun dato corrisponde ai filtri, mostriamo la tabella vuota
+        // Se nessun filtro ha prodotto risultati, lascia la tabella visibile come se non fosse applicato alcun filtro
         if (!hasMatchingFilters) {
-            displayTable({}); // Mostra una tabella vuota
+            console.warn("Nessun risultato trovato, mostrando tutti i dati non filtrati.");
+            displayTable({});
             return;
         }
     
@@ -140,6 +141,7 @@
             displayTable(sortedSummary);
         }
     }
+    
 
     function matchesExactBufferNumber(location, filter) {
         const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
@@ -363,6 +365,79 @@
 
         $('body').append(toggleButton);
     }
+
+    function addChartButton() {
+        const chartButton = $('<button id="chartButton" style="position: fixed; top: 50px; left: calc(50% - 40px); padding: 4px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Grafico</button>');
+    
+        chartButton.on('click', function() {
+            createBufferChart();
+        });
+    
+        $('body').append(chartButton);
+    }
+    
+    function createBufferChart() {
+        // Raccogliamo i dati per il grafico
+        const chartData = [];
+        const chartLabels = [];
+        Object.entries(stackingToLaneMap).forEach(([filter, lane]) => {
+            const totalContainers = Object.values(sortedSummary[lane] || {}).reduce((acc, data) => acc + data.count, 0);
+            chartData.push(totalContainers);
+            chartLabels.push(filter);
+        });
+    
+        // Creazione della finestra per il grafico
+        const chartContainerId = 'chartContainer';
+        if (!$(`#${chartContainerId}`).length) {
+            const chartContainer = $(`<div id="${chartContainerId}" style="position: fixed; top: 100px; left: 50%; transform: translateX(-50%); width: 600px; height: 400px; background: white; padding: 10px; border: 1px solid #ddd; z-index: 9999; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+                <canvas id="bufferChart" style="width: 100%; height: 100%;"></canvas>
+                <button id="closeChartButton" style="position: absolute; top: 5px; right: 5px; background-color: red; color: white; border: none; border-radius: 3px; padding: 5px;">X</button>
+            </div>`);
+            $('body').append(chartContainer);
+    
+            $('#closeChartButton').on('click', function() {
+                $(`#${chartContainerId}`).remove();
+            });
+        }
+    
+        // Configurazione del grafico con Chart.js
+        const ctx = document.getElementById('bufferChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    label: 'Numero di Container per Buffer',
+                    data: chartData,
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    }
+    
+    // Aggiunta del pulsante per il grafico
+    fetchStackingFilterMap(function() {
+        addToggleButton();
+        addChartButton(); // Aggiungiamo il pulsante per il grafico
+        fetchBufferSummary();
+    });
+    
 
     fetchStackingFilterMap(function() {
         addToggleButton();
