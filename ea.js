@@ -366,84 +366,92 @@
         $('body').append(toggleButton);
     }
 
-    function addChartButton() {
-        const chartButton = $('<button id="chartButton" style="position: fixed; top: 50px; left: calc(50% - 40px); padding: 4px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Grafico</button>');
-    
-        chartButton.on('click', function() {
-            createBufferChart();
-        });
-    
-        $('body').append(chartButton);
+  function addChartButton() {
+    const chartButton = $('<button id="chartButton" style="position: fixed; top: 50px; left: calc(50% - 40px); padding: 4px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Grafico</button>');
+
+    chartButton.on('click', function () {
+        createBufferChart();
+    });
+
+    $('body').append(chartButton);
+}
+
+function createBufferChart() {
+    if (!sortedSummary || Object.keys(sortedSummary).length === 0) {
+        alert("Nessun dato disponibile per generare il grafico.");
+        return;
     }
-    
-    function createBufferChart() {
-        // Raccogliamo i dati per il grafico
-        const chartData = [];
-        const chartLabels = [];
-        Object.entries(stackingToLaneMap).forEach(([filter, lane]) => {
-            const totalContainers = Object.values(sortedSummary[lane] || {}).reduce((acc, data) => acc + data.count, 0);
-            chartData.push(totalContainers);
-            chartLabels.push(filter);
+
+    // Raccogli i dati per il grafico
+    const chartLabels = [];
+    const chartData = [];
+    Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
+        Object.entries(laneSummary).forEach(([buffer, data]) => {
+            chartLabels.push(buffer);
+            chartData.push(data.count);
         });
-    
-        // Creazione della finestra per il grafico
-        const chartContainerId = 'chartContainer';
-        if (!$(`#${chartContainerId}`).length) {
-            const chartContainer = $(`<div id="${chartContainerId}" style="position: fixed; top: 100px; left: 50%; transform: translateX(-50%); width: 600px; height: 400px; background: white; padding: 10px; border: 1px solid #ddd; z-index: 9999; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+    });
+
+    if (chartData.length === 0) {
+        alert("Nessun dato disponibile per generare il grafico.");
+        return;
+    }
+
+    // Creazione della finestra per il grafico
+    const chartContainerId = 'chartContainer';
+    if (!$(`#${chartContainerId}`).length) {
+        const chartContainer = $(`
+            <div id="${chartContainerId}" style="position: fixed; top: 100px; left: 50%; transform: translateX(-50%); width: 600px; height: 400px; background: white; padding: 10px; border: 1px solid #ddd; z-index: 9999; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
                 <canvas id="bufferChart" style="width: 100%; height: 100%;"></canvas>
                 <button id="closeChartButton" style="position: absolute; top: 5px; right: 5px; background-color: red; color: white; border: none; border-radius: 3px; padding: 5px;">X</button>
-            </div>`);
-            $('body').append(chartContainer);
-    
-            $('#closeChartButton').on('click', function() {
-                $(`#${chartContainerId}`).remove();
-            });
-        }
-    
-        // Configurazione del grafico con Chart.js
-        const ctx = document.getElementById('bufferChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: chartLabels,
-                datasets: [{
-                    label: 'Numero di Container per Buffer',
-                    data: chartData,
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                },
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                responsive: true,
-                maintainAspectRatio: false
-            }
+            </div>
+        `);
+        $('body').append(chartContainer);
+
+        $('#closeChartButton').on('click', function () {
+            $(`#${chartContainerId}`).remove();
         });
     }
-    
-    // Aggiunta del pulsante per il grafico
-    fetchStackingFilterMap(function() {
-        addToggleButton();
-        addChartButton(); // Aggiungiamo il pulsante per il grafico
-        fetchBufferSummary();
-    });
-    
 
-    fetchStackingFilterMap(function() {
-        addToggleButton();
-        fetchBufferSummary();
+    // Configurazione del grafico a torta con Chart.js
+    const ctx = document.getElementById('bufferChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: chartLabels,
+            datasets: [{
+                label: 'Numero di Container per Buffer',
+                data: chartData,
+                backgroundColor: chartData.map((_, index) => `hsl(${index * 30}, 70%, 50%)`),
+                borderWidth: 1,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (tooltipItem) {
+                            return `${tooltipItem.label}: ${tooltipItem.raw} container`;
+                        }
+                    }
+                }
+            }
+        }
     });
+}
 
+// Aggiunta del pulsante per il grafico
+fetchStackingFilterMap(function () {
+    addToggleButton();
+    addChartButton(); // Aggiungiamo il pulsante per il grafico
+    fetchBufferSummary();
+});
+
+    
     // Aggiorna i dati ogni 3 minuti
     setInterval(fetchBufferSummary, 180000); // 180,000 ms = 3 minuti
 })();
