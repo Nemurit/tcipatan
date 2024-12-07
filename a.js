@@ -140,11 +140,15 @@
 
 // Modifica della funzione di filtro per il buffer
 function matchesExactBufferString(location, filter) {
-    // Se il filtro è esattamente uguale alla location, restituisce true
-    if (location.toUpperCase().includes(filter.toUpperCase())) {
-        return true;
+    // Usa una regular expression per verificare se il nome del buffer contiene esattamente il numero fornito
+    const match = location.match(/BUFFER\s*(\d+)/); // Cerca solo il numero nel nome del buffer
+    if (match) {
+        const bufferNumber = match[1]; // Ottieni il numero del buffer
+        return bufferNumber === filter; // Confronta se il numero del buffer è esattamente uguale al filtro
     }
-    return false;
+    return false; // Restituisce false se non c'è un numero nel nome del buffer
+}
+
 }
 
 // All'interno della funzione processAndDisplay
@@ -352,10 +356,11 @@ function parseBufferNumber(bufferName) {
 
         $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function(event) {
             if (event.key === "Enter") {
-                selectedBufferFilter = $(this).val();
-                fetchBufferSummary();
+                selectedBufferFilter = $(this).val().trim(); // Prendi il valore del filtro
+                fetchBufferSummary(); // Ricarica i dati con il nuovo filtro
             }
         });
+        
 
         $('#laneFilterInput').val(selectedLaneFilters.join(', ')).on('keydown', function(event) {
             if (event.key === "Enter") {
