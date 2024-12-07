@@ -372,59 +372,61 @@
             }
         `);
     }
-    function addChartToggleButton() {
-        const button = $('<button id="toggleChartButton">Mostra Grafico</button>');
-        button.css({
-            position: 'fixed',
-            bottom: '10px',
-            left: '10px',
-            padding: '10px',
-            background: '#4CAF50',
-            color: '#fff',
-            border: 'none',
-            cursor: 'pointer',
-            borderRadius: '5px',
-            fontSize: '14px'
-        });
-    
-        button.on('click', function() {
-            isChartVisible = !isChartVisible;
-            if (isChartVisible) {
-                generatePieChart(filteredSummary);
-                $(this).text('Chiudi Grafico'); // Cambia testo del pulsante quando il grafico è visibile
-            } else {
-                $('#chartContainer').remove(); // Rimuovi il grafico quando viene chiuso
-                $(this).text('Mostra Grafico'); // Ripristina il testo del pulsante
-            }
-        });
-    
-        $('body').append(button);
-    }
-    
     function generatePieChart(filteredSummary) {
         if (!filteredSummary || Object.keys(filteredSummary).length === 0) {
             console.warn("No data to generate the chart.");
             return;
         }
     
-        // Aggrega i dati per area
-        const areaData = {};  // To store the total count of containers per area
+        // Create the chart container dynamically if it doesn't exist
+        let chartContainer = document.getElementById('chartContainer');
+        if (!chartContainer) {
+            chartContainer = document.createElement('div');
+            chartContainer.id = 'chartContainer';
+            chartContainer.style.display = 'none'; // Initially hidden
+            chartContainer.style.position = 'fixed';
+            chartContainer.style.top = '10px';
+            chartContainer.style.left = '50%';
+            chartContainer.style.transform = 'translateX(-50%)';
+            chartContainer.style.padding = '20px';
+            chartContainer.style.backgroundColor = 'rgba(0, 0, 0, 0)';  // Background transparent
+            chartContainer.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
+            chartContainer.style.borderRadius = '10px';
+            chartContainer.style.width = '500px';
+            chartContainer.style.maxWidth = '100%';
+            chartContainer.style.zIndex = '1000';
+            chartContainer.style.boxSizing = 'border-box'; // Ensure padding is included in the width/height calculation
+    
+            // Add a canvas to the container
+            const chartCanvas = document.createElement('canvas');
+            chartCanvas.id = 'myChart';
+            chartCanvas.style.width = '100%';  // Full width inside container
+            chartCanvas.style.height = '400px'; // Fixed height for chart
+            chartContainer.appendChild(chartCanvas);
+    
+            document.body.appendChild(chartContainer);
+        }
+    
+        // Aggregate data by buffer location
+        const areaData = {};  // To store the total count of containers per buffer location
     
         Object.entries(filteredSummary).forEach(([area, laneSummary]) => {
             Object.entries(laneSummary).forEach(([lane, data]) => {
-                if (!areaData[area]) {
-                    areaData[area] = 0;
+                if (location.startsWith("BUFFER")) {
+                    if (!areaData[area]) {
+                        areaData[data] = 0;
+                    }
+                    areaData[area] += data.count;  // Add up the count of containers for the buffer location
                 }
-                areaData[area] += data.count;  // Sum the count of containers for the area
             });
         });
     
-        // Prepara i dati per il grafico
-        const labels = Object.keys(areaData);
-        const data = labels.map(area => areaData[area]);
+        // Prepare data for the chart
+        const labels = Object.keys(bufferLocations);
+        const data = labels.map(location => bufferLocations[location]);
     
         if (data.length === 0) {
-            console.warn("No area data to chart.");
+            console.warn("No buffer locations to chart.");
             return;
         }
     
@@ -467,7 +469,6 @@
         }
     }
     
-    
     function addChartToggleButton() {
         const button = $('<button id="toggleChartButton"  style="position: fixed; top: 35px; left: calc(50% - 22px); padding: 10px; background: rgb(0, 123, 255); color: white; border: none; cursor: pointer; border-radius: 5px; font-size: 14px;">Mostra grafico recuperi</button>');
         
@@ -486,6 +487,7 @@
     
         $('body').append(button);
     }
+    
 
 
     function addToggleButton() {
