@@ -9,6 +9,7 @@
     let stackingToLaneMap = {};
     let sortedSummary = {}; // Variabile globale per i dati filtrati e ordinati
     let isVisible = false;
+console.log(sortedSummary);  // Verifica i dati nel sortedSummary
 
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
