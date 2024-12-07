@@ -39,7 +39,7 @@
         const endTime = new Date().getTime();
         const startTime = endTime - 24 * 60 * 60 * 1000;
 
-        const apiUrl = https://www.amazonlogistics.eu/sortcenter/vista/controller/getContainersDetailByCriteria;
+        const apiUrl = `https://www.amazonlogistics.eu/sortcenter/vista/controller/getContainersDetailByCriteria`;
         const payload = {
             entity: "getContainersDetailByCriteria",
             nodeId: nodeId,
@@ -58,7 +58,7 @@
 
         GM_xmlhttpRequest({
             method: "GET",
-            url: ${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })},
+            url: `${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })}`,
             onload: function(response) {
                 try {
                     const data = JSON.parse(response.responseText);
@@ -137,7 +137,7 @@ function formatCPT(date) {
     const optionsDate = { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', year: 'numeric' };
     const time = date.toLocaleTimeString('it-IT', optionsTime);
     const dateStr = date.toLocaleDateString('it-IT', optionsDate);
-    return ${time} ${dateStr};
+    return `${time} ${dateStr}`;
 }
 
 // Funzione che confronta il numero esatto nel nome del buffer con il filtro
@@ -171,7 +171,7 @@ function parseBufferNumber(bufferName) {
         const table = $('<table id="bufferSummaryTable" class="performance"></table>');
 
         const thead = $('<thead></thead>');
-        thead.append(
+        thead.append(`
             <tr>
                 <th>
                     <input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="width: 100%; padding: 5px; box-sizing: border-box;">
@@ -184,14 +184,14 @@ function parseBufferNumber(bufferName) {
                 <input id="timeFilterInput" type="text" placeholder="Filtro per ORA (es. 14:00-16:00)" style="width: 100%; padding: 5px; box-sizing: border-box;">
             </th>
         </tr>
-        );
+        `);
 
-        thead.append(
+        thead.append(`
             <tr>
                 <th>Buffer</th>
                 <th>Totale Container</th>
             </tr>
-        );
+        `);
 
         const tbody = $('<tbody></tbody>');
         let totalContainers = 0;
@@ -214,11 +214,11 @@ function parseBufferNumber(bufferName) {
                 laneColor = 'red';
             }
     
-            const laneRow = $(<tr class="laneRow" style="cursor: pointer;">
+            const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
                 <td colspan="2" style="font-weight: bold; text-align: left;">
                     Lane: ${lane} - CPT: <span>${laneCPT}</span> - Totale: <span style="color: ${laneColor};">${laneTotal}</span>
                 </td>
-            </tr>);
+            </tr>`);
     
             laneRow.on('click', function() {
                 const nextRows = $(this).nextUntil('.laneRow');
@@ -240,8 +240,8 @@ function parseBufferNumber(bufferName) {
                     color = 'red';
                 }
     
-                row.append(<td>${location}</td>);
-                row.append(<td style="color: ${color};">${count}</td>);
+                row.append(`<td>${location}</td>`);
+                row.append(`<td style="color: ${color};">${count}</td>`);
                 tbody.append(row);
             });
     
@@ -280,7 +280,7 @@ function parseBufferNumber(bufferName) {
             }
         });
 
-        GM_addStyle(
+        GM_addStyle(`
             #bufferSummaryTable {
                 table-layout: auto;
                 margin: 20px 0;
@@ -307,7 +307,7 @@ function parseBufferNumber(bufferName) {
             .locationRow {
                 display: none;
             }
-        );
+        `);
     }
 
     function addToggleButton() {
