@@ -288,15 +288,27 @@
     if (!chartCanvas) {
         chartCanvas = document.createElement('canvas');
         chartCanvas.id = 'myChart';
-        chartCanvas.style.width = '100%';
-        chartCanvas.style.height = '300px';
+        chartCanvas.style.width = '300px';  // Smaller canvas width
+        chartCanvas.style.height = '300px'; // Smaller canvas height
         document.body.appendChild(chartCanvas);
     }
 
-    const labels = Object.keys(filteredSummary);
-    const data = labels.map(location => {
-        return Object.values(filteredSummary[location]).reduce((acc, locData) => acc + locData.count, 0);
+    // Aggregate data by buffer location
+    const bufferLocations = {};  // To store the total count of containers per buffer location
+
+    Object.entries(filteredSummary).forEach(([lane, laneSummary]) => {
+        Object.entries(laneSummary).forEach(([location, data]) => {
+            if (location.startsWith("BUFFER")) {
+                if (!bufferLocations[location]) {
+                    bufferLocations[location] = 0;
+                }
+                bufferLocations[location] += data.count;  // Add up the count of containers for the buffer location
+            }
+        });
     });
+
+    const labels = Object.keys(bufferLocations);
+    const data = labels.map(location => bufferLocations[location]);
 
     const chartData = {
         labels: labels,
