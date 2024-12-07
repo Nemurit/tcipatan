@@ -392,13 +392,11 @@
             chartContainer.id = 'chartContainer';
             chartContainer.style.display = 'none'; // Initially hidden
             chartContainer.style.position = 'fixed';
-            chartContainer.style.top = '10px';
+            chartContainer.style.top = '50px';
             chartContainer.style.left = '50%';
-            chartContainer.style.transform = 'translateX(-50%)';
             chartContainer.style.padding = '20px';
             chartContainer.style.backgroundColor = 'rgba(0, 0, 0, 0)';  // Background transparent
             chartContainer.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
-            chartContainer.style.borderRadius = '10px';
             chartContainer.style.width = '500px';
             chartContainer.style.maxWidth = '100%';
             chartContainer.style.zIndex = '1000';
