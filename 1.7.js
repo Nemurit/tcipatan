@@ -135,11 +135,14 @@ function processAndDisplay(containers) {
     }
 }
 
-// Funzione per convertire una data in formato UTC+1
+// Funzione per convertire una data in formato HH:mm:ss DD/MM/YYYY
 function formatCPT(date) {
     if (!date) return 'N/A';
-    const options = { timeZone: 'Europe/Rome', hour: '2-digit', minute: '2-digit', second: '2-digit', year: 'numeric', month: '2-digit', day: '2-digit' };
-    return date.toLocaleString('it-IT', options); // Formatta la data in formato italiano UTC+1
+    const optionsTime = { timeZone: 'Europe/Rome', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+    const optionsDate = { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', year: 'numeric' };
+    const time = date.toLocaleTimeString('it-IT', optionsTime);
+    const dateStr = date.toLocaleDateString('it-IT', optionsDate);
+    return `${time} ${dateStr}`;
 }
 
 function displayTable(sortedSummary) {
@@ -160,6 +163,11 @@ function displayTable(sortedSummary) {
             </th>
             <th>
                 <input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="width: 100%; padding: 5px; box-sizing: border-box;">
+            </th>
+        </tr>
+        <tr>
+            <th colspan="2">
+                <input id="timeFilterInput" type="text" placeholder="Filtro per ORA (es. 14:00-16:00)" style="width: 100%; padding: 5px; box-sizing: border-box;">
             </th>
         </tr>
     `);
@@ -251,6 +259,18 @@ function displayTable(sortedSummary) {
         }
     });
 
+    $('#timeFilterInput').on('keydown', function(event) {
+        if (event.key === "Enter") {
+            const timeRange = $(this).val().split('-').map(time => time.trim());
+            if (timeRange.length === 2) {
+                const [startTime, endTime] = timeRange;
+                selectedStartTime = startTime;
+                selectedEndTime = endTime;
+                fetchBufferSummary();
+            }
+        }
+    });
+
     GM_addStyle(`
         #bufferSummaryTable {
             table-layout: auto;
@@ -280,6 +300,7 @@ function displayTable(sortedSummary) {
         }
     `);
 }
+
 
 
 
