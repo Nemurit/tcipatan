@@ -160,18 +160,27 @@
     function filterCpt(cpt, filter) {
         try {
             const date = new Date(cpt);
-            const hourMinute = date.toISOString().slice(11, 16); // Ora e minuti (es. 16:15)
+            const hourMinute = date.toISOString().slice(11, 16); // Otteniamo "HH:MM"
     
-            // Suddivide il filtro in valori multipli
+            // Dividiamo il filtro in parti (es. "16", "16:15", ecc.)
             const filterParts = filter.split(',').map(f => f.trim());
-            
-            // Verifica se uno dei valori del filtro corrisponde
-            return filterParts.some(part => hourMinute.startsWith(part) || hourMinute === part);
+    
+            // Confrontiamo ogni parte del filtro con il valore esatto di "HH:MM"
+            return filterParts.some(part => {
+                // Se il filtro è solo "16", controlliamo che corrisponda all'ora
+                if (/^\d{1,2}$/.test(part)) {
+                    const hour = part.padStart(2, '0'); // Assicuriamo che l'ora sia "HH"
+                    return hour === hourMinute.slice(0, 2); // Confrontiamo solo l'ora
+                }
+                // Se il filtro è "HH:MM", confrontiamo l'intero valore
+                return part === hourMinute;
+            });
         } catch (error) {
             console.warn("Errore nel parsing del filtro CPT o valore non valido:", error);
             return false;
         }
     }
+    
     
     function displayTable(sortedSummary) {
         $('#contentContainer').remove();
