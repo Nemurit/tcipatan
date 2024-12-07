@@ -139,84 +139,29 @@
 }
 
 function matchesExactBufferNumber(location, filter) {
-    console.log(`Checking filter: ${filter} against location: ${location}`);
+    const match = location.match(/BUFFER\s*([A-Za-z]*)(\d+)/); // Capture both the letter(s) and the number
+    if (match) {
+        const bufferLetter = match[1]; // Get the letter part (if any)
+        const bufferNumber = match[2]; // Get the numeric part of the buffer
 
-    // Gestisce il formato intervallo "BUFFER E3 - F3"
-    const rangeMatch = filter.match(/^BUFFER\s*([A-Za-z]+)(\d+)\s*-\s*([A-Za-z]+)(\d+)$/);
-    if (rangeMatch) {
-        const startPrefix = rangeMatch[1];
-        const startNum = parseInt(rangeMatch[2], 10);
-        const endPrefix = rangeMatch[3];
-        const endNum = parseInt(rangeMatch[4], 10);
-        
-        console.log(`Range match found: ${startPrefix}${startNum} to ${endPrefix}${endNum}`);
-        
-        const bufferMatch = location.match(/^BUFFER\s*([A-Za-z]+)(\d+)$/);
-        if (bufferMatch) {
-            const bufferPrefix = bufferMatch[1];
-            const bufferNum = parseInt(bufferMatch[2], 10);
-            
-            // Verifica che il prefisso sia nello stesso intervallo (o uguale)
-            const prefixInRange = bufferPrefix === startPrefix || bufferPrefix === endPrefix;
-            
-            // Verifica che il numero sia nell'intervallo
-            const isInRange = (bufferPrefix === startPrefix && bufferNum >= startNum) || 
-                              (bufferPrefix === endPrefix && bufferNum <= endNum) ||
-                              (bufferPrefix !== startPrefix && bufferPrefix !== endPrefix && 
-                               bufferNum >= startNum && bufferNum <= endNum);
+        // Check if the filter matches any part of the buffer
+        // The filter can be a full match like "BUFFER E3", or just "E3", "3", etc.
+        const filterParts = filter.split('-').map(part => part.trim());
 
-            console.log(`Buffer prefix: ${bufferPrefix}, Buffer number: ${bufferNum}, Is in range? ${isInRange}`);
-            return isInRange;
+        // If there's a filter for the letter and number
+        if (filterParts.length === 2) {
+            const filterLetter = filterParts[0];
+            const filterNumber = filterParts[1];
+
+            return (bufferLetter.toUpperCase() === filterLetter.toUpperCase() || !filterLetter) &&
+                   (bufferNumber === filterNumber || !filterNumber);
         }
+
+        // If the filter is just a number or letter (like "3" or "E3")
+        return (bufferLetter.toUpperCase() + bufferNumber).includes(filter.toUpperCase());
     }
-
-    // Gestisce il formato "BUFFER E3" o "BUFFER 3"
-    const singleMatch = filter.match(/^BUFFER\s*([A-Za-z]+)?(\d+)$/);
-    if (singleMatch) {
-        const filterPrefix = singleMatch[1] || '';
-        const filterNumber = parseInt(singleMatch[2], 10);
-
-        console.log(`Single match found: ${filterPrefix}${filterNumber}`);
-        
-        const bufferMatch = location.match(/^BUFFER\s*([A-Za-z]+)?(\d+)$/);
-        if (bufferMatch) {
-            const locationPrefix = bufferMatch[1] || '';
-            const locationNumber = parseInt(bufferMatch[2], 10);
-            
-            const matchesPrefix = (filterPrefix === '' || locationPrefix === filterPrefix);
-            const isNumberMatch = locationNumber === filterNumber;
-            
-            console.log(`Location prefix: ${locationPrefix}, Location number: ${locationNumber}, Matches prefix? ${matchesPrefix}, Matches number? ${isNumberMatch}`);
-            
-            if (matchesPrefix && isNumberMatch) {
-                return true;
-            }
-        }
-    }
-
-    console.log(`No match found for filter: ${filter} in location: ${location}`);
     return false;
 }
-
-// Esempio di dati
-const bufferArray = [
-    "BUFFER E3", "BUFFER E4", "BUFFER E5", "BUFFER E6", 
-    "BUFFER E7", "BUFFER E8", "BUFFER E9", "BUFFER F3", 
-    "BUFFER F4", "BUFFER F5"
-];
-
-// Filtro che cerchi
-const filter = "BUFFER E6 - E7"; // Modifica questo valore per testare
-
-// Filtraggio dell'array
-const filteredBuffers = bufferArray.filter(location => matchesExactBufferNumber(location, filter));
-
-console.log("Filtered Buffers:", filteredBuffers);
-
-
-
-
-
 
     function parseBufferNumber(bufferName) {
         const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
