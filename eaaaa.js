@@ -94,36 +94,15 @@
                 (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
                 (selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter)))
             ) {
-                if (!filteredSummary[lane]) {
-                    filteredSummary[lane] = {};
+                if (!filteredSummary[location]) {
+                    filteredSummary[location] = { count: 0 };
                 }
 
-                if (!filteredSummary[lane][location]) {
-                    filteredSummary[lane][location] = { count: 0, cpt: cpt };
-                }
-
-                filteredSummary[lane][location].count++;
+                filteredSummary[location].count++;
             }
         });
 
-        sortedSummary = {}; // Ripulisce e aggiorna la variabile globale
-        Object.keys(filteredSummary).forEach(lane => {
-            const laneSummary = filteredSummary[lane];
-            sortedSummary[lane] = Object.keys(laneSummary)
-                .sort((a, b) => {
-                    const numA = parseBufferNumber(a);
-                    const numB = parseBufferNumber(b);
-
-                    if (numA === numB) {
-                        return a.localeCompare(b);
-                    }
-                    return numA - numB;
-                })
-                .reduce((acc, location) => {
-                    acc[location] = laneSummary[location];
-                    return acc;
-                }, {});
-        });
+        sortedSummary = filteredSummary; // Usando direttamente la variabile globale per i buffer sommati
 
         if (isVisible) {
             displayTable(sortedSummary);
@@ -137,11 +116,6 @@
             return bufferNumber === filter;
         }
         return false;
-    }
-
-    function parseBufferNumber(bufferName) {
-        const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
-        return match ? parseInt(match[1], 10) : 0;
     }
 
     function convertTimestampToLocalTime(timestamp) {
@@ -216,43 +190,15 @@
         const tbody = $('<tbody></tbody>');
         let totalContainers = 0;
 
-        Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
-            let laneTotal = 0;
-
-            Object.entries(laneSummary).forEach(([location, data]) => {
-                laneTotal += data.count;
-            });
-
-            let laneColor = '';
-            if (laneTotal <= 10) {
-                laneColor = 'green';
-            } else if (laneTotal <= 30) {
-                laneColor = 'orange';
-            } else {
-                laneColor = 'red';
-            }
-
-            const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-                <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
+        Object.entries(sortedSummary).forEach(([location, data]) => {
+            const bufferRow = $(`<tr>
+                <td>${location}</td>
+                <td>${data.count}</td>
+                <td></td>
             </tr>`);
+            tbody.append(bufferRow);
 
-            laneRow.on('click', function() {
-                const nextRows = $(this).nextUntil('.laneRow');
-                nextRows.toggle();
-            });
-
-            tbody.append(laneRow);
-
-            Object.entries(laneSummary).forEach(([location, data]) => {
-                const bufferRow = $(`<tr class="bufferRow" style="display: none;">
-                    <td>${location}</td>
-                    <td>${data.count}</td>
-                    <td>${data.cpt}</td>
-                </tr>`);
-                tbody.append(bufferRow);
-            });
-
-            totalContainers += laneTotal;
+            totalContainers += data.count;
         });
 
         table.append(thead);
@@ -290,10 +236,8 @@
         }
 
         const chartData = [];
-        Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
-            Object.entries(laneSummary).forEach(([buffer, data]) => {
-                chartData.push({ label: buffer, value: data.count });
-            });
+        Object.entries(sortedSummary).forEach(([buffer, data]) => {
+            chartData.push({ label: buffer, value: data.count });
         });
 
         if (chartData.length === 0) {
