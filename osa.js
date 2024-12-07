@@ -86,12 +86,16 @@
         const lane = stackingToLaneMap[stackingFilter] || 'N/A';
         const cpt = container.physicalLocationMoveTimestamp || 0;
 
+        // Verifica che il timestamp sia un numero valido
         if (isNaN(cpt) || cpt <= 0) {
             console.warn(`Invalid CPT timestamp for container at location ${location}:`, cpt);
         }
 
+        // Usa direttamente il timestamp senza modificarlo
         const cptDate = new Date(cpt);
-        const cptFormatted = (isNaN(cptDate.getTime())) ? 'N/A' : formatCPT(cptDate); // Controlla se la data è valida
+
+        // Verifica che la data sia valida prima di formattarla
+        const cptFormatted = (isNaN(cptDate.getTime())) ? 'N/A' : formatCPT(cptDate);
 
         if (
             location.toUpperCase().startsWith("BUFFER") &&
@@ -109,22 +113,23 @@
             filteredSummary[lane].containers[location].count++;
         }
     });
-        
-        const sortedSummary = {};
-        Object.keys(filteredSummary).forEach(lane => {
-            const laneSummary = filteredSummary[lane];
-            sortedSummary[lane] = Object.keys(laneSummary.containers)
-                .sort((a, b) => parseBufferNumber(a) - parseBufferNumber(b))
-                .reduce((acc, location) => {
-                    acc[location] = laneSummary.containers[location];
-                    return acc;
-                }, {});
-        });
 
-        if (isVisible) {
-            displayTable(sortedSummary);
-        }
+    const sortedSummary = {};
+    Object.keys(filteredSummary).forEach(lane => {
+        const laneSummary = filteredSummary[lane];
+        sortedSummary[lane] = Object.keys(laneSummary.containers)
+            .sort((a, b) => parseBufferNumber(a) - parseBufferNumber(b))
+            .reduce((acc, location) => {
+                acc[location] = laneSummary.containers[location];
+                return acc;
+            }, {});
+    });
+
+    if (isVisible) {
+        displayTable(sortedSummary);
     }
+}
+
 
     // Funzione che confronta il numero esatto nel nome del buffer con il filtro
     function matchesExactBufferNumber(location, filter) {
