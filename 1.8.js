@@ -88,13 +88,14 @@ function processAndDisplay(containers) {
         const location = container.location || '';
         const stackingFilter = container.stackingFilter || 'N/A';
         const lane = stackingToLaneMap[stackingFilter] || 'N/A';
-        const cpt = container.cpt ? new Date(container.cpt) : null; // Recupera il CPT e lo converte in oggetto Date
+        const cpt = container.cpt ? new Date(container.cpt) : null; // Recupera il CPT come oggetto Date
 
-        // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
+        // Filtra solo i buffer che contengono "BUFFER"
         if (
             location.toUpperCase().startsWith("BUFFER") &&
             (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
-            (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
+            (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
+            (selectedTimeFilter === '' || matchesTimeFilter(cpt, selectedTimeFilter))
         ) {
             if (!filteredSummary[lane]) {
                 filteredSummary[lane] = { locations: {}, cpt: cpt };
@@ -135,6 +136,23 @@ function processAndDisplay(containers) {
     }
 }
 
+// Funzione per confrontare un buffer con il filtro numerico
+function matchesExactBufferNumber(location, filter) {
+    const match = location.match(/BUFFER\s*[A-Za-z]?(\d+)/); // Trova il numero associato al buffer
+    if (match) {
+        const bufferNumber = match[1]; // Estrae il numero
+        return bufferNumber === filter; // Verifica che corrisponda esattamente al filtro
+    }
+    return false;
+}
+
+// Funzione per confrontare l'ora del CPT con il filtro dell'ora
+function matchesTimeFilter(cpt, timeFilter) {
+    if (!cpt) return false; // Se non c'è un CPT, non corrisponde
+    const cptTime = cpt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+    return cptTime === timeFilter;
+}
+
 // Funzione per convertire una data in formato HH:mm:ss DD/MM/YYYY
 function formatCPT(date) {
     if (!date) return 'N/A';
@@ -167,7 +185,7 @@ function displayTable(sortedSummary) {
         </tr>
         <tr>
             <th colspan="2">
-                <input id="timeFilterInput" type="text" placeholder="Filtro per ORA (es. 14:00-16:00)" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                <input id="timeFilterInput" type="text" placeholder="Filtro per ORA (es. HH:mm)" style="width: 100%; padding: 5px; box-sizing: border-box;">
             </th>
         </tr>
     `);
@@ -259,15 +277,10 @@ function displayTable(sortedSummary) {
         }
     });
 
-    $('#timeFilterInput').on('keydown', function(event) {
+    $('#timeFilterInput').val(selectedTimeFilter).on('keydown', function(event) {
         if (event.key === "Enter") {
-            const timeRange = $(this).val().split('-').map(time => time.trim());
-            if (timeRange.length === 2) {
-                const [startTime, endTime] = timeRange;
-                selectedStartTime = startTime;
-                selectedEndTime = endTime;
-                fetchBufferSummary();
-            }
+            selectedTimeFilter = $(this).val();
+            fetchBufferSummary();
         }
     });
 
@@ -300,7 +313,6 @@ function displayTable(sortedSummary) {
         }
     `);
 }
-
 
 
 
