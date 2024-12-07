@@ -79,32 +79,38 @@
 
     function processAndDisplay(containers) {
         const filteredSummary = {};
-
+        let hasMatchingFilters = false; // Variabile per verificare se almeno un dato corrisponde ai filtri
+    
         containers.forEach(container => {
             const location = container.location || '';
             const stackingFilter = container.stackingFilter || 'N/A';
             const lane = stackingToLaneMap[stackingFilter] || 'N/A';
             const cpt = container.cpt || null;
-
-            // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
+    
+            // Verifica se il container soddisfa i criteri di filtro
+            const matchesBufferFilter = selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter);
+            const matchesLaneFilter = selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()));
+            const matchesCptFilter = selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter));
+    
             if (
                 location.toUpperCase().startsWith("BUFFER") &&
-                (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
-                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
-                (selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter)))
+                matchesBufferFilter &&
+                matchesLaneFilter &&
+                matchesCptFilter
             ) {
                 if (!filteredSummary[lane]) {
                     filteredSummary[lane] = {};
                 }
-
+    
                 if (!filteredSummary[lane][location]) {
                     filteredSummary[lane][location] = { count: 0, cpt: cpt };
                 }
-
+    
                 filteredSummary[lane][location].count++;
+                hasMatchingFilters = true; // Almeno un dato corrisponde ai filtri
             }
         });
-
+    
         const sortedSummary = {};
         Object.keys(filteredSummary).forEach(lane => {
             const laneSummary = filteredSummary[lane];
@@ -112,7 +118,7 @@
                 .sort((a, b) => {
                     const numA = parseBufferNumber(a);
                     const numB = parseBufferNumber(b);
-
+    
                     if (numA === numB) {
                         return a.localeCompare(b);
                     }
@@ -123,11 +129,19 @@
                     return acc;
                 }, {});
         });
-
+    
+        // Se nessun filtro ha prodotto risultati, lascia la tabella visibile come se non fosse applicato alcun filtro
+        if (!hasMatchingFilters) {
+            console.warn("Nessun risultato trovato, mostrando tutti i dati non filtrati.");
+            displayTable({});
+            return;
+        }
+    
         if (isVisible) {
             displayTable(sortedSummary);
         }
     }
+    
 
     function matchesExactBufferNumber(location, filter) {
         const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
