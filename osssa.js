@@ -77,17 +77,22 @@
         });
     }
 
-   function processAndDisplay(containers) {
+  function processAndDisplay(containers) {
     const filteredSummary = {};
 
     containers.forEach(container => {
         const location = container.location || '';
         const stackingFilter = container.stackingFilter || 'N/A';
         const lane = stackingToLaneMap[stackingFilter] || 'N/A';
-        const cpt = container.physicalLocationMoveTimestamp;
+        let cpt = container.physicalLocationMoveTimestamp;
 
         // Log per vedere cosa ricevi come timestamp
         console.log(`CPT timestamp for container at location ${location}:`, cpt);
+
+        // Se il timestamp è una stringa, lo converto in numero
+        if (typeof cpt === 'string') {
+            cpt = parseInt(cpt, 10); // Converte la stringa in numero
+        }
 
         // Verifica che il timestamp sia un numero valido
         if (isNaN(cpt) || cpt <= 0) {
@@ -132,6 +137,7 @@
         displayTable(sortedSummary);
     }
 }
+
 
 
 
