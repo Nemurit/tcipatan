@@ -6,6 +6,7 @@
     let selectedBufferFilter = '';
     let selectedLaneFilters = [];
     let stackingToLaneMap = {};
+    let selectedTimeFilter = ''; // Variabile per il filtro dell'ora
     let isVisible = false;
 
 
