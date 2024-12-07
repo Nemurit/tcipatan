@@ -156,9 +156,15 @@ function matchesExactBufferNumber(location, filter) {
             const bufferPrefix = bufferMatch[1];
             const bufferNum = parseInt(bufferMatch[2], 10);
             
-            const prefixInRange = bufferPrefix >= startPrefix && bufferPrefix <= endPrefix;
-            const isInRange = prefixInRange && bufferNum >= startNum && bufferNum <= endNum;
+            // Verifica che il prefisso sia nello stesso intervallo (o uguale)
+            const prefixInRange = bufferPrefix === startPrefix || bufferPrefix === endPrefix;
             
+            // Verifica che il numero sia nell'intervallo
+            const isInRange = (bufferPrefix === startPrefix && bufferNum >= startNum) || 
+                              (bufferPrefix === endPrefix && bufferNum <= endNum) ||
+                              (bufferPrefix !== startPrefix && bufferPrefix !== endPrefix && 
+                               bufferNum >= startNum && bufferNum <= endNum);
+
             console.log(`Buffer prefix: ${bufferPrefix}, Buffer number: ${bufferNum}, Is in range? ${isInRange}`);
             return isInRange;
         }
@@ -191,6 +197,22 @@ function matchesExactBufferNumber(location, filter) {
     console.log(`No match found for filter: ${filter} in location: ${location}`);
     return false;
 }
+
+// Esempio di dati
+const bufferArray = [
+    "BUFFER E3", "BUFFER E4", "BUFFER E5", "BUFFER E6", 
+    "BUFFER E7", "BUFFER E8", "BUFFER E9", "BUFFER F3", 
+    "BUFFER F4", "BUFFER F5"
+];
+
+// Filtro che cerchi
+const filter = "BUFFER E6 - E7"; // Modifica questo valore per testare
+
+// Filtraggio dell'array
+const filteredBuffers = bufferArray.filter(location => matchesExactBufferNumber(location, filter));
+
+console.log("Filtered Buffers:", filteredBuffers);
+
 
 
 
