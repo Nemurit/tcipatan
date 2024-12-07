@@ -6,7 +6,7 @@
     let selectedBufferFilter = '';
     let selectedLaneFilters = [];
     let stackingToLaneMap = {};
-    let selectedTimeFilter = ''; // Aggiunta qui
+    let selectedTimeFilter = ''; // Time filter
     let isVisible = false;
 
     // Add the toggle button to the page
@@ -118,10 +118,11 @@
                 }
 
                 if (!filteredSummary[lane][location]) {
-                    filteredSummary[lane][location] = { count: 0 };
+                    filteredSummary[lane][location] = { count: 0, cpt: [] };
                 }
 
                 filteredSummary[lane][location].count++;
+                if (cpt) filteredSummary[lane][location].cpt.push(cpt); // Storing CPTs for each location
             }
         });
 
@@ -202,9 +203,7 @@
                 <th>
                     <input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="width: 100%; padding: 5px; box-sizing: border-box;">
                 </th>
-            </tr>
-            <tr>
-                <th colspan="2">
+                <th>
                     <input id="timeFilterInput" type="text" placeholder="Filtro per ORA (es. 14:30)" style="width: 100%; padding: 5px; box-sizing: border-box;">
                 </th>
             </tr>
@@ -213,13 +212,14 @@
         const tbody = $('<tbody></tbody>');
         Object.entries(sortedSummary).forEach(([lane, locations]) => {
             const laneRow = $('<tr></tr>');
-            laneRow.append(`<td colspan="2"><strong>${lane}</strong></td>`);
+            laneRow.append(`<td colspan="3"><strong>${lane}</strong></td>`);
 
             Object.entries(locations).forEach(([location, data]) => {
                 tbody.append(`
                     <tr>
                         <td>${location}</td>
                         <td>${data.count}</td>
+                        <td>${data.cpt.length > 0 ? data.cpt.map(formatCPT).join('<br>') : 'N/A'}</td>
                     </tr>
                 `);
             });
