@@ -294,7 +294,8 @@
                 if (isValidCptFilter(newFilter)) {
                     selectedCptFilter = newFilter;
                     fetchBufferSummary();
-                
+                } else {
+                    alert("Il filtro inserito non è valido. Usare valori come '16, 16:15, 16:30'.");
                 }
             }
         });
