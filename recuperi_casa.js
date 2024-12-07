@@ -8,6 +8,8 @@
     let selectedCptFilter = '';
     let stackingToLaneMap = {};
     let isVisible = false;
+    let isChartVisible = false;
+    let filteredSummary = {}; // Store filtered summary globally
 
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
@@ -78,56 +80,64 @@
     }
 
     function processAndDisplay(containers) {
-        const filteredSummary = {};
+    const filteredSummary = {};
 
-        containers.forEach(container => {
-            const location = container.location || '';
-            const stackingFilter = container.stackingFilter || 'N/A';
-            const lane = stackingToLaneMap[stackingFilter] || 'N/A';
-            const cpt = container.cpt || null;
+    containers.forEach(container => {
+        const location = container.location || '';
+        const stackingFilter = container.stackingFilter || 'N/A';
+        const lane = stackingToLaneMap[stackingFilter] || 'N/A';
+        const cpt = container.cpt || null;
 
-            // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
-            if (
-                location.toUpperCase().startsWith("BUFFER") &&
-                (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
-                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
-                (selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter)))
-            ) {
-                if (!filteredSummary[lane]) {
-                    filteredSummary[lane] = {};
-                }
-
-                if (!filteredSummary[lane][location]) {
-                    filteredSummary[lane][location] = { count: 0, cpt: cpt };
-                }
-
-                filteredSummary[lane][location].count++;
+        // Filter only the buffers that contain "BUFFER"
+        if (
+            location.toUpperCase().startsWith("BUFFER") &&
+            (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
+            (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
+            (selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter)))
+        ) {
+            if (!filteredSummary[lane]) {
+                filteredSummary[lane] = {};
             }
-        });
 
-        const sortedSummary = {};
-        Object.keys(filteredSummary).forEach(lane => {
-            const laneSummary = filteredSummary[lane];
-            sortedSummary[lane] = Object.keys(laneSummary)
-                .sort((a, b) => {
-                    const numA = parseBufferNumber(a);
-                    const numB = parseBufferNumber(b);
+            if (!filteredSummary[lane][location]) {
+                filteredSummary[lane][location] = { count: 0, cpt: cpt };
+            }
 
-                    if (numA === numB) {
-                        return a.localeCompare(b);
-                    }
-                    return numA - numB;
-                })
-                .reduce((acc, location) => {
-                    acc[location] = laneSummary[location];
-                    return acc;
-                }, {});
-        });
-
-        if (isVisible) {
-            displayTable(sortedSummary);
+            filteredSummary[lane][location].count++;
         }
+    });
+
+    console.log("Filtered Summary:", filteredSummary); // Debugging line
+
+    const sortedSummary = {};
+    Object.keys(filteredSummary).forEach(lane => {
+        const laneSummary = filteredSummary[lane];
+        sortedSummary[lane] = Object.keys(laneSummary)
+            .sort((a, b) => {
+                const numA = parseBufferNumber(a);
+                const numB = parseBufferNumber(b);
+
+                if (numA === numB) {
+                    return a.localeCompare(b);
+                }
+                return numA - numB;
+            })
+            .reduce((acc, location) => {
+                acc[location] = laneSummary[location];
+                return acc;
+            }, {});
+    });
+
+    if (isVisible) {
+        displayTable(sortedSummary);
     }
+
+    // If sortedSummary is not empty, pass it to the chart generation function
+    if (Object.keys(sortedSummary).length > 0) {
+        generatePieChart(sortedSummary);
+    }
+}
+
 
     function matchesExactBufferNumber(location, filter) {
         const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
@@ -288,7 +298,7 @@
             }
         });
 
-       $('#cptFilterInput').val(selectedCptFilter).on('keydown', function(event) {
+        $('#cptFilterInput').val(selectedCptFilter).on('keydown', function(event) {
     if (event.key === "Enter") {
         const newFilter = $(this).val();
         if (newFilter === "") {
@@ -305,7 +315,6 @@
         }
     }
 });
-
         
         function isValidCptFilter(filter) {
             const parts = filter.split(',').map(f => f.trim());
@@ -341,6 +350,149 @@
             }
         `);
     }
+    function addChartToggleButton() {
+        const button = $('<button id="toggleChartButton">Mostra Grafico</button>');
+        button.css({
+            position: 'fixed',
+            bottom: '10px',
+            left: '10px',
+            padding: '10px',
+            background: '#4CAF50',
+            color: '#fff',
+            border: 'none',
+            cursor: 'pointer',
+            borderRadius: '5px',
+            fontSize: '14px'
+        });
+    
+        button.on('click', function() {
+            isChartVisible = !isChartVisible;
+            if (isChartVisible) {
+                generatePieChart(filteredSummary);
+                $(this).text('Chiudi Grafico'); // Cambia testo del pulsante quando il grafico è visibile
+            } else {
+                $('#chartContainer').remove(); // Rimuovi il grafico quando viene chiuso
+                $(this).text('Mostra Grafico'); // Ripristina il testo del pulsante
+            }
+        });
+    
+        $('body').append(button);
+    }
+    
+    function generatePieChart(filteredSummary) {
+        if (!filteredSummary || Object.keys(filteredSummary).length === 0) {
+            console.warn("No data to generate the chart.");
+            return;
+        }
+    
+        // Create the chart container dynamically if it doesn't exist
+        let chartContainer = document.getElementById('chartContainer');
+        if (!chartContainer) {
+            chartContainer = document.createElement('div');
+            chartContainer.id = 'chartContainer';
+            chartContainer.style.display = 'none'; // Initially hidden
+            chartContainer.style.position = 'fixed';
+            chartContainer.style.top = '60px';
+            chartContainer.style.left = '50%';
+            chartContainer.style.padding = '20px';
+            chartContainer.style.backgroundColor = 'rgba(0, 0, 0, 0)';  // Background transparent
+            chartContainer.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
+            chartContainer.style.width = '500px';
+            chartContainer.style.maxWidth = '100%';
+            chartContainer.style.zIndex = '1000';
+            chartContainer.style.boxSizing = 'border-box'; // Ensure padding is included in the width/height calculation
+    
+            // Add a canvas to the container
+            const chartCanvas = document.createElement('canvas');
+            chartCanvas.id = 'myChart';
+            chartCanvas.style.width = '100%';  // Full width inside container
+            chartCanvas.style.height = '400px'; // Fixed height for chart
+            chartContainer.appendChild(chartCanvas);
+    
+            document.body.appendChild(chartContainer);
+        }
+    
+        // Aggregate data by buffer location
+        const bufferLocations = {};  // To store the total count of containers per buffer location
+    
+        Object.entries(filteredSummary).forEach(([lane, laneSummary]) => {
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                if (location.startsWith("BUFFER")) {
+                    if (!bufferLocations[location]) {
+                        bufferLocations[location] = 0;
+                    }
+                    bufferLocations[location] += data.count;  // Add up the count of containers for the buffer location
+                }
+            });
+        });
+    
+        // Prepare data for the chart
+        const labels = Object.keys(bufferLocations);
+        const data = labels.map(location => bufferLocations[location]);
+    
+        if (data.length === 0) {
+            console.warn("No buffer locations to chart.");
+            return;
+        }
+    
+        const chartData = {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: ['#ff0000', '#ff7f00', '#ffff00', '#7fff00', '#00ff00', '#0000ff', '#8a2be2'],
+                borderColor: '#ffffff',
+                borderWidth: 1
+            }]
+        };
+    
+        // Get the canvas context and create the chart
+        const ctx = document.getElementById('myChart').getContext('2d');
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'pie',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    const label = tooltipItem.label || '';
+                                    const value = tooltipItem.raw || 0;
+                                    return `${label}: ${value}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            console.error("Canvas context could not be found.");
+        }
+    }
+    
+    function addChartToggleButton() {
+        const button = $('<button id="toggleChartButton"  style="position: fixed; top: 35px; left: calc(50% - 22px); padding: 10px; background: rgb(0, 123, 255); color: white; border: none; cursor: pointer; border-radius: 5px; font-size: 14px;">Mostra grafico recuperi</button>');
+        
+    
+        button.on('click', function() {
+            const chartContainer = document.getElementById('chartContainer');
+            if (chartContainer.style.display === 'none') {
+                chartContainer.style.display = 'block';  // Show the chart container
+                generatePieChart(filteredSummary);  // Generate chart if it's not already done
+                $(this).text('Nascondi Grafico');
+            } else {
+                chartContainer.style.display = 'none';  // Hide the chart container
+                $(this).text('Mostra Grafico');
+            }
+        });
+    
+        $('body').append(button);
+    }
+
 
     function addToggleButton() {
         const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
@@ -361,6 +513,7 @@
 
     fetchStackingFilterMap(function() {
         addToggleButton();
+        addChartToggleButton();
         fetchBufferSummary();
     });
 
