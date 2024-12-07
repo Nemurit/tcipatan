@@ -139,34 +139,55 @@
 }
 
 function matchesExactBufferNumber(location, filter) {
-    const match = location.match(/BUFFER\s*([A-Za-z]*)(\d+)/); // Capture both the letter(s) and the number
-    if (match) {
-        const bufferLetter = match[1]; // Get the letter part (if any)
-        const bufferNumber = match[2]; // Get the numeric part of the buffer
+    // If the filter is a range (e.g., "E3 - F3")
+    const rangeMatch = filter.match(/^BUFFER\s*([A-Za-z]*)\s*(\d+)\s*-\s*([A-Za-z]*)\s*(\d+)$/);
+    
+    if (rangeMatch) {
+        const startLetter = rangeMatch[1].toUpperCase();
+        const startNumber = parseInt(rangeMatch[2], 10);
+        const endLetter = rangeMatch[3].toUpperCase();
+        const endNumber = parseInt(rangeMatch[4], 10);
+        
+        // Now match the location (e.g., "E3", "F3")
+        const locationMatch = location.match(/BUFFER\s*([A-Za-z]*)\s*(\d+)/);
+        
+        if (locationMatch) {
+            const locLetter = locationMatch[1].toUpperCase();
+            const locNumber = parseInt(locationMatch[2], 10);
+            
+            // Check if the location falls within the range (start to end)
+            const isInRange =
+                (locLetter === startLetter && locNumber >= startNumber) ||
+                (locLetter === endLetter && locNumber <= endNumber) ||
+                (locLetter > startLetter && locLetter < endLetter);
 
-        // Check if the filter matches any part of the buffer
-        // The filter can be a full match like "BUFFER E3", or just "E3", "3", etc.
-        const filterParts = filter.split('-').map(part => part.trim());
-
-        // If there's a filter for the letter and number
-        if (filterParts.length === 2) {
-            const filterLetter = filterParts[0];
-            const filterNumber = filterParts[1];
-
-            return (bufferLetter.toUpperCase() === filterLetter.toUpperCase() || !filterLetter) &&
-                   (bufferNumber === filterNumber || !filterNumber);
+            return isInRange;
         }
-
-        // If the filter is just a number or letter (like "3" or "E3")
-        return (bufferLetter.toUpperCase() + bufferNumber).includes(filter.toUpperCase());
     }
+    
+    // If it's not a range, just match normally (e.g., "E3" or "3")
+    const match = location.match(/BUFFER\s*([A-Za-z]*)\s*(\d+)/);
+    if (match) {
+        const bufferLetter = match[1];  // Optional letter part
+        const bufferNumber = match[2];  // Numeric part
+
+        if (filter.includes(bufferNumber)) {
+            if (bufferLetter) {
+                // If the user entered a letter and number (e.g., "E3"), match that as well
+                return filter.toUpperCase().includes(bufferLetter.toUpperCase() + bufferNumber);
+            }
+            return bufferNumber === filter; // Match just the number part
+        }
+    }
+    
     return false;
 }
 
-    function parseBufferNumber(bufferName) {
-        const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
-        return match ? parseInt(match[1], 10) : 0;
-    }
+function parseBufferNumber(bufferName) {
+    const match = bufferName.match(/BUFFER\s*([A-Za-z]*)\s*(\d+)/);
+    return match ? parseInt(match[2], 10) : 0;  // Extract only the numeric part
+}
+
 
     function convertTimestampToLocalTime(timestamp) {
         const date = new Date(timestamp);
