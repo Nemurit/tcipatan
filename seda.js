@@ -350,116 +350,147 @@
             }
         `);
     }
-   function generatePieChart(filteredSummary) {
-    if (!filteredSummary || Object.keys(filteredSummary).length === 0) {
-        console.warn("No data to generate the chart.");
-        return;
-    }
-
-    // Create the canvas element dynamically if it doesn't exist
-    let chartCanvas = document.getElementById('myChart');
-    if (!chartCanvas) {
-        chartCanvas = document.createElement('canvas');
-        chartCanvas.id = 'myChart';
-        chartCanvas.style.width = '400px';  // Smaller canvas width
-        chartCanvas.style.height = '400px'; // Smaller canvas height
-        chartCanvas.style.margin = '20px auto'; // Center the canvas
-        chartCanvas.style.display = 'block'; // Ensure it is a block element to be displayed
-        document.body.appendChild(chartCanvas);
-    }
-
-    // Aggregate data by buffer location
-    const bufferLocations = {};  // To store the total count of containers per buffer location
-
-    Object.entries(filteredSummary).forEach(([lane, laneSummary]) => {
-        Object.entries(laneSummary).forEach(([location, data]) => {
-            if (location.startsWith("BUFFER")) {
-                if (!bufferLocations[location]) {
-                    bufferLocations[location] = 0;
+    function generatePieChart(filteredSummary) {
+        if (!filteredSummary || Object.keys(filteredSummary).length === 0) {
+            console.warn("No data to generate the chart.");
+            return;
+        }
+    
+        // Create the chart container dynamically if it doesn't exist
+        let chartContainer = document.getElementById('chartContainer');
+        if (!chartContainer) {
+            chartContainer = document.createElement('div');
+            chartContainer.id = 'chartContainer';
+            chartContainer.style.display = 'none'; // Initially hidden
+            chartContainer.style.position = 'fixed';
+            chartContainer.style.top = '10px';
+            chartContainer.style.left = '50%';
+            chartContainer.style.transform = 'translateX(-50%)';
+            chartContainer.style.padding = '20px';
+            chartContainer.style.backgroundColor = '#fff';
+            chartContainer.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
+            chartContainer.style.borderRadius = '10px';
+            chartContainer.style.width = '500px';
+            chartContainer.style.maxWidth = '100%';
+            chartContainer.style.zIndex = '1000';
+    
+            // Add a close button to hide the chart
+            const closeButton = document.createElement('button');
+            closeButton.innerText = 'Chiudi Grafico';
+            closeButton.style.position = 'absolute';
+            closeButton.style.top = '10px';
+            closeButton.style.right = '10px';
+            closeButton.style.backgroundColor = '#ff4d4d';
+            closeButton.style.color = 'white';
+            closeButton.style.border = 'none';
+            closeButton.style.padding = '5px 10px';
+            closeButton.style.cursor = 'pointer';
+            closeButton.onclick = function() {
+                chartContainer.style.display = 'none';
+            };
+            chartContainer.appendChild(closeButton);
+    
+            const chartCanvas = document.createElement('canvas');
+            chartCanvas.id = 'myChart';
+            chartCanvas.style.width = '100%';  // Full width inside container
+            chartCanvas.style.height = '400px'; // Fixed height for chart
+            chartContainer.appendChild(chartCanvas);
+    
+            document.body.appendChild(chartContainer);
+        }
+    
+        // Aggregate data by buffer location
+        const bufferLocations = {};  // To store the total count of containers per buffer location
+    
+        Object.entries(filteredSummary).forEach(([lane, laneSummary]) => {
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                if (location.startsWith("BUFFER")) {
+                    if (!bufferLocations[location]) {
+                        bufferLocations[location] = 0;
+                    }
+                    bufferLocations[location] += data.count;  // Add up the count of containers for the buffer location
                 }
-                bufferLocations[location] += data.count;  // Add up the count of containers for the buffer location
-            }
+            });
         });
-    });
-
-    // Prepare data for the chart
-    const labels = Object.keys(bufferLocations);
-    const data = labels.map(location => bufferLocations[location]);
-
-    if (data.length === 0) {
-        console.warn("No buffer locations to chart.");
-        return;
-    }
-
-    const chartData = {
-        labels: labels,
-        datasets: [{
-            data: data,
-            backgroundColor: ['#ff0000', '#ff7f00', '#ffff00', '#7fff00', '#00ff00', '#0000ff', '#8a2be2'],
-            borderColor: '#ffffff',
-            borderWidth: 1
-        }]
-    };
-
-    // Get the canvas context and create the chart
-    const ctx = chartCanvas.getContext('2d');
-    if (ctx) {
-        new Chart(ctx, {
-            type: 'pie',
-            data: chartData,
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(tooltipItem) {
-                                const label = tooltipItem.label || '';
-                                const value = tooltipItem.raw || 0;
-                                return `${label}: ${value}`;
+    
+        // Prepare data for the chart
+        const labels = Object.keys(bufferLocations);
+        const data = labels.map(location => bufferLocations[location]);
+    
+        if (data.length === 0) {
+            console.warn("No buffer locations to chart.");
+            return;
+        }
+    
+        const chartData = {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: ['#ff0000', '#ff7f00', '#ffff00', '#7fff00', '#00ff00', '#0000ff', '#8a2be2'],
+                borderColor: '#ffffff',
+                borderWidth: 1
+            }]
+        };
+    
+        // Get the canvas context and create the chart
+        const ctx = document.getElementById('myChart').getContext('2d');
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'pie',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    const label = tooltipItem.label || '';
+                                    const value = tooltipItem.raw || 0;
+                                    return `${label}: ${value}`;
+                                }
                             }
                         }
                     }
                 }
+            });
+        } else {
+            console.error("Canvas context could not be found.");
+        }
+    }
+    
+    function addChartToggleButton() {
+        const button = $('<button id="toggleChartButton">Mostra Grafico</button>');
+        button.css({
+            position: 'fixed',
+            bottom: '10px',
+            left: '10px',
+            padding: '10px',
+            background: '#4CAF50',
+            color: '#fff',
+            border: 'none',
+            cursor: 'pointer',
+            borderRadius: '5px',
+            fontSize: '14px'
+        });
+    
+        button.on('click', function() {
+            const chartContainer = document.getElementById('chartContainer');
+            if (chartContainer.style.display === 'none') {
+                chartContainer.style.display = 'block';  // Show the chart container
+                generatePieChart(filteredSummary);  // Generate chart if it's not already done
+                $(this).text('Nascondi Grafico');
+            } else {
+                chartContainer.style.display = 'none';  // Hide the chart container
+                $(this).text('Mostra Grafico');
             }
         });
-    } else {
-        console.error("Canvas context could not be found.");
+    
+        $('body').append(button);
     }
-}
-
     
-    
-        function addChartToggleButton() {
-            const button = $('<button id="toggleChartButton">Mostra Grafico</button>');
-            button.css({
-                position: 'fixed',
-                bottom: '10px',
-                left: '10px',
-                padding: '10px',
-                background: '#4CAF50',
-                color: '#fff',
-                border: 'none',
-                cursor: 'pointer',
-                borderRadius: '5px',
-                fontSize: '14px'
-            });
-    
-            button.on('click', function() {
-                isChartVisible = !isChartVisible;
-                if (isChartVisible) {
-                    generatePieChart(filteredSummary);
-                    $(this).text('Nascondi Grafico');
-                } else {
-                    $('#myChart').remove();
-                    $(this).text('Mostra Grafico');
-                }
-            });
-    
-            $('body').append(button);
-        }
 
     function addToggleButton() {
         const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
