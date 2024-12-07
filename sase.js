@@ -80,56 +80,64 @@
     }
 
     function processAndDisplay(containers) {
-        const filteredSummary = {};
+    const filteredSummary = {};
 
-        containers.forEach(container => {
-            const location = container.location || '';
-            const stackingFilter = container.stackingFilter || 'N/A';
-            const lane = stackingToLaneMap[stackingFilter] || 'N/A';
-            const cpt = container.cpt || null;
+    containers.forEach(container => {
+        const location = container.location || '';
+        const stackingFilter = container.stackingFilter || 'N/A';
+        const lane = stackingToLaneMap[stackingFilter] || 'N/A';
+        const cpt = container.cpt || null;
 
-            // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
-            if (
-                location.toUpperCase().startsWith("BUFFER") &&
-                (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
-                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
-                (selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter)))
-            ) {
-                if (!filteredSummary[lane]) {
-                    filteredSummary[lane] = {};
-                }
-
-                if (!filteredSummary[lane][location]) {
-                    filteredSummary[lane][location] = { count: 0, cpt: cpt };
-                }
-
-                filteredSummary[lane][location].count++;
+        // Filter only the buffers that contain "BUFFER"
+        if (
+            location.toUpperCase().startsWith("BUFFER") &&
+            (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
+            (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
+            (selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter)))
+        ) {
+            if (!filteredSummary[lane]) {
+                filteredSummary[lane] = {};
             }
-        });
 
-        const sortedSummary = {};
-        Object.keys(filteredSummary).forEach(lane => {
-            const laneSummary = filteredSummary[lane];
-            sortedSummary[lane] = Object.keys(laneSummary)
-                .sort((a, b) => {
-                    const numA = parseBufferNumber(a);
-                    const numB = parseBufferNumber(b);
+            if (!filteredSummary[lane][location]) {
+                filteredSummary[lane][location] = { count: 0, cpt: cpt };
+            }
 
-                    if (numA === numB) {
-                        return a.localeCompare(b);
-                    }
-                    return numA - numB;
-                })
-                .reduce((acc, location) => {
-                    acc[location] = laneSummary[location];
-                    return acc;
-                }, {});
-        });
-
-        if (isVisible) {
-            displayTable(sortedSummary);
+            filteredSummary[lane][location].count++;
         }
+    });
+
+    console.log("Filtered Summary:", filteredSummary); // Debugging line
+
+    const sortedSummary = {};
+    Object.keys(filteredSummary).forEach(lane => {
+        const laneSummary = filteredSummary[lane];
+        sortedSummary[lane] = Object.keys(laneSummary)
+            .sort((a, b) => {
+                const numA = parseBufferNumber(a);
+                const numB = parseBufferNumber(b);
+
+                if (numA === numB) {
+                    return a.localeCompare(b);
+                }
+                return numA - numB;
+            })
+            .reduce((acc, location) => {
+                acc[location] = laneSummary[location];
+                return acc;
+            }, {});
+    });
+
+    if (isVisible) {
+        displayTable(sortedSummary);
     }
+
+    // If sortedSummary is not empty, pass it to the chart generation function
+    if (Object.keys(sortedSummary).length > 0) {
+        generatePieChart(sortedSummary);
+    }
+}
+
 
     function matchesExactBufferNumber(location, filter) {
         const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
