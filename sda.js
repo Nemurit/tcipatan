@@ -379,6 +379,35 @@
         $('body').append(button);
     }
     
+    function addChartToggleButton() {
+        const button = $('<button id="toggleChartButton">Mostra Grafico</button>');
+        button.css({
+            position: 'fixed',
+            bottom: '10px',
+            left: '10px',
+            padding: '10px',
+            background: '#4CAF50',
+            color: '#fff',
+            border: 'none',
+            cursor: 'pointer',
+            borderRadius: '5px',
+            fontSize: '14px'
+        });
+    
+        button.on('click', function() {
+            isChartVisible = !isChartVisible;
+            if (isChartVisible) {
+                generatePieChart(filteredSummary);
+                $(this).text('Chiudi Grafico'); // Cambia testo del pulsante quando il grafico è visibile
+            } else {
+                $('#chartContainer').remove(); // Rimuovi il grafico quando viene chiuso
+                $(this).text('Mostra Grafico'); // Ripristina il testo del pulsante
+            }
+        });
+    
+        $('body').append(button);
+    }
+    
     function generatePieChart(filteredSummary) {
         if (!filteredSummary || Object.keys(filteredSummary).length === 0) {
             console.warn("No data to generate the chart.");
@@ -395,12 +424,13 @@
             chartContainer.style.right = '20px';  // Posizionamento del container
             chartContainer.style.width = '400px';
             chartContainer.style.height = '400px';
-            chartContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'; // Sfondo trasparente
+            chartContainer.style.backgroundColor = 'rgba(0, 0, 0, 0)'; // Sfondo completamente trasparente
             chartContainer.style.borderRadius = '10px';
             chartContainer.style.padding = '20px';
             chartContainer.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
             chartContainer.style.zIndex = '1000';
-            
+    
+            // Pulsante di chiusura
             const closeButton = $('<button class="closeChartButton" style="position: absolute; top: 10px; right: 10px; background: #ff0000; color: white; border: none; cursor: pointer; border-radius: 5px;">X</button>');
             closeButton.on('click', function() {
                 $('#chartContainer').remove();  // Rimuove il grafico dal DOM
@@ -478,39 +508,6 @@
             console.error("Canvas context could not be found.");
         }
     }
-    
-    
-
-function addChartToggleButton() {
-    const button = $('<button id="toggleChartButton">Mostra Grafico</button>');
-    button.css({
-        position: 'fixed',
-        bottom: '10px',
-        left: '10px',
-        padding: '10px',
-        background: '#4CAF50',
-        color: '#fff',
-        border: 'none',
-        cursor: 'pointer',
-        borderRadius: '5px',
-        fontSize: '14px'
-    });
-
-    button.on('click', function() {
-        const chartContainer = document.getElementById('chartContainer');
-        if (chartContainer.style.display === 'none') {
-            chartContainer.style.display = 'block';  // Show the chart container
-            generatePieChart(filteredSummary);  // Generate chart if it's not already done
-            $(this).text('Nascondi Grafico');
-        } else {
-            chartContainer.style.display = 'none';  // Hide the chart container
-            $(this).text('Mostra Grafico');
-        }
-    });
-
-    $('body').append(button);
-}
-
 
     function addToggleButton() {
         const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
