@@ -88,7 +88,7 @@ function processAndDisplay(containers) {
         const location = container.location || '';
         const stackingFilter = container.stackingFilter || 'N/A';
         const lane = stackingToLaneMap[stackingFilter] || 'N/A';
-        const cpt = container.cpt || 'N/A'; // Recupera il CPT (o un valore predefinito)
+        const cpt = container.cpt ? new Date(container.cpt) : null; // Recupera il CPT e lo converte in oggetto Date
 
         // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
         if (
@@ -97,39 +97,49 @@ function processAndDisplay(containers) {
             (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
         ) {
             if (!filteredSummary[lane]) {
-                filteredSummary[lane] = {};
+                filteredSummary[lane] = { locations: {}, cpt: cpt };
             }
 
-            if (!filteredSummary[lane][location]) {
-                filteredSummary[lane][location] = { count: 0, cpt: cpt };
+            if (!filteredSummary[lane].locations[location]) {
+                filteredSummary[lane].locations[location] = { count: 0 };
             }
 
-            filteredSummary[lane][location].count++;
+            filteredSummary[lane].locations[location].count++;
         }
     });
 
     const sortedSummary = {};
     Object.keys(filteredSummary).forEach(lane => {
-        const laneSummary = filteredSummary[lane];
-        sortedSummary[lane] = Object.keys(laneSummary)
-            .sort((a, b) => {
-                const numA = parseBufferNumber(a);
-                const numB = parseBufferNumber(b);
+        const laneSummary = filteredSummary[lane].locations;
+        sortedSummary[lane] = {
+            cpt: filteredSummary[lane].cpt,
+            locations: Object.keys(laneSummary)
+                .sort((a, b) => {
+                    const numA = parseBufferNumber(a);
+                    const numB = parseBufferNumber(b);
 
-                if (numA === numB) {
-                    return a.localeCompare(b);
-                }
-                return numA - numB;
-            })
-            .reduce((acc, location) => {
-                acc[location] = laneSummary[location];
-                return acc;
-            }, {});
+                    if (numA === numB) {
+                        return a.localeCompare(b);
+                    }
+                    return numA - numB;
+                })
+                .reduce((acc, location) => {
+                    acc[location] = laneSummary[location];
+                    return acc;
+                }, {})
+        };
     });
 
     if (isVisible) {
         displayTable(sortedSummary);
     }
+}
+
+// Funzione per convertire una data in formato UTC+1
+function formatCPT(date) {
+    if (!date) return 'N/A';
+    const options = { timeZone: 'Europe/Rome', hour: '2-digit', minute: '2-digit', second: '2-digit', year: 'numeric', month: '2-digit', day: '2-digit' };
+    return date.toLocaleString('it-IT', options); // Formatta la data in formato italiano UTC+1
 }
 
 function displayTable(sortedSummary) {
@@ -151,9 +161,6 @@ function displayTable(sortedSummary) {
             <th>
                 <input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="width: 100%; padding: 5px; box-sizing: border-box;">
             </th>
-            <th>
-                <input id="cptFilterInput" type="text" placeholder="Filtro per CPT (HH:mm)" style="width: 100%; padding: 5px; box-sizing: border-box;">
-            </th>
         </tr>
     `);
 
@@ -161,18 +168,19 @@ function displayTable(sortedSummary) {
         <tr>
             <th>Buffer</th>
             <th>Totale Container</th>
-            <th>CPT</th>
         </tr>
     `);
 
     const tbody = $('<tbody></tbody>');
     let totalContainers = 0;
 
-    Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
-        let laneTotal = 0;
+    Object.entries(sortedSummary).forEach(([lane, data]) => {
+        const laneCPT = formatCPT(data.cpt);
+        const laneSummary = data.locations;
 
-        Object.entries(laneSummary).forEach(([location, data]) => {
-            laneTotal += data.count;
+        let laneTotal = 0;
+        Object.entries(laneSummary).forEach(([location, locData]) => {
+            laneTotal += locData.count;
         });
 
         let laneColor = '';
@@ -185,7 +193,9 @@ function displayTable(sortedSummary) {
         }
 
         const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-            <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
+            <td colspan="2" style="font-weight: bold; text-align: left;">
+                Lane: ${lane} - CPT: <span>${laneCPT}</span> - Totale: <span style="color: ${laneColor};">${laneTotal}</span>
+            </td>
         </tr>`);
 
         laneRow.on('click', function() {
@@ -195,9 +205,9 @@ function displayTable(sortedSummary) {
 
         tbody.append(laneRow);
 
-        Object.entries(laneSummary).forEach(([location, data]) => {
+        Object.entries(laneSummary).forEach(([location, locData]) => {
             const row = $('<tr class="locationRow"></tr>');
-            const count = data.count;
+            const count = locData.count;
 
             let color = '';
             if (count <= 10) {
@@ -210,7 +220,6 @@ function displayTable(sortedSummary) {
 
             row.append(`<td>${location}</td>`);
             row.append(`<td style="color: ${color};">${count}</td>`);
-            row.append(`<td>${data.cpt}</td>`);
             tbody.append(row);
         });
 
@@ -218,7 +227,7 @@ function displayTable(sortedSummary) {
     });
 
     const tfoot = $('<tfoot></tfoot>');
-    const globalTotalRow = $('<tr><td colspan="3" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
+    const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
     tfoot.append(globalTotalRow);
 
     table.append(thead);
@@ -239,15 +248,6 @@ function displayTable(sortedSummary) {
         if (event.key === "Enter") {
             selectedLaneFilters = $(this).val().split(',').map(filter => filter.trim());
             fetchBufferSummary();
-        }
-    });
-
-    $('#cptFilterInput').on('keydown', function(event) {
-        if (event.key === "Enter") {
-            const filterCPT = $(this).val();
-            if (filterCPT) {
-                applyCPTFilter(filterCPT, sortedSummary);
-            }
         }
     });
 
