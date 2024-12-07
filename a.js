@@ -140,30 +140,40 @@
 
 
 function matchesExactBufferNumber(location, filter) {
-    // Aggiustiamo il filtro per gestire sia numeri che lettere
-    const match = location.match(/BUFFER\s*([A-Za-z]*)\s*(\d*)/); // Trova la lettera (opzionale) seguita dal numero (opzionale)
-    if (match) {
-        const letterPart = match[1];  // Parte letterale del buffer
-        const numberPart = match[2];  // Parte numerica del buffer
+    // Gestisce il formato "BUFFER B11 - B12"
+    const rangeMatch = filter.match(/^([A-Za-z]+)(\d+)\s*-\s*(\d+)$/);
+    if (rangeMatch) {
+        const prefix = rangeMatch[1];
+        const startNum = parseInt(rangeMatch[2], 10);
+        const endNum = parseInt(rangeMatch[3], 10);
 
-        // Controlliamo se il filtro contiene una lettera
-        const letterFilter = filter.match(/[A-Za-z]+/); // Se il filtro contiene lettere
-        const numberFilter = filter.match(/\d+/); // Se il filtro contiene numeri
-
-        // Se il filtro contiene sia lettere che numeri
-        if (letterFilter && numberFilter) {
-            return letterPart.toUpperCase() === letterFilter[0].toUpperCase() && numberPart === numberFilter[0];
-        }
-        // Se il filtro contiene solo lettere o solo numeri
-        if (letterFilter) {
-            return letterPart.toUpperCase() === letterFilter[0].toUpperCase();
-        }
-        if (numberFilter) {
-            return numberPart === numberFilter[0];
+        const bufferMatch = location.match(/^BUFFER\s*([A-Za-z]+)(\d+)$/);
+        if (bufferMatch && bufferMatch[1] === prefix) {
+            const bufferNum = parseInt(bufferMatch[2], 10);
+            return bufferNum >= startNum && bufferNum <= endNum;
         }
     }
+
+    // Gestisce il formato "BUFFER B11" o "BUFFER 11"
+    const singleMatch = filter.match(/^([A-Za-z]+)?(\d+)$/);
+    if (singleMatch) {
+        const prefix = singleMatch[1] || '';  // Può essere vuoto se non c'è una lettera
+        const filterNumber = parseInt(singleMatch[2], 10);
+
+        const bufferMatch = location.match(/^BUFFER\s*([A-Za-z]+)?(\d+)$/);
+        if (bufferMatch) {
+            const locationPrefix = bufferMatch[1] || '';  // Preleva il prefisso (B, C, ecc.)
+            const locationNumber = parseInt(bufferMatch[2], 10);
+
+            if (prefix === '' || locationPrefix === prefix) {
+                return locationNumber === filterNumber;
+            }
+        }
+    }
+
     return false;
 }
+
 
 
     function parseBufferNumber(bufferName) {
