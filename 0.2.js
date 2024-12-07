@@ -82,10 +82,10 @@
         });
     }
 
-function processAndDisplay(containers) {
-    const filteredSummary = {};
+        function processAndDisplay(containers) {
+        const filteredSummary = {};
 
-    containers.forEach(container => {
+            containers.forEach(container => {
         const location = container.location || '';
         const stackingFilter = container.stackingFilter || 'N/A';
         const lane = stackingToLaneMap[stackingFilter] || 'N/A';
@@ -317,27 +317,29 @@ function displayTable(sortedSummary) {
 
 
 
-    function addToggleButton() {
-        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
+   function addToggleButton() {
+    const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; z-index: 10000;">Mostra Recuperi</button>');
 
-        toggleButton.on('click', function() {
-            isVisible = !isVisible;
-            if (isVisible) {
-                fetchBufferSummary();
-                $(this).text("Nascondi Recuperi");
-            } else {
-                $('#contentContainer').remove();
-                $(this).text("Mostra Recuperi");
-            }
-        });
-
-        $('body').append(toggleButton);
-    }
-
-    fetchStackingFilterMap(function() {
-        addToggleButton();
-        fetchBufferSummary();
+    toggleButton.on('click', function() {
+        isVisible = !isVisible;
+        if (isVisible) {
+            fetchBufferSummary();
+            $(this).text("Nascondi Recuperi");
+        } else {
+            $('#contentContainer').remove();
+            $(this).text("Mostra Recuperi");
+        }
     });
+
+    $('body').append(toggleButton);
+}
+
+
+  fetchStackingFilterMap(function () {
+    addToggleButton(); // Mostra il pulsante
+    fetchBufferSummary(); // Esegue il primo caricamento dei dati
+});
+
 
     // Aggiorna i dati ogni 5 minuti
     setInterval(fetchBufferSummary, 200000); // 200,000 ms = 3 minuti
