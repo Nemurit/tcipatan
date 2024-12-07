@@ -9,25 +9,9 @@
     let stackingToLaneMap = {};
     let isVisible = false;
 
-    // Funzione che estrae il numero dal nome del buffer per ordinarlo
-    function parseBufferNumber(bufferName) {
-        const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/); // Cerca il numero dopo "BUFFER"
-        return match ? parseInt(match[1], 10) : 0; // Restituisce il numero o 0 se non trovato
-    }
-
-    // Funzione che confronta il numero esatto nel nome del buffer con il filtro
-    function matchesExactBufferNumber(location, filter) {
-        const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
-        if (match) {
-            const bufferNumber = match[1]; // Estrae il numero
-            return bufferNumber === filter; // Verifica che il numero estratto corrisponda esattamente al filtro
-        }
-        return false;
-    }
-
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
-            method: 'GET',
+            method: "GET",
             url: stackingFilterMapUrl,
             onload: function (response) {
                 try {
@@ -41,11 +25,11 @@
 
                     if (callback) callback();
                 } catch (error) {
-                    console.error('Errore nel parsing della mappa JSON:', error);
+                    console.error("Errore nel parsing della mappa JSON:", error);
                 }
             },
             onerror: function (error) {
-                console.error('Errore nel caricamento del file JSON:', error);
+                console.error("Errore nel caricamento del file JSON:", error);
             }
         });
     }
@@ -54,25 +38,25 @@
         const endTime = new Date().getTime();
         const startTime = endTime - 24 * 60 * 60 * 1000;
 
-        const apiUrl = 'https://www.amazonlogistics.eu/sortcenter/vista/controller/getContainersDetailByCriteria';
+        const apiUrl = `https://www.amazonlogistics.eu/sortcenter/vista/controller/getContainersDetailByCriteria`;
         const payload = {
-            entity: 'getContainersDetailByCriteria',
+            entity: "getContainersDetailByCriteria",
             nodeId: nodeId,
             timeBucket: {
-                fieldName: 'physicalLocationMoveTimestamp',
+                fieldName: "physicalLocationMoveTimestamp",
                 startTime: startTime,
                 endTime: endTime
             },
             filterBy: {
-                state: ['Stacked'],
+                state: ["Stacked"],
                 isClosed: [true],
                 isMissing: [false]
             },
-            containerTypes: ['PALLET', 'GAYLORD', 'CART']
+            containerTypes: ["PALLET", "GAYLORD", "CART"]
         };
 
         GM_xmlhttpRequest({
-            method: 'GET',
+            method: "GET",
             url: `${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })}`,
             onload: function (response) {
                 try {
@@ -81,14 +65,14 @@
                         const containers = data.ret.getContainersDetailByCriteriaOutput.containerDetails[0].containerDetails;
                         processAndDisplay(containers);
                     } else {
-                        console.warn('Nessun dato trovato nella risposta API.');
+                        console.warn("Nessun dato trovato nella risposta API.");
                     }
                 } catch (error) {
-                    console.error('Errore nella risposta API:', error);
+                    console.error("Errore nella risposta API:", error);
                 }
             },
             onerror: function (error) {
-                console.error('Errore nella chiamata API:', error);
+                console.error("Errore nella chiamata API:", error);
             }
         });
     }
@@ -109,39 +93,59 @@
                 (selectedCptFilter === '' || cpt.toUpperCase().includes(selectedCptFilter.toUpperCase()))
             ) {
                 if (!filteredSummary[lane]) {
-                    filteredSummary[lane] = {};
+                    filteredSummary[lane] = { cpts: new Set(), locations: {} };
                 }
 
-                if (!filteredSummary[lane][location]) {
-                    filteredSummary[lane][location] = { count: 0 };
+                filteredSummary[lane].cpts.add(cpt);
+
+                if (!filteredSummary[lane].locations[location]) {
+                    filteredSummary[lane].locations[location] = { count: 0, cpt: new Set() };
                 }
 
-                filteredSummary[lane][location].count++;
+                filteredSummary[lane].locations[location].count++;
+                filteredSummary[lane].locations[location].cpt.add(cpt);
             }
         });
 
         const sortedSummary = {};
         Object.keys(filteredSummary).forEach(lane => {
-            const laneSummary = filteredSummary[lane];
-            sortedSummary[lane] = Object.keys(laneSummary)
-                .sort((a, b) => {
-                    const numA = parseBufferNumber(a);
-                    const numB = parseBufferNumber(b);
+            const laneSummary = filteredSummary[lane].locations;
+            sortedSummary[lane] = {
+                cpts: Array.from(filteredSummary[lane].cpts).join(', '),
+                locations: Object.keys(laneSummary)
+                    .sort((a, b) => {
+                        const numA = parseBufferNumber(a);
+                        const numB = parseBufferNumber(b);
 
-                    if (numA === numB) {
-                        return a.localeCompare(b);
-                    }
-                    return numA - numB;
-                })
-                .reduce((acc, location) => {
-                    acc[location] = laneSummary[location];
-                    return acc;
-                }, {});
+                        if (numA === numB) {
+                            return a.localeCompare(b);
+                        }
+                        return numA - numB;
+                    })
+                    .reduce((acc, location) => {
+                        acc[location] = laneSummary[location];
+                        return acc;
+                    }, {})
+            };
         });
 
         if (isVisible) {
             displayTable(sortedSummary);
         }
+    }
+
+    function matchesExactBufferNumber(location, filter) {
+        const match = location.match(/BUFFER\s*[A-Za-z](\d+)/);
+        if (match) {
+            const bufferNumber = match[1];
+            return bufferNumber === filter;
+        }
+        return false;
+    }
+
+    function parseBufferNumber(bufferName) {
+        const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
+        return match ? parseInt(match[1], 10) : 0;
     }
 
     function displayTable(sortedSummary) {
@@ -180,10 +184,10 @@
         const tbody = $('<tbody></tbody>');
         let totalContainers = 0;
 
-        Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
+        Object.entries(sortedSummary).forEach(([lane, { cpts, locations }]) => {
             let laneTotal = 0;
 
-            Object.entries(laneSummary).forEach(([location, data]) => {
+            Object.entries(locations).forEach(([location, data]) => {
                 laneTotal += data.count;
             });
 
@@ -197,7 +201,7 @@
             }
 
             const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-                <td colspan="2" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
+                <td colspan="2" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span><br>CPT: ${cpts}</td>
             </tr>`);
 
             laneRow.on('click', function () {
@@ -207,7 +211,7 @@
 
             tbody.append(laneRow);
 
-            Object.entries(laneSummary).forEach(([location, data]) => {
+            Object.entries(locations).forEach(([location, data]) => {
                 const row = $('<tr class="locationRow"></tr>');
                 const count = data.count;
 
@@ -222,6 +226,7 @@
 
                 row.append(`<td>${location}</td>`);
                 row.append(`<td style="color: ${color};">${count}</td>`);
+                row.append(`<td>CPT: ${Array.from(data.cpt).join(', ')}</td>`);
                 tbody.append(row);
             });
 
@@ -261,26 +266,16 @@
         });
     }
 
-    function addToggleButton() {
-        const toggleButton = $('<button id="toggleButton" style="position: fixed; bottom: 10px; right: 10px; z-index: 9999; background: #007bff; color: #fff; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">Buffer Summary</button>');
-
-        toggleButton.on('click', function () {
-            isVisible = !isVisible;
-
-            if (isVisible) {
-                fetchBufferSummary();
-            } else {
-                $('#contentContainer').remove();
-            }
-        });
-
-        $('body').append(toggleButton);
+    function toggleVisibility() {
+        isVisible = !isVisible;
+        if (isVisible) {
+            fetchBufferSummary();
+        } else {
+            $('#contentContainer').remove();
+        }
     }
 
-    fetchStackingFilterMap(function () {
-        addToggleButton();
-        fetchBufferSummary();
-    });
+    GM_registerMenuCommand("Mostra/Nascondi Sommario Buffer", toggleVisibility);
 
-    setInterval(fetchBufferSummary, 200000); // Refresh ogni 3 minuti
+    fetchStackingFilterMap();
 })();
