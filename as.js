@@ -138,7 +138,6 @@
     }
 }
 
-// Modifica della funzione di filtro per il buffer
 function matchesExactBufferString(location, filter) {
     // Usa una regular expression per verificare se il nome del buffer contiene esattamente il numero fornito
     const match = location.match(/BUFFER\s*(\d+)/); // Cerca solo il numero nel nome del buffer
@@ -149,7 +148,6 @@ function matchesExactBufferString(location, filter) {
     return false; // Restituisce false se non c'è un numero nel nome del buffer
 }
 
-}
 
 // All'interno della funzione processAndDisplay
 function processAndDisplay(containers) {
@@ -361,7 +359,6 @@ function parseBufferNumber(bufferName) {
             }
         });
         
-
         $('#laneFilterInput').val(selectedLaneFilters.join(', ')).on('keydown', function(event) {
             if (event.key === "Enter") {
                 selectedLaneFilters = $(this).val().split(',').map(filter => filter.trim());
