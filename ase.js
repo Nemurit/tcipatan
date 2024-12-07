@@ -435,6 +435,7 @@
 
     fetchStackingFilterMap(function() {
         addToggleButton();
+        addChartToggleButton();
         fetchBufferSummary();
     });
 
