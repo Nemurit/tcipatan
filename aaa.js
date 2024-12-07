@@ -138,42 +138,48 @@
     }
 }
 
-
 function matchesExactBufferNumber(location, filter) {
-    // Gestisce il formato intervallo "BUFFER B11 - B12"
-    const rangeMatch = filter.match(/^BUFFER\s*([A-Za-z]+)(\d+)\s*-\s*(\d+)$/);
+    // Gestisce il formato intervallo "BUFFER E3 - F3"
+    const rangeMatch = filter.match(/^BUFFER\s*([A-Za-z]+)(\d+)\s*-\s*([A-Za-z]+)(\d+)$/);
     if (rangeMatch) {
-        const prefix = rangeMatch[1];  // "B" (o altro prefisso)
-        const startNum = parseInt(rangeMatch[2], 10);  // Numero di inizio
-        const endNum = parseInt(rangeMatch[3], 10);  // Numero di fine
+        const startPrefix = rangeMatch[1]; // Es. "E"
+        const startNum = parseInt(rangeMatch[2], 10);  // Numero iniziale (es. 3)
+        const endPrefix = rangeMatch[3];   // Es. "F"
+        const endNum = parseInt(rangeMatch[4], 10);    // Numero finale (es. 3)
 
-        // Controlla se il buffer ha lo stesso prefisso e un numero nel range
+        // Verifica che il prefisso e i numeri del buffer siano nell'intervallo
         const bufferMatch = location.match(/^BUFFER\s*([A-Za-z]+)(\d+)$/);
-        if (bufferMatch && bufferMatch[1] === prefix) {
-            const bufferNum = parseInt(bufferMatch[2], 10);
-            return bufferNum >= startNum && bufferNum <= endNum;  // Verifica se il numero è nell'intervallo
+        if (bufferMatch) {
+            const bufferPrefix = bufferMatch[1];  // Es. "E"
+            const bufferNum = parseInt(bufferMatch[2], 10); // Es. 3
+
+            // Verifica se il prefisso è nell'intervallo tra startPrefix e endPrefix
+            const prefixInRange = bufferPrefix >= startPrefix && bufferPrefix <= endPrefix;
+
+            // Se il prefisso è nell'intervallo e il numero è tra startNum e endNum
+            return prefixInRange && bufferNum >= startNum && bufferNum <= endNum;
         }
     }
 
-    // Gestisce il formato "BUFFER B11" o "BUFFER 11"
+    // Gestisce il formato "BUFFER E3" o "BUFFER 3"
     const singleMatch = filter.match(/^BUFFER\s*([A-Za-z]+)?(\d+)$/);
     if (singleMatch) {
-        const prefix = singleMatch[1] || '';  // Può essere vuoto se non c'è una lettera
-        const filterNumber = parseInt(singleMatch[2], 10);
+        const filterPrefix = singleMatch[1] || ''; // Se c'è una lettera, la prende, altrimenti è vuoto
+        const filterNumber = parseInt(singleMatch[2], 10); // Numero del filtro
 
         const bufferMatch = location.match(/^BUFFER\s*([A-Za-z]+)?(\d+)$/);
         if (bufferMatch) {
-            const locationPrefix = bufferMatch[1] || '';  // Preleva il prefisso (B, C, ecc.)
-            const locationNumber = parseInt(bufferMatch[2], 10);
+            const locationPrefix = bufferMatch[1] || '';  // Prefisso del buffer
+            const locationNumber = parseInt(bufferMatch[2], 10); // Numero del buffer
 
-            // Se il prefisso è vuoto o corrisponde al prefisso del filtro
-            if (prefix === '' || locationPrefix === prefix) {
-                return locationNumber === filterNumber;  // Verifica se il numero corrisponde
+            // Se il prefisso è vuoto o corrisponde al prefisso del filtro, confronta i numeri
+            if ((filterPrefix === '' || locationPrefix === filterPrefix) && locationNumber === filterNumber) {
+                return true;
             }
         }
     }
 
-    return false;  // Se non corrisponde a nessuna delle condizioni
+    return false; // Se non corrisponde a nessuna delle condizioni
 }
 
 
