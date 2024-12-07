@@ -139,14 +139,32 @@
 }
 
 
-    function matchesExactBufferNumber(location, filter) {
-        const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
-        if (match) {
-            const bufferNumber = match[1];  // Estrae il numero
-            return bufferNumber === filter;
+function matchesExactBufferNumber(location, filter) {
+    // Aggiustiamo il filtro per gestire sia numeri che lettere
+    const match = location.match(/BUFFER\s*([A-Za-z]*)\s*(\d*)/); // Trova la lettera (opzionale) seguita dal numero (opzionale)
+    if (match) {
+        const letterPart = match[1];  // Parte letterale del buffer
+        const numberPart = match[2];  // Parte numerica del buffer
+
+        // Controlliamo se il filtro contiene una lettera
+        const letterFilter = filter.match(/[A-Za-z]+/); // Se il filtro contiene lettere
+        const numberFilter = filter.match(/\d+/); // Se il filtro contiene numeri
+
+        // Se il filtro contiene sia lettere che numeri
+        if (letterFilter && numberFilter) {
+            return letterPart.toUpperCase() === letterFilter[0].toUpperCase() && numberPart === numberFilter[0];
         }
-        return false;
+        // Se il filtro contiene solo lettere o solo numeri
+        if (letterFilter) {
+            return letterPart.toUpperCase() === letterFilter[0].toUpperCase();
+        }
+        if (numberFilter) {
+            return numberPart === numberFilter[0];
+        }
     }
+    return false;
+}
+
 
     function parseBufferNumber(bufferName) {
         const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
