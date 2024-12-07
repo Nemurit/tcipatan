@@ -142,7 +142,6 @@
             displayTable(sortedSummary);
         }
     }
-    
 
     function matchesExactBufferNumber(location, filter) {
         const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
@@ -200,8 +199,7 @@
             return false;
         }
     }
-    
-    
+
     function displayTable(sortedSummary) {
         $('#contentContainer').remove();
 
@@ -239,226 +237,29 @@
         const tbody = $('<tbody></tbody>');
         let totalContainers = 0;
 
-        Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
-            let laneTotal = 0;
+        Object.entries(sortedSummary).forEach(([lane, locations]) => {
+            Object.entries(locations).forEach(([location, details]) => {
+                tbody.append(`
+                    <tr>
+                        <td>${location}</td>
+                        <td>${details.count}</td>
+                        <td>${details.cpt || 'N/A'}</td>
+                    </tr>
+                `);
 
-            Object.entries(laneSummary).forEach(([location, data]) => {
-                laneTotal += data.count;
+                totalContainers += details.count;
             });
-
-            let laneColor = '';
-            if (laneTotal <= 10) {
-                laneColor = 'green';
-            } else if (laneTotal <= 30) {
-                laneColor = 'orange';
-            } else {
-                laneColor = 'red';
-            }
-
-            const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-                <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
-            </tr>`);
-
-            laneRow.on('click', function() {
-                const nextRows = $(this).nextUntil('.laneRow');
-                nextRows.toggle();
-            });
-
-            tbody.append(laneRow);
-
-            Object.entries(laneSummary).forEach(([location, data]) => {
-                // Visualizza il CPT solo nelle righe delle lane
-                const row = $('<tr class="locationRow"></tr>');
-                row.append(`<td>${location}</td>`);
-                row.append(`<td>${data.count}</td>`);
-                row.append(`<td>${data.cpt ? convertTimestampToLocalTime(data.cpt) : 'N/A'}</td>`);
-                tbody.append(row);
-            });
-
-            totalContainers += laneTotal;
         });
 
-        const tfoot = $('<tfoot></tfoot>');
-        const globalTotalRow = $('<tr><td colspan="3" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
-        tfoot.append(globalTotalRow);
-
-        table.append(thead);
-        table.append(tbody);
-        table.append(tfoot);
+        table.append(thead).append(tbody);
         contentContainer.append(table);
-
         $('body').append(contentContainer);
-
-        $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedBufferFilter = $(this).val();
-                fetchBufferSummary();
-            }
-        });
-
-        $('#laneFilterInput').val(selectedLaneFilters.join(', ')).on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedLaneFilters = $(this).val().split(',').map(filter => filter.trim());
-                fetchBufferSummary();
-            }
-        });
-
-        $('#cptFilterInput').val(selectedCptFilter).on('keydown', function(event) {
-            if (event.key === "Enter") {
-                const newFilter = $(this).val();
-                if (isValidCptFilter(newFilter)) {
-                    selectedCptFilter = newFilter;
-                    fetchBufferSummary();
-                } else {
-                    alert("Il filtro inserito non è valido. Usare valori come '16, 16:15, 16:30'.");
-                }
-            }
-        });
-        
-        function isValidCptFilter(filter) {
-            const parts = filter.split(',').map(f => f.trim());
-            return parts.every(part => /^(\d{1,2}(:\d{2})?)$/.test(part)); // Es. 16 o 16:15
-        }
-        
-        GM_addStyle(`
-            #bufferSummaryTable {
-                table-layout: auto;
-                margin: 20px 0;
-                border-collapse: collapse;
-                width: 100%;
-            }
-            #bufferSummaryTable th, #bufferSummaryTable td {
-                border: 1px solid #ddd;
-                padding: 10px;
-                text-align: left;
-            }
-            #bufferSummaryTable th {
-                background-color: #f4f4f4;
-                font-weight: bold;
-            }
-            #bufferSummaryTable tfoot {
-                background-color: #f4f4f4;
-            }
-            #bufferSummaryTable input {
-                font-size: 14px;
-                padding: 5px;
-                margin: 0;
-            }
-            .locationRow {
-                display: none;
-            }
-        `);
+        isVisible = true;
     }
 
-    function addToggleButton() {
-        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
-
-        toggleButton.on('click', function() {
-            isVisible = !isVisible;
-            if (isVisible) {
-                fetchBufferSummary();
-                $(this).text("Nascondi Recuperi");
-            } else {
-                $('#contentContainer').remove();
-                $(this).text("Mostra Recuperi");
-            }
-        });
-
-        $('body').append(toggleButton);
-    }
-
-    function addChartButton() {
-        const chartButton = $('<button id="chartButton" style="position: fixed; top: 50px; left: calc(50% - 40px); padding: 4px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Grafico</button>');
-    
-        chartButton.on('click', function() {
-            createBufferChart();
-        });
-    
-        $('body').append(chartButton);
-    }
-    
-    function createBufferChart() {
-    // Verifica se sortedSummary è popolato
-    console.log("Contenuto di sortedSummary:", sortedSummary);
-
-    // Verifica se sortedSummary è vuoto
-    if (Object.keys(sortedSummary).length === 0) {
-        console.log("sortedSummary è vuoto. Controlla dove vengono caricati i dati.");
-        return;  // Se non ci sono dati, non fare nulla
-    }
-
-    const chartData = [];
-    const chartLabels = [];
-
-    // Raccogli i dati aggregati per ogni buffer dalla colonna "Totale container"
-    Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
-        console.log(`Lane: ${lane}`, laneSummary); // Log per vedere cosa c'è in laneSummary
-
-        Object.entries(laneSummary).forEach(([location, data]) => {
-            console.log(`Location: ${location}, Data:`, data); // Log per vedere cosa c'è in ogni location
-
-            const bufferName = location; // Nome del buffer (location)
-            const totalContainers = data.count; // Numero di container
-
-            chartLabels.push(bufferName);
-            chartData.push(totalContainers);
-        });
-    });
-
-    // Verifica se ci sono dati da visualizzare
-    if (chartData.length === 0 || chartLabels.length === 0) {
-        console.log("Non ci sono dati aggregati per il grafico");
-        return;  // Se non ci sono dati, non fare nulla
-    }
-
-    // Creazione della finestra per il grafico
-    const chartContainerId = 'chartContainer';
-    if (!$(`#${chartContainerId}`).length) {
-        const chartContainer = $(`<div id="${chartContainerId}" style="position: fixed; top: 100px; left: 50%; transform: translateX(-50%); width: 600px; height: 400px; background: white; padding: 10px; border: 1px solid #ddd; z-index: 9999; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
-            <canvas id="bufferChart" style="width: 100%; height: 100%;"></canvas>
-            <button id="closeChartButton" style="position: absolute; top: 5px; right: 5px; background-color: red; color: white; border: none; border-radius: 3px; padding: 5px;">X</button>
-        </div>`);
-        $('body').append(chartContainer);
-
-        $('#closeChartButton').on('click', function() {
-            $(`#${chartContainerId}`).remove();
-        });
-    }
-
-    // Creazione del grafico
-    const ctx = document.getElementById('bufferChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'pie',  // Tipo grafico a torta
-        data: {
-            labels: chartLabels,
-            datasets: [{
-                label: 'Numero di Container per Buffer (Location)',
-                data: chartData,
-                backgroundColor: chartLabels.map(() => `#${Math.floor(Math.random() * 16777215).toString(16)}`), // Colori casuali
-                borderColor: '#fff',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'top'
-                }
-            }
-        }
-    });
-}
-
-    
-    
-    // Aggiunta del pulsante per il grafico
-    fetchStackingFilterMap(function() {
-        addToggleButton();
-        addChartButton(); // Aggiungiamo il pulsante per il grafico
+    // Inizializza la mappa dei filtri
+    fetchStackingFilterMap(() => {
         fetchBufferSummary();
     });
 
-   // Aggiorna i dati ogni 3 minuti
-    setInterval(fetchBufferSummary, 180000); // 180,000 ms = 3 minuti
 })();
