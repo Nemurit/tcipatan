@@ -8,6 +8,8 @@
     let selectedCptFilter = '';
     let stackingToLaneMap = {};
     let isVisible = false;
+    let isChartVisible = false;
+    let filteredSummary = {}; // Store filtered summary globally
 
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
@@ -78,7 +80,9 @@
     }
 
     function processAndDisplay(containers) {
-        const filteredSummary = {};
+        filteredSummary = {}; // Reset filteredSummary
+
+        let hasMatchingFilters = false;
 
         containers.forEach(container => {
             const location = container.location || '';
@@ -86,12 +90,16 @@
             const lane = stackingToLaneMap[stackingFilter] || 'N/A';
             const cpt = container.cpt || null;
 
-            // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
+            // Verifica se il container soddisfa i criteri di filtro
+            const matchesBufferFilter = selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter);
+            const matchesLaneFilter = selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()));
+            const matchesCptFilter = selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter));
+
             if (
                 location.toUpperCase().startsWith("BUFFER") &&
-                (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
-                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
-                (selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter)))
+                matchesBufferFilter &&
+                matchesLaneFilter &&
+                matchesCptFilter
             ) {
                 if (!filteredSummary[lane]) {
                     filteredSummary[lane] = {};
@@ -102,6 +110,7 @@
                 }
 
                 filteredSummary[lane][location].count++;
+                hasMatchingFilters = true;
             }
         });
 
@@ -124,15 +133,25 @@
                 }, {});
         });
 
+        if (!hasMatchingFilters) {
+            console.warn("Nessun risultato trovato, mostrando tutti i dati non filtrati.");
+            displayTable({});
+            return;
+        }
+
         if (isVisible) {
             displayTable(sortedSummary);
+        }
+
+        if (isChartVisible) {
+            generatePieChart(filteredSummary);
         }
     }
 
     function matchesExactBufferNumber(location, filter) {
-        const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
+        const match = location.match(/BUFFER\s*[A-Za-z](\d+)/);
         if (match) {
-            const bufferNumber = match[1];  // Estrae il numero
+            const bufferNumber = match[1];
             return bufferNumber === filter;
         }
         return false;
@@ -145,7 +164,6 @@
 
     function convertTimestampToLocalTime(timestamp) {
         const date = new Date(timestamp);
-        // Ottieni l'ora locale
         const options = {
             hour: '2-digit',
             minute: '2-digit',
@@ -158,9 +176,27 @@
     }
 
     function filterCpt(cpt, filter) {
-        const date = new Date(cpt);
-        const hour = date.getHours();
-        return hour.toString().startsWith(filter);
+        try {
+            const date = new Date(cpt);
+            const cptLocalTime = date.toLocaleTimeString('it-IT', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+
+            const filterParts = filter.split(',').map(f => f.trim());
+
+            return filterParts.some(part => {
+                if (/^\d{1,2}$/.test(part)) {
+                    const hour = part.padStart(2, '0');
+                    return cptLocalTime.startsWith(hour + ':');
+                }
+                return part === cptLocalTime;
+            });
+        } catch (error) {
+            console.warn("Errore nel filtro CPT o valore non valido:", error);
+            return false;
+        }
     }
 
     function displayTable(sortedSummary) {
@@ -173,7 +209,6 @@
         }
 
         const table = $('<table id="bufferSummaryTable" class="performance"></table>');
-
         const thead = $('<thead></thead>');
         thead.append(`
             <tr>
@@ -228,83 +263,93 @@
             tbody.append(laneRow);
 
             Object.entries(laneSummary).forEach(([location, data]) => {
-                // Visualizza il CPT solo nelle righe delle lane
-                const row = $('<tr class="locationRow"></tr>');
-                row.append(`<td>${location}</td>`);
-                row.append(`<td>${data.count}</td>`);
-                row.append(`<td>${data.cpt ? convertTimestampToLocalTime(data.cpt) : 'N/A'}</td>`);
+                const row = $('<tr class="containerRow" style="display: none;"></tr>');
+
+                row.append(`
+                    <td>${location}</td>
+                    <td>${data.count}</td>
+                    <td>${data.cpt ? convertTimestampToLocalTime(data.cpt) : ''}</td>
+                `);
+
                 tbody.append(row);
             });
-
-            totalContainers += laneTotal;
         });
 
-        const tfoot = $('<tfoot></tfoot>');
-        const globalTotalRow = $('<tr><td colspan="3" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
-        tfoot.append(globalTotalRow);
-
-        table.append(thead);
-        table.append(tbody);
-        table.append(tfoot);
+        table.append(thead).append(tbody);
         contentContainer.append(table);
-
         $('body').append(contentContainer);
-
-        $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedBufferFilter = $(this).val();
-                fetchBufferSummary();
-            }
-        });
-
-        $('#laneFilterInput').val(selectedLaneFilters.join(', ')).on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedLaneFilters = $(this).val().split(',').map(filter => filter.trim());
-                fetchBufferSummary();
-            }
-        });
-
-        $('#cptFilterInput').val(selectedCptFilter).on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedCptFilter = $(this).val();
-                fetchBufferSummary();
-            }
-        });
-
-        GM_addStyle(`
-            #bufferSummaryTable {
-                table-layout: auto;
-                margin: 20px 0;
-                border-collapse: collapse;
-                width: 100%;
-            }
-            #bufferSummaryTable th, #bufferSummaryTable td {
-                border: 1px solid #ddd;
-                padding: 10px;
-                text-align: left;
-            }
-            #bufferSummaryTable th {
-                background-color: #f4f4f4;
-                font-weight: bold;
-            }
-            #bufferSummaryTable tfoot {
-                background-color: #f4f4f4;
-            }
-            #bufferSummaryTable input {
-                font-size: 14px;
-                padding: 5px;
-                margin: 0;
-            }
-            .locationRow {
-                display: none;
-            }
-        `);
     }
 
-    function addToggleButton() {
-        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
+    function generatePieChart(filteredSummary) {
+        if (!filteredSummary || Object.keys(filteredSummary).length === 0) return;
 
-        toggleButton.on('click', function() {
+        const labels = Object.keys(filteredSummary);
+        const data = labels.map(location => {
+            return Object.values(filteredSummary[location]).reduce((acc, locData) => acc + locData.count, 0);
+        });
+
+        const chartData = {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: ['#ff0000', '#ff7f00', '#ffff00', '#7fff00', '#00ff00', '#0000ff', '#8a2be2'],
+                borderColor: '#ffffff',
+                borderWidth: 1
+            }]
+        };
+
+        const ctx = document.getElementById('myChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'pie',
+            data: chartData
+        });
+    }
+
+    function addChartToggleButton() {
+        const button = $('<button id="toggleChartButton">Mostra Grafico</button>');
+        button.css({
+            position: 'fixed',
+            bottom: '10px',
+            left: '10px',
+            padding: '10px',
+            background: '#4CAF50',
+            color: '#fff',
+            border: 'none',
+            cursor: 'pointer',
+            borderRadius: '5px',
+            fontSize: '14px'
+        });
+
+        button.on('click', function() {
+            isChartVisible = !isChartVisible;
+            if (isChartVisible) {
+                generatePieChart(filteredSummary);
+                $(this).text('Nascondi Grafico');
+            } else {
+                $('#myChart').remove();
+                $(this).text('Mostra Grafico');
+            }
+        });
+
+        $('body').append(button);
+    }
+
+    function addTableToggleButton() {
+        const button = $('<button id="toggleButton">Mostra Recuperi</button>');
+        button.css({
+            position: 'fixed',
+            top: '10px',
+            right: '10px',
+            padding: '10px',
+            background: '#4CAF50',
+            color: '#fff',
+            border: 'none',
+            cursor: 'pointer',
+            borderRadius: '5px',
+            fontSize: '14px'
+        });
+
+        button.on('click', function() {
             isVisible = !isVisible;
             if (isVisible) {
                 fetchBufferSummary();
@@ -315,14 +360,12 @@
             }
         });
 
-        $('body').append(toggleButton);
+        $('body').append(button);
     }
 
-    fetchStackingFilterMap(function() {
-        addToggleButton();
-        fetchBufferSummary();
+    $(document).ready(function() {
+        addTableToggleButton();
+        addChartToggleButton();
+        fetchStackingFilterMap();
     });
-
-    // Aggiorna i dati ogni 3 minuti
-    setInterval(fetchBufferSummary, 180000); // 180,000 ms = 3 minuti
 })();
