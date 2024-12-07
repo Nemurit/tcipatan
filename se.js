@@ -288,24 +288,17 @@
             }
         });
 
-       $('#cptFilterInput').val(selectedCptFilter).on('keydown', function(event) {
-    if (event.key === "Enter") {
-        const newFilter = $(this).val();
-        if (newFilter === "") {
-            // Se il filtro CPT è vuoto, resettiamo il filtro
-            selectedCptFilter = '';
-            fetchBufferSummary();
-        } else {
-            if (isValidCptFilter(newFilter)) {
-                selectedCptFilter = newFilter;
-                fetchBufferSummary();
-            } else {
-                alert("Il filtro inserito non è valido. Usare valori come '16, 16:15, 16:30'.");
+        $('#cptFilterInput').val(selectedCptFilter).on('keydown', function(event) {
+            if (event.key === "Enter") {
+                const newFilter = $(this).val();
+                if (isValidCptFilter(newFilter)) {
+                    selectedCptFilter = newFilter;
+                    fetchBufferSummary();
+                } else {
+                    alert("Il filtro inserito non è valido. Usare valori come '16, 16:15, 16:30'.");
+                }
             }
-        }
-    }
-});
-
+        });
         
         function isValidCptFilter(filter) {
             const parts = filter.split(',').map(f => f.trim());
@@ -341,6 +334,87 @@
             }
         `);
     }
+    function generatePieChart(filteredSummary) {
+        if (!filteredSummary || Object.keys(filteredSummary).length === 0) return;
+    
+        // Create the canvas element dynamically if it doesn't exist
+        let chartCanvas = document.getElementById('myChart');
+        if (!chartCanvas) {
+            chartCanvas = document.createElement('canvas');
+            chartCanvas.id = 'myChart';
+            chartCanvas.style.width = '300px';  // Smaller canvas width
+            chartCanvas.style.height = '300px'; // Smaller canvas height
+            document.body.appendChild(chartCanvas);
+        }
+    
+        // Aggregate data by buffer location
+        const bufferLocations = {};  // To store the total count of containers per buffer location
+    
+        Object.entries(filteredSummary).forEach(([lane, laneSummary]) => {
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                if (location.startsWith("BUFFER")) {
+                    if (!bufferLocations[location]) {
+                        bufferLocations[location] = 0;
+                    }
+                    bufferLocations[location] += data.count;  // Add up the count of containers for the buffer location
+                }
+            });
+        });
+    
+        const labels = Object.keys(bufferLocations);
+        const data = labels.map(location => bufferLocations[location]);
+    
+        const chartData = {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: ['#ff0000', '#ff7f00', '#ffff00', '#7fff00', '#00ff00', '#0000ff', '#8a2be2'],
+                borderColor: '#ffffff',
+                borderWidth: 1
+            }]
+        };
+    
+        // Get the canvas context and create the chart
+        const ctx = chartCanvas.getContext('2d');
+        if (ctx) {
+            new Chart(ctx, {
+                type: 'pie',
+                data: chartData
+            });
+        } else {
+            console.error("Canvas context could not be found.");
+        }
+    }
+    
+    
+        function addChartToggleButton() {
+            const button = $('<button id="toggleChartButton">Mostra Grafico</button>');
+            button.css({
+                position: 'fixed',
+                bottom: '10px',
+                left: '10px',
+                padding: '10px',
+                background: '#4CAF50',
+                color: '#fff',
+                border: 'none',
+                cursor: 'pointer',
+                borderRadius: '5px',
+                fontSize: '14px'
+            });
+    
+            button.on('click', function() {
+                isChartVisible = !isChartVisible;
+                if (isChartVisible) {
+                    generatePieChart(filteredSummary);
+                    $(this).text('Nascondi Grafico');
+                } else {
+                    $('#myChart').remove();
+                    $(this).text('Mostra Grafico');
+                }
+            });
+    
+            $('body').append(button);
+        }
 
     function addToggleButton() {
         const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
