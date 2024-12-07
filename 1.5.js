@@ -8,6 +8,11 @@
     let stackingToLaneMap = {};
     let isVisible = false;
 
+
+    function parseBufferNumber(bufferName) {
+        const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
+        return match ? parseInt(match[1], 10) : 0;  // Estrae solo il numero, o restituisce 0 se non corrisponde
+    }
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
             method: "GET",
