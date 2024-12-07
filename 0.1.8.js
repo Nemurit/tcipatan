@@ -6,9 +6,8 @@
     let selectedBufferFilter = '';
     let selectedLaneFilters = [];
     let stackingToLaneMap = {};
-    let selectedTimeFilter = ''; // Aggiunta qui
     let isVisible = false;
-    
+    let selectedTimeFilter = ''; // Variabile per il filtro orario
 
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
@@ -62,14 +61,11 @@
             onload: function(response) {
                 try {
                     const data = JSON.parse(response.responseText);
-                    console.log("API Response:", data);  // Log the entire response
                     if (data.ret && data.ret.getContainersDetailByCriteriaOutput) {
-                        const containers = data.ret.getContainersDetailByCriteriaOutput.containerDetails;
-if (Array.isArray(containers) && containers.length > 0) {
-    processAndDisplay(containers[0].containerDetails); // Assuming the first item contains the container details
-} else {
-    console.warn("I dati dei container non sono disponibili o non sono strutturati correttamente.");
-}
+                        const containers = data.ret.getContainersDetailByCriteriaOutput.containerDetails[0].containerDetails;
+                        processAndDisplay(containers);
+                    } else {
+                        console.warn("Nessun dato trovato nella risposta API.");
                     }
                 } catch (error) {
                     console.error("Errore nella risposta API:", error);
@@ -79,21 +75,17 @@ if (Array.isArray(containers) && containers.length > 0) {
                 console.error("Errore nella chiamata API:", error);
             }
         });
-    }        
+    }
 
     function processAndDisplay(containers) {
-        if (!containers || !Array.isArray(containers)) {
-            console.warn("Nessun dato trovato nei containers.");
-            return;
-        }
-    
         const filteredSummary = {};
-    
+
         containers.forEach(container => {
             const location = container.location || '';
             const stackingFilter = container.stackingFilter || 'N/A';
             const lane = stackingToLaneMap[stackingFilter] || 'N/A';
-    
+            const timestamp = container.physicalLocationMoveTimestamp; // Orario del timestamp del container
+
             // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
             if (
                 location.toUpperCase().startsWith("BUFFER") &&
@@ -103,15 +95,16 @@ if (Array.isArray(containers) && containers.length > 0) {
                 if (!filteredSummary[lane]) {
                     filteredSummary[lane] = {};
                 }
-    
+
                 if (!filteredSummary[lane][location]) {
-                    filteredSummary[lane][location] = { count: 0 };
+                    filteredSummary[lane][location] = { count: 0, times: [] };
                 }
-    
+
                 filteredSummary[lane][location].count++;
+                filteredSummary[lane][location].times.push(timestamp);
             }
         });
-    
+
         const sortedSummary = {};
         Object.keys(filteredSummary).forEach(lane => {
             const laneSummary = filteredSummary[lane];
@@ -119,7 +112,7 @@ if (Array.isArray(containers) && containers.length > 0) {
                 .sort((a, b) => {
                     const numA = parseBufferNumber(a);
                     const numB = parseBufferNumber(b);
-    
+
                     if (numA === numB) {
                         return a.localeCompare(b);
                     }
@@ -130,40 +123,16 @@ if (Array.isArray(containers) && containers.length > 0) {
                     return acc;
                 }, {});
         });
-    
+
         if (isVisible) {
             displayTable(sortedSummary);
         }
     }
-    
-// Funzione per convertire una data in formato HH:mm:ss DD/MM/YYYY
-function formatCPT(date) {
-    if (!date) return 'N/A';
-    const optionsTime = { timeZone: 'Europe/Rome', hour: '2-digit', minute: '2-digit', second: '2-digit' };
-    const optionsDate = { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', year: 'numeric' };
-    const time = date.toLocaleTimeString('it-IT', optionsTime);
-    const dateStr = date.toLocaleDateString('it-IT', optionsDate);
-    return `${time} ${dateStr}`;
-}
 
-// Funzione che confronta il numero esatto nel nome del buffer con il filtro
-function matchesExactBufferNumber(location, filter) {
-    const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
-    if (match) {
-        const bufferNumber = match[1];  // Estrae il numero
-        // Verifica che il numero estratto corrisponda esattamente al filtro
-        return bufferNumber === filter;  
+    function parseBufferNumber(bufferName) {
+        const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
+        return match ? parseInt(match[1], 10) : 0;  // Estrae solo il numero
     }
-    return false;
-}
-
-// Funzione che estrae il numero dal nome del buffer per ordinarlo
-function parseBufferNumber(bufferName) {
-    const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
-    return match ? parseInt(match[1], 10) : 0;  // Estrae solo il numero
-}
-
-
 
     function displayTable(sortedSummary) {
         $('#contentContainer').remove();
@@ -175,7 +144,6 @@ function parseBufferNumber(bufferName) {
         }
 
         const table = $('<table id="bufferSummaryTable" class="performance"></table>');
-
         const thead = $('<thead></thead>');
         thead.append(`
             <tr>
@@ -185,58 +153,42 @@ function parseBufferNumber(bufferName) {
                 <th>
                     <input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="width: 100%; padding: 5px; box-sizing: border-box;">
                 </th>
+                <th>
+                    <input id="timeFilterInput" type="text" placeholder="Filtro per Orario (HH:mm)" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                </th>
             </tr>
-            <th colspan="2">
-                <input id="timeFilterInput" type="text" placeholder="Filtro per ORA (es. 14:00-16:00)" style="width: 100%; padding: 5px; box-sizing: border-box;">
-            </th>
-        </tr>
-        `);
-
-        thead.append(`
             <tr>
                 <th>Buffer</th>
                 <th>Totale Container</th>
+                <th>Orario CPT</th>
             </tr>
         `);
 
         const tbody = $('<tbody></tbody>');
         let totalContainers = 0;
 
-        Object.entries(sortedSummary).forEach(([lane, data]) => {
-            const laneCPT = formatCPT(data.cpt);
-            const laneSummary = data.locations;
-    
+        Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
             let laneTotal = 0;
-            Object.entries(laneSummary).forEach(([location, locData]) => {
-                laneTotal += locData.count;
+
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                laneTotal += data.count;
             });
-    
-            let laneColor = '';
-            if (laneTotal <= 10) {
-                laneColor = 'green';
-            } else if (laneTotal <= 30) {
-                laneColor = 'orange';
-            } else {
-                laneColor = 'red';
-            }
-    
+
             const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-                <td colspan="2" style="font-weight: bold; text-align: left;">
-                    Lane: ${lane} - CPT: <span>${laneCPT}</span> - Totale: <span style="color: ${laneColor};">${laneTotal}</span>
-                </td>
+                <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: ${laneTotal}</td>
             </tr>`);
-    
+
             laneRow.on('click', function() {
                 const nextRows = $(this).nextUntil('.laneRow');
                 nextRows.toggle();
             });
-    
+
             tbody.append(laneRow);
-    
-            Object.entries(laneSummary).forEach(([location, locData]) => {
+
+            Object.entries(laneSummary).forEach(([location, data]) => {
                 const row = $('<tr class="locationRow"></tr>');
-                const count = locData.count;
-    
+                const count = data.count;
+
                 let color = '';
                 if (count <= 10) {
                     color = 'green';
@@ -245,24 +197,32 @@ function parseBufferNumber(bufferName) {
                 } else {
                     color = 'red';
                 }
-    
+
+                const cptTime = getCPTTime(data.times);
+
+                // Filtro orario
+                if (selectedTimeFilter && !matchesTimeFilter(cptTime, selectedTimeFilter)) {
+                    return;
+                }
+
                 row.append(`<td>${location}</td>`);
                 row.append(`<td style="color: ${color};">${count}</td>`);
+                row.append(`<td>${cptTime}</td>`);
                 tbody.append(row);
             });
-    
+
             totalContainers += laneTotal;
         });
-    
+
         const tfoot = $('<tfoot></tfoot>');
-        const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
+        const globalTotalRow = $('<tr><td colspan="3" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
         tfoot.append(globalTotalRow);
-    
+
         table.append(thead);
         table.append(tbody);
         table.append(tfoot);
         contentContainer.append(table);
-    
+
         $('body').append(contentContainer);
 
         $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function(event) {
@@ -316,6 +276,25 @@ function parseBufferNumber(bufferName) {
         `);
     }
 
+    function getCPTTime(timestamps) {
+        const timeZoneOffset = 1 * 60 * 60 * 1000; // UTC+1
+        const cptTimestamp = Math.max(...timestamps); // Usa il timestamp più recente
+
+        const cptDate = new Date(cptTimestamp + timeZoneOffset);
+        const hours = cptDate.getHours().toString().padStart(2, '0');
+        const minutes = cptDate.getMinutes().toString().padStart(2, '0');
+        const date = cptDate.toISOString().slice(0, 10); // Data in formato YYYY-MM-DD
+
+        return `${hours}:${minutes} ${date}`;
+    }
+
+    function matchesTimeFilter(cptTime, timeFilter) {
+        const [filterHour, filterMinute] = timeFilter.split(':').map(num => parseInt(num, 10));
+        const [cptHour, cptMinute] = cptTime.split(':').map(num => parseInt(num, 10));
+
+        return cptHour > filterHour || (cptHour === filterHour && cptMinute >= filterMinute);
+    }
+
     function addToggleButton() {
         const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
 
@@ -338,7 +317,6 @@ function parseBufferNumber(bufferName) {
         fetchBufferSummary();
     });
 
-    // Aggiorna i dati ogni 5 minuti
     setInterval(fetchBufferSummary, 200000); // 200,000 ms = 3 minuti
 
 })();
