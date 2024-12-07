@@ -10,28 +10,6 @@
     let isVisible = false;
     let isChartVisible = false;
     let filteredSummary = {}; // Store filtered summary globally
-    const bufferAreaMapUrl = 'https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/buffer.json';
-    let bufferAreaMap = {}; // Map to store the relationship between buffers and areas
-
-
-    function fetchBufferAreaMap(callback) {
-        GM_xmlhttpRequest({
-            method: "GET",
-            url: bufferAreaMapUrl,
-            onload: function(response) {
-                try {
-                    const areaData = JSON.parse(response.responseText);
-                    bufferAreaMap = areaData; // Store the mapping of buffer to area
-                    if (callback) callback();
-                } catch (error) {
-                    console.error("Errore nel parsing della mappa delle aree:", error);
-                }
-            },
-            onerror: function(error) {
-                console.error("Errore nel caricamento del file delle aree:", error);
-            }
-        });
-    }
 
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
@@ -372,6 +350,35 @@
             }
         `);
     }
+    function addChartToggleButton() {
+        const button = $('<button id="toggleChartButton">Mostra Grafico</button>');
+        button.css({
+            position: 'fixed',
+            bottom: '10px',
+            left: '10px',
+            padding: '10px',
+            background: '#4CAF50',
+            color: '#fff',
+            border: 'none',
+            cursor: 'pointer',
+            borderRadius: '5px',
+            fontSize: '14px'
+        });
+    
+        button.on('click', function() {
+            isChartVisible = !isChartVisible;
+            if (isChartVisible) {
+                generatePieChart(filteredSummary);
+                $(this).text('Chiudi Grafico'); // Cambia testo del pulsante quando il grafico è visibile
+            } else {
+                $('#chartContainer').remove(); // Rimuovi il grafico quando viene chiuso
+                $(this).text('Mostra Grafico'); // Ripristina il testo del pulsante
+            }
+        });
+    
+        $('body').append(button);
+    }
+    
     function generatePieChart(filteredSummary) {
         if (!filteredSummary || Object.keys(filteredSummary).length === 0) {
             console.warn("No data to generate the chart.");
@@ -385,13 +392,11 @@
             chartContainer.id = 'chartContainer';
             chartContainer.style.display = 'none'; // Initially hidden
             chartContainer.style.position = 'fixed';
-            chartContainer.style.top = '10px';
+            chartContainer.style.top = '60px';
             chartContainer.style.left = '50%';
-            chartContainer.style.transform = 'translateX(-50%)';
             chartContainer.style.padding = '20px';
             chartContainer.style.backgroundColor = 'rgba(0, 0, 0, 0)';  // Background transparent
             chartContainer.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
-            chartContainer.style.borderRadius = '10px';
             chartContainer.style.width = '500px';
             chartContainer.style.maxWidth = '100%';
             chartContainer.style.zIndex = '1000';
@@ -408,15 +413,15 @@
         }
     
         // Aggregate data by buffer location
-        const areaData = {};  // To store the total count of containers per buffer location
+        const bufferLocations = {};  // To store the total count of containers per buffer location
     
-        Object.entries(filteredSummary).forEach(([area, laneSummary]) => {
-            Object.entries(laneSummary).forEach(([lane, data]) => {
+        Object.entries(filteredSummary).forEach(([lane, laneSummary]) => {
+            Object.entries(laneSummary).forEach(([location, data]) => {
                 if (location.startsWith("BUFFER")) {
-                    if (!areaData[area]) {
-                        areaData[data] = 0;
+                    if (!bufferLocations[location]) {
+                        bufferLocations[location] = 0;
                     }
-                    areaData[area] += data.count;  // Add up the count of containers for the buffer location
+                    bufferLocations[location] += data.count;  // Add up the count of containers for the buffer location
                 }
             });
         });
@@ -443,7 +448,7 @@
         // Get the canvas context and create the chart
         const ctx = document.getElementById('myChart').getContext('2d');
         if (ctx) {
-            new Chart(ctx, {
+            const chart = new Chart(ctx, {
                 type: 'pie',
                 data: chartData,
                 options: {
@@ -461,6 +466,16 @@
                                 }
                             }
                         }
+                    },
+                    onClick: function(event, elements) {
+                        if (elements.length > 0) {
+                            // Get the label of the clicked slice (buffer location)
+                            const clickedLabel = chart.data.labels[elements[0].index];
+                            // Set the buffer filter to the clicked label
+                            selectedBufferFilter = clickedLabel;
+                            $('#bufferFilterInput').val(selectedBufferFilter);  // Update the input field
+                            fetchBufferSummary();  // Fetch the updated data based on the new filter
+                        }
                     }
                 }
             });
@@ -468,6 +483,7 @@
             console.error("Canvas context could not be found.");
         }
     }
+    
     
     function addChartToggleButton() {
         const button = $('<button id="toggleChartButton"  style="position: fixed; top: 35px; left: calc(50% - 22px); padding: 10px; background: rgb(0, 123, 255); color: white; border: none; cursor: pointer; border-radius: 5px; font-size: 14px;">Mostra grafico recuperi</button>');
@@ -487,7 +503,6 @@
     
         $('body').append(button);
     }
-    
 
 
     function addToggleButton() {
@@ -507,12 +522,10 @@
         $('body').append(toggleButton);
     }
 
-    fetchBufferAreaMap(function() {
-        fetchStackingFilterMap(function() {
-            addToggleButton();
-            addChartToggleButton();
-            fetchBufferSummary(); // Fetch and process data after both maps are loaded
-        });
+    fetchStackingFilterMap(function() {
+        addToggleButton();
+        addChartToggleButton();
+        fetchBufferSummary();
     });
 
     // Aggiorna i dati ogni 3 minuti
