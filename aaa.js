@@ -146,7 +146,12 @@
     function convertTimestampToUTCPlusOne(timestamp) {
         const date = new Date(timestamp);
         date.setHours(date.getHours() + 1); // Aggiungi 1 ora per UTC+1
-        return date.toISOString(); // Restituisce la data in formato ISO 8601
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${hours}:${minutes} ${day}/${month}/${year}`;
     }
 
     function filterCpt(cpt, filter) {
@@ -173,7 +178,7 @@
                     <input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="width: 100%; padding: 5px; box-sizing: border-box;">
                 </th>
                 <th>
-                    <input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                    <input id="laneFilterInput" type="text" placeholder="Filtro per LANE (es. Lane1, Lane2)" style="width: 100%; padding: 5px; box-sizing: border-box;">
                 </th>
                 <th>
                     <input id="cptFilterInput" type="text" placeholder="Filtro per CPT (es. 14)" style="width: 100%; padding: 5px; box-sizing: border-box;">
@@ -209,7 +214,7 @@
             }
 
             const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-                <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span> - CPT: ${laneSummary[Object.keys(laneSummary)[0]].cpt ? convertTimestampToUTCPlusOne(laneSummary[Object.keys(laneSummary)[0]].cpt) : 'N/A'}</td>
+                <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
             </tr>`);
 
             laneRow.on('click', function() {
