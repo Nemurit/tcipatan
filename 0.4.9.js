@@ -96,7 +96,7 @@
                 (selectedCptFilter === '' || cpt.toUpperCase().includes(selectedCptFilter.toUpperCase()))
             ) {
                 if (!filteredSummary[lane]) {
-                    filteredSummary[lane] = { cpts: new Set(), locations: {} };
+                    filteredSummary[lane] = { cpts: new Set(), locations: {}, totalContainers: 0 };
                 }
 
                 filteredSummary[lane].cpts.add(cpt);
@@ -107,6 +107,9 @@
 
                 filteredSummary[lane].locations[location].count++;
                 filteredSummary[lane].locations[location].cpt.add(cpt);
+
+                // Incrementa il totale dei container per lane
+                filteredSummary[lane].totalContainers++;
             }
         });
 
@@ -128,7 +131,8 @@
                     .reduce((acc, location) => {
                         acc[location] = laneSummary[location];
                         return acc;
-                    }, {})
+                    }, {}),
+                totalContainers: filteredSummary[lane].totalContainers
             };
         });
 
@@ -150,6 +154,23 @@
     function parseBufferNumber(bufferName) {
         const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
         return match ? parseInt(match[1], 10) : 0;
+    }
+
+    // Funzione per formattare la data e ora CPT in UTC+1
+    function formatCptDate(cpt) {
+        const date = new Date(cpt);
+        const options = {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+            timeZone: 'Europe/Rome',
+            timeZoneName: 'short'
+        };
+        return date.toLocaleString('it-IT', options);
     }
 
     // Visualizza la tabella con i risultati
@@ -188,7 +209,7 @@
         `);
 
         const tbody = $('<tbody></tbody>');
-        Object.entries(sortedSummary).forEach(([lane, { cpts, locations }]) => {
+        Object.entries(sortedSummary).forEach(([lane, { cpts, locations, totalContainers }]) => {
             Object.entries(locations).forEach(([location, data]) => {
                 const row = $('<tr class="locationRow"></tr>');
                 row.append(`<td>${lane}</td>`);
@@ -224,33 +245,6 @@
                 fetchBufferSummary();
             }
         });
-
-        GM_addStyle(`
-            #bufferSummaryTable {
-                table-layout: auto;
-                margin: 20px 0;
-                border-collapse: collapse;
-                width: 100%;
-            }
-            #bufferSummaryTable th, #bufferSummaryTable td {
-                border: 1px solid #ddd;
-                padding: 10px;
-                text-align: left;
-            }
-            #bufferSummaryTable th {
-                background-color: #f4f4f4;
-                font-weight: bold;
-            }
-            #bufferSummaryTable tfoot {
-                background-color: #f4f4f4;
-            }
-            #contentContainer {
-                max-height: 600px;
-                overflow-y: auto;
-                border-radius: 8px;
-                box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-            }
-        `);
     }
 
     // Mostra/Nascondi contenitore
