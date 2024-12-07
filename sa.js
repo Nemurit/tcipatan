@@ -138,17 +138,14 @@
     }
 }
 
+// Modifica della funzione di filtro per il buffer
 function matchesExactBufferString(location, filter) {
-    const regexFullBuffer = new RegExp(`^BUFFER\\s*${filter}$`, 'i'); // Esatta corrispondenza dell'intera stringa "BUFFER X"
-    const regexPartialBuffer = new RegExp(`^BUFFER\\s*[A-Za-z]*\\s*${filter}$`, 'i'); // Corrispondenza per lettere seguite da un numero
-    
-    // Se il filtro è vuoto, accetta tutto
-    if (!filter) return true;
-
-    // Controlla se la location soddisfa uno dei due scenari
-    return regexFullBuffer.test(location) || regexPartialBuffer.test(location);
+    // Se il filtro è esattamente uguale alla location, restituisce true
+    if (location.toUpperCase().includes(filter.toUpperCase())) {
+        return true;
+    }
+    return false;
 }
-
 
 // All'interno della funzione processAndDisplay
 function processAndDisplay(containers) {
@@ -163,7 +160,7 @@ function processAndDisplay(containers) {
         // Filtro solo i buffer che contengono "BUFFER" e applico il filtro selezionato
         if (
             location.toUpperCase().startsWith("BUFFER") &&
-            (selectedBufferFilter === '' || matchesExactBufferString(location, selectedBufferFilter)) &&
+            (selectedBufferFilter === '' || matchesExactBufferString(location, selectedBufferFilter)) &&  // Usa matchesExactBufferString
             (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
             (selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter)))
         ) {
@@ -179,7 +176,7 @@ function processAndDisplay(containers) {
         }
     });
 
-    console.log("Filtered Summary:", filteredSummary);
+    console.log("Filtered Summary:", filteredSummary); // Debugging line
 
     const sortedSummary = {};
     Object.keys(filteredSummary).forEach(lane => {
@@ -204,7 +201,6 @@ function processAndDisplay(containers) {
         displayTable(sortedSummary);
     }
 
-   
     // Se sortedSummary non è vuoto, generiamo il grafico
     if (Object.keys(sortedSummary).length > 0) {
         generatePieChart(sortedSummary);
