@@ -7,7 +7,7 @@
     let selectedLaneFilters = [];
     let selectedCptFilter = '';
     let stackingToLaneMap = {};
-    let filteredSummary = {}; // Variabile globale per i dati filtrati e ordinati
+    let sortedSummary = {}; // Variabile globale per i dati filtrati e ordinati
     let isVisible = false;
 
     function fetchStackingFilterMap(callback) {
@@ -78,70 +78,44 @@
         });
     }
 
-    function processAndDisplay(containers) {
-        const filteredSummary = {};
-        let hasMatchingFilters = false; // Variabile per verificare se almeno un dato corrisponde ai filtri
-    
-        containers.forEach(container => {
-            const location = container.location || '';
-            const stackingFilter = container.stackingFilter || 'N/A';
-            const lane = stackingToLaneMap[stackingFilter] || 'N/A';
-            const cpt = container.cpt || null;
-    
-            // Verifica se il container soddisfa i criteri di filtro
-            const matchesBufferFilter = selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter);
-            const matchesLaneFilter = selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()));
-            const matchesCptFilter = selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter));
-    
-            if (
-                location.toUpperCase().startsWith("BUFFER") &&
-                matchesBufferFilter &&
-                matchesLaneFilter &&
-                matchesCptFilter
-            ) {
-                if (!filteredSummary[lane]) {
-                    filteredSummary[lane] = {};
-                }
-    
-                if (!filteredSummary[lane][location]) {
-                    filteredSummary[lane][location] = { count: 0, cpt: cpt };
-                }
-    
-                filteredSummary[lane][location].count++;
-                hasMatchingFilters = true; // Almeno un dato corrisponde ai filtri
-            }
-        });
-    
-        const sortedSummary = {};
-        Object.keys(filteredSummary).forEach(lane => {
-            const laneSummary = filteredSummary[lane];
-            sortedSummary[lane] = Object.keys(laneSummary)
-                .sort((a, b) => {
-                    const numA = parseBufferNumber(a);
-                    const numB = parseBufferNumber(b);
-    
-                    if (numA === numB) {
-                        return a.localeCompare(b);
-                    }
-                    return numA - numB;
-                })
-                .reduce((acc, location) => {
-                    acc[location] = laneSummary[location];
-                    return acc;
-                }, {});
-        });
-    
-        // Se nessun filtro ha prodotto risultati, lascia la tabella visibile come se non fosse applicato alcun filtro
-        if (!hasMatchingFilters) {
-            console.warn("Nessun risultato trovato, mostrando tutti i dati non filtrati.");
-            displayTable({});
-            return;
-        }
-    
-        if (isVisible) {
-            displayTable(sortedSummary);
-        }
-    }
+ function processAndDisplay(containers) {
+     const filteredSummary = {};
+     let hasMatchingFilters = false;
+
+     containers.forEach(container => {
+         // Elaborazione dei dati
+         // ...
+     });
+
+     const sortedSummary = {};
+     Object.keys(filteredSummary).forEach(lane => {
+         const laneSummary = filteredSummary[lane];
+         sortedSummary[lane] = Object.keys(laneSummary)
+             .sort((a, b) => {
+                 const numA = parseBufferNumber(a);
+                 const numB = parseBufferNumber(b);
+                 return numA - numB;
+             })
+             .reduce((acc, location) => {
+                 acc[location] = laneSummary[location];
+                 return acc;
+             }, {});
+     });
+
+     console.log("Dati ordinati:", sortedSummary);  // Aggiungi questo per vedere i dati dopo l'ordinamento
+
+     // Se nessun filtro ha trovato risultati
+     if (!hasMatchingFilters) {
+         console.warn("Nessun risultato trovato, mostrando tutti i dati non filtrati.");
+         displayTable({});
+         return;
+     }
+
+     if (isVisible) {
+         displayTable(sortedSummary);
+     }
+ }
+
     
 
     function matchesExactBufferNumber(location, filter) {
@@ -378,76 +352,72 @@
     }
     
     function createBufferChart() {
-        // Verifica se sortedSummary è popolato
-        console.log("Contenuto di sortedSummary:", filteredSummary);
-    
-        // Raccogliamo i dati per il grafico
-        const chartData = [];
-        const chartLabels = [];
-    
-        // Verifica se sortedSummary è vuoto
-        if (Object.keys(filteredSummary).length === 0) {
-            console.log("Nessun dato trovato per il grafico");
-            return;  // Se non ci sono dati, non fare nulla
-        }
-    
-        // Raccogli i dati aggregati per ogni buffer dalla colonna "Totale container"
-        Object.entries(filteredSummary).forEach(([lane, laneSummary]) => {
-            Object.entries(laneSummary).forEach(([location, data]) => {
-                const bufferName = location; // Nome del buffer (location)
-                const totalContainers = data.count; // Numero di container
-    
-                // Aggiungi i dati per il grafico
-                chartLabels.push(bufferName);
-                chartData.push(totalContainers);
-            });
-        });
-    
-        // Verifica se ci sono dati da visualizzare
-        if (chartData.length === 0 || chartLabels.length === 0) {
-            console.log("Non ci sono dati aggregati per il grafico");
-            return;  // Se non ci sono dati, non fare nulla
-        }
-    
-        // Creazione della finestra per il grafico
-        const chartContainerId = 'chartContainer';
-        if (!$(`#${chartContainerId}`).length) {
-            const chartContainer = $(`<div id="${chartContainerId}" style="position: fixed; top: 100px; left: 50%; transform: translateX(-50%); width: 600px; height: 400px; background: white; padding: 10px; border: 1px solid #ddd; z-index: 9999; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
-                <canvas id="bufferChart" style="width: 100%; height: 100%;"></canvas>
-                <button id="closeChartButton" style="position: absolute; top: 5px; right: 5px; background-color: red; color: white; border: none; border-radius: 3px; padding: 5px;">X</button>
-            </div>`);
-            $('body').append(chartContainer);
-    
-            $('#closeChartButton').on('click', function() {
-                $(`#${chartContainerId}`).remove();
-            });
-        }
-    
-        // Configurazione del grafico con Chart.js
-        const ctx = document.getElementById('bufferChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'pie',  // Tipo grafico a torta
-            data: {
-                labels: chartLabels,
-                datasets: [{
-                    label: 'Numero di Container per Buffer (Location)',
-                    data: chartData,
-                    backgroundColor: chartLabels.map(() => `#${Math.floor(Math.random() * 16777215).toString(16)}`), // Colori casuali
-                    borderColor: '#fff',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'top'
-                    }
-                }
-            }
-        });
-    }
-    
+     console.log("Contenuto di sortedSummary:", sortedSummary);  // Aggiungi questo per vedere cosa contiene sortedSummary
+
+     const chartData = [];
+     const chartLabels = [];
+
+     // Verifica se sortedSummary è vuoto
+     if (Object.keys(sortedSummary).length === 0) {
+         console.log("Nessun dato trovato per il grafico");
+         return;  // Se non ci sono dati, non fare nulla
+     }
+
+     Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
+         Object.entries(laneSummary).forEach(([location, data]) => {
+             const bufferName = location;
+             const totalContainers = data.count;
+
+             chartLabels.push(bufferName);
+             chartData.push(totalContainers);
+         });
+     });
+
+     console.log("Dati per il grafico:", chartData, chartLabels);  // Aggiungi questo per vedere i dati preparati per il grafico
+
+     // Se chartData è vuoto, non fare nulla
+     if (chartData.length === 0 || chartLabels.length === 0) {
+         console.log("Non ci sono dati aggregati per il grafico");
+         return;
+     }
+
+     const chartContainerId = 'chartContainer';
+     if (!$(`#${chartContainerId}`).length) {
+         const chartContainer = $(`<div id="${chartContainerId}" style="position: fixed; top: 100px; left: 50%; transform: translateX(-50%); width: 600px; height: 400px; background: white; padding: 10px; border: 1px solid #ddd; z-index: 9999; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+             <canvas id="bufferChart" style="width: 100%; height: 100%;"></canvas>
+             <button id="closeChartButton" style="position: absolute; top: 5px; right: 5px; background-color: red; color: white; border: none; border-radius: 3px; padding: 5px;">X</button>
+         </div>`);
+         $('body').append(chartContainer);
+
+         $('#closeChartButton').on('click', function() {
+             $(`#${chartContainerId}`).remove();
+         });
+     }
+
+     const ctx = document.getElementById('bufferChart').getContext('2d');
+     new Chart(ctx, {
+         type: 'pie',
+         data: {
+             labels: chartLabels,
+             datasets: [{
+                 label: 'Numero di Container per Buffer (Location)',
+                 data: chartData,
+                 backgroundColor: chartLabels.map(() => `#${Math.floor(Math.random() * 16777215).toString(16)}`),
+                 borderColor: '#fff',
+                 borderWidth: 1
+             }]
+         },
+         options: {
+             responsive: true,
+             plugins: {
+                 legend: {
+                     position: 'top'
+                 }
+             }
+         }
+     });
+ }
+
     
     // Aggiunta del pulsante per il grafico
     fetchStackingFilterMap(function() {
