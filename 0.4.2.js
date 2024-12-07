@@ -85,10 +85,7 @@
         const location = container.location || '';
         const stackingFilter = container.stackingFilter || 'N/A';
         const lane = stackingToLaneMap[stackingFilter] || 'N/A';
-        const cpt = container.cpt ? new Date(container.cpt) : null; // Recupera il CPT e lo converte in oggetto Date
 
-
-        // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
         if (
             location.toUpperCase().startsWith("BUFFER") &&
             (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
@@ -124,6 +121,11 @@
                 return acc;
             }, {});
     });
+
+    if (Object.keys(sortedSummary).length === 0) {
+        console.warn("No data to display.");
+        return;
+    }
 
     if (isVisible) {
         displayTable(sortedSummary);
