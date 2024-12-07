@@ -159,24 +159,29 @@
 
     function filterCpt(cpt, filter) {
         try {
+            // Converte CPT al fuso orario locale e formato "HH:MM"
             const date = new Date(cpt);
-            const hourMinute = date.toISOString().slice(11, 16); // Otteniamo "HH:MM"
+            const cptLocalTime = date.toLocaleTimeString('it-IT', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
     
             // Dividiamo il filtro in parti (es. "16", "16:15", ecc.)
             const filterParts = filter.split(',').map(f => f.trim());
     
-            // Confrontiamo ogni parte del filtro con il valore esatto di "HH:MM"
+            // Confrontiamo ogni parte del filtro con l'orario locale "HH:MM"
             return filterParts.some(part => {
-                // Se il filtro è solo "16", controlliamo che corrisponda all'ora
                 if (/^\d{1,2}$/.test(part)) {
-                    const hour = part.padStart(2, '0'); // Assicuriamo che l'ora sia "HH"
-                    return hour === hourMinute.slice(0, 2); // Confrontiamo solo l'ora
+                    // Se il filtro è solo "HH", confronta solo l'ora
+                    const hour = part.padStart(2, '0');
+                    return cptLocalTime.startsWith(hour + ':'); // HH corrisponde
                 }
-                // Se il filtro è "HH:MM", confrontiamo l'intero valore
-                return part === hourMinute;
+                // Se il filtro è "HH:MM", confronta l'intero valore
+                return part === cptLocalTime;
             });
         } catch (error) {
-            console.warn("Errore nel parsing del filtro CPT o valore non valido:", error);
+            console.warn("Errore nel filtro CPT o valore non valido:", error);
             return false;
         }
     }
