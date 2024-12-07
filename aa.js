@@ -10,7 +10,7 @@
     let isVisible = false;
     let isChartVisible = false;
     let filteredSummary = {}; // Store filtered summary globally
-    
+
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
             method: "GET",
@@ -79,6 +79,15 @@
         });
     }
 
+    function matchesBufferByString(location, filter) {
+        const regex = new RegExp(`^BUFFER\\s.*${filter}$|^BUFFER\\s${filter}.*$`, 'i'); // Case insensitive
+        return regex.test(location);
+    }
+
+    function matchesBufferByNumber(location, number) {
+        const regex = new RegExp(`\\b${number}\\b`); // Numero isolato
+        return regex.test(location);
+    }
     function processAndDisplay(containers) {
     const filteredSummary = {};
 
@@ -89,12 +98,13 @@
         const cpt = container.cpt || null;
 
         // Filter only the buffers that contain "BUFFER"
-        if (
-            location.toUpperCase().startsWith("BUFFER") &&
-            (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
-            (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
-            (selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter)))
-        ) {
+      if (
+                location.toUpperCase().startsWith("BUFFER") &&
+                (selectedBufferFilter === '' || matchesBufferByString(location, selectedBufferFilter)) &&
+                (selectedNumberFilter === '' || matchesBufferByNumber(location, selectedNumberFilter)) &&
+                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
+                (selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter)))
+            ) {
             if (!filteredSummary[lane]) {
                 filteredSummary[lane] = {};
             }
@@ -171,30 +181,13 @@ function matchesExactBufferString(location, filter) {
             return locationLetter === filterLetterOrNumber;
         }
         
-        // Se è solo il numero che corrisponde (confronto numerico)
-        if (!isNaN(filterLetterOrNumber)) {
-            return parseInt(locationNumber, 10) === parseInt(filterLetterOrNumber, 10);
-        }
-    }
-
-    // Caso 3: Se il filtro ha solo una parte (ad esempio solo numero o solo lettera) e location è solo una parte
-    if (filterParts.length === 1 && locationParts.length === 1) {
-        const [filterLetterOrNumber] = filterParts;
-        const [locationLetterOrNumber] = locationParts;
-
-        // Se è solo la lettera che corrisponde
-        if (isNaN(filterLetterOrNumber)) {
-            return locationLetterOrNumber === filterLetterOrNumber;
-        }
-
-        // Se è solo il numero che corrisponde (confronto numerico)
-        return parseInt(locationLetterOrNumber, 10) === parseInt(filterLetterOrNumber, 10);
+        // Se è solo il numero che corrisponde
+        return locationNumber === filterLetterOrNumber;
     }
 
     // Default: se non corrisponde
     return false;
 }
-
 
 
 // All'interno della funzione processAndDisplay
@@ -563,10 +556,6 @@ function parseBufferNumber(bufferName) {
     
         // Get the canvas context and create the chart
         const ctx = document.getElementById('myChart').getContext('2d');
-        if (window.myChart instanceof Chart) {
-    // Se esiste, distruggi il grafico precedente
-    window.myChart.destroy();
-}
         if (ctx) {
             const chart = new Chart(ctx, {
                 type: 'pie',
