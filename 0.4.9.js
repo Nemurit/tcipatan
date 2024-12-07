@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    const nodeId = 'MXP6';
+    const nodeId = 'MXP6'; // Nodo configurabile
     const stackingFilterMapUrl = 'https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/stacking_filter_map.json';
     let selectedBufferFilter = '';
     let selectedLaneFilters = [];
@@ -9,6 +9,7 @@
     let stackingToLaneMap = {};
     let isVisible = false;
 
+    // Funzione per caricare la mappa Lane/Stacking
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
             method: "GET",
@@ -34,6 +35,7 @@
         });
     }
 
+    // Funzione per ottenere i dati dal server
     function fetchBufferSummary() {
         const endTime = new Date().getTime();
         const startTime = endTime - 24 * 60 * 60 * 1000;
@@ -77,6 +79,7 @@
         });
     }
 
+    // Elaborazione dei dati e filtro
     function processAndDisplay(containers) {
         const filteredSummary = {};
 
@@ -134,6 +137,7 @@
         }
     }
 
+    // Estrai il numero dal nome del buffer
     function matchesExactBufferNumber(location, filter) {
         const match = location.match(/BUFFER\s*[A-Za-z](\d+)/);
         if (match) {
@@ -148,6 +152,7 @@
         return match ? parseInt(match[1], 10) : 0;
     }
 
+    // Visualizza la tabella con i risultati
     function displayTable(sortedSummary) {
         $('#contentContainer').remove();
 
@@ -176,96 +181,79 @@
 
         thead.append(`
             <tr>
-                <th>Buffer</th>
+                <th>Lane</th>
                 <th>Totale Container</th>
+                <th>CPT</th>
             </tr>
         `);
 
         const tbody = $('<tbody></tbody>');
-        let totalContainers = 0;
-
         Object.entries(sortedSummary).forEach(([lane, { cpts, locations }]) => {
-            let laneTotal = 0;
-
-            Object.entries(locations).forEach(([location, data]) => {
-                laneTotal += data.count;
-            });
-
-            let laneColor = '';
-            if (laneTotal <= 10) {
-                laneColor = 'green';
-            } else if (laneTotal <= 30) {
-                laneColor = 'orange';
-            } else {
-                laneColor = 'red';
-            }
-
-            const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-                <td colspan="2" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span><br>CPT: ${cpts}</td>
-            </tr>`);
-
-            laneRow.on('click', function () {
-                const nextRows = $(this).nextUntil('.laneRow');
-                nextRows.toggle();
-            });
-
-            tbody.append(laneRow);
-
             Object.entries(locations).forEach(([location, data]) => {
                 const row = $('<tr class="locationRow"></tr>');
-                const count = data.count;
-
-                let color = '';
-                if (count <= 10) {
-                    color = 'green';
-                } else if (count <= 30) {
-                    color = 'orange';
-                } else {
-                    color = 'red';
-                }
-
-                row.append(`<td>${location}</td>`);
-                row.append(`<td style="color: ${color};">${count}</td>`);
-                row.append(`<td>CPT: ${Array.from(data.cpt).join(', ')}</td>`);
+                row.append(`<td>${lane}</td>`);
+                row.append(`<td>${data.count}</td>`);
+                row.append(`<td>${cpts}</td>`);
                 tbody.append(row);
             });
-
-            totalContainers += laneTotal;
         });
-
-        const tfoot = $('<tfoot></tfoot>');
-        const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
-        tfoot.append(globalTotalRow);
 
         table.append(thead);
         table.append(tbody);
-        table.append(tfoot);
         contentContainer.append(table);
 
         $('body').append(contentContainer);
 
         $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function (event) {
-            if (event.key === 'Enter') {
+            if (event.key === "Enter") {
                 selectedBufferFilter = $(this).val();
                 fetchBufferSummary();
             }
         });
 
-        $('#laneFilterInput').val(selectedLaneFilters.join(',')).on('keydown', function (event) {
-            if (event.key === 'Enter') {
-                selectedLaneFilters = $(this).val().split(',');
+        $('#laneFilterInput').val(selectedLaneFilters.join(', ')).on('keydown', function (event) {
+            if (event.key === "Enter") {
+                selectedLaneFilters = $(this).val().split(',').map(filter => filter.trim());
                 fetchBufferSummary();
             }
         });
 
         $('#cptFilterInput').val(selectedCptFilter).on('keydown', function (event) {
-            if (event.key === 'Enter') {
+            if (event.key === "Enter") {
                 selectedCptFilter = $(this).val();
                 fetchBufferSummary();
             }
         });
+
+        GM_addStyle(`
+            #bufferSummaryTable {
+                table-layout: auto;
+                margin: 20px 0;
+                border-collapse: collapse;
+                width: 100%;
+            }
+            #bufferSummaryTable th, #bufferSummaryTable td {
+                border: 1px solid #ddd;
+                padding: 10px;
+                text-align: left;
+            }
+            #bufferSummaryTable th {
+                background-color: #f4f4f4;
+                font-weight: bold;
+            }
+            #bufferSummaryTable tfoot {
+                background-color: #f4f4f4;
+            }
+            #contentContainer {
+                max-height: 600px;
+                overflow-y: auto;
+                border-radius: 8px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            }
+        `);
     }
 
+    // Mostra/Nascondi contenitore
     function toggleVisibility() {
         isVisible = !isVisible;
         if (isVisible) {
