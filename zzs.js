@@ -140,15 +140,76 @@
             displayTable(sortedSummary);
         }
     }
+
+    function matchesExactBufferNumber(location, filter) {
+        const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
+        if (match) {
+            const bufferNumber = match[1];  // Estrae il numero
+            return bufferNumber === filter;
+        }
+        return false;
+    }
+
+    function parseBufferNumber(bufferName) {
+        const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
+        return match ? parseInt(match[1], 10) : 0;
+    }
+
+    function convertTimestampToLocalTime(timestamp) {
+        const date = new Date(timestamp);
+        // Ottieni l'ora locale
+        const options = {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+            day: '2-digit',
+            month: '2-digit',
+            year: '2-digit'
+        };
+        return date.toLocaleString('it-IT', options);
+    }
+
+    function filterCpt(cpt, filter) {
+        try {
+            // Converte CPT al fuso orario locale e formato "HH:MM"
+            const date = new Date(cpt);
+            const cptLocalTime = date.toLocaleTimeString('it-IT', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+    
+            // Dividiamo il filtro in parti (es. "16", "16:15", ecc.)
+            const filterParts = filter.split(',').map(f => f.trim());
+    
+            // Confrontiamo ogni parte del filtro con l'orario locale "HH:MM"
+            return filterParts.some(part => {
+                if (/^\d{1,2}$/.test(part)) {
+                    // Se il filtro è solo "HH", confronta solo l'ora
+                    const hour = part.padStart(2, '0');
+                    return cptLocalTime.startsWith(hour + ':'); // HH corrisponde
+                }
+                // Se il filtro è "HH:MM", confronta l'intero valore
+                return part === cptLocalTime;
+            });
+        } catch (error) {
+            console.warn("Errore nel filtro CPT o valore non valido:", error);
+            return false;
+        }
+    }
+    
     
     function displayTable(sortedSummary) {
         $('#contentContainer').remove();
-    
+
         const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
-    
-        // Crea la tabella anche se non ci sono dati
+
+        if (Object.keys(sortedSummary).length === 0) {
+            return;
+        }
+
         const table = $('<table id="bufferSummaryTable" class="performance"></table>');
-    
+
         const thead = $('<thead></thead>');
         thead.append(`
             <tr>
@@ -163,7 +224,7 @@
                 </th>
             </tr>
         `);
-    
+
         thead.append(`
             <tr>
                 <th>Buffer</th>
@@ -171,83 +232,91 @@
                 <th>CPT</th>
             </tr>
         `);
-    
+
         const tbody = $('<tbody></tbody>');
-    
-        // Se non ci sono dati, aggiungi una riga di avviso
-        if (Object.keys(sortedSummary).length === 0) {
-            tbody.append('<tr><td colspan="3" style="text-align:center;">Nessun dato trovato</td></tr>');
-        } else {
-            Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
-                let laneTotal = 0;
-    
-                Object.entries(laneSummary).forEach(([location, data]) => {
-                    laneTotal += data.count;
-                });
-    
-                let laneColor = '';
-                if (laneTotal <= 10) {
-                    laneColor = 'green';
-                } else if (laneTotal <= 30) {
-                    laneColor = 'orange';
-                } else {
-                    laneColor = 'red';
-                }
-    
-                const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-                    <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
-                </tr>`);
-    
-                laneRow.on('click', function() {
-                    const nextRows = $(this).nextUntil('.laneRow');
-                    nextRows.toggle();
-                });
-    
-                tbody.append(laneRow);
-    
-                Object.entries(laneSummary).forEach(([location, data]) => {
-                    const row = $('<tr class="locationRow"></tr>');
-                    row.append(`<td>${location}</td>`);
-                    row.append(`<td>${data.count}</td>`);
-                    row.append(`<td>${data.cpt ? convertTimestampToLocalTime(data.cpt) : 'N/A'}</td>`);
-                    tbody.append(row);
-                });
+        let totalContainers = 0;
+
+        Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
+            let laneTotal = 0;
+
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                laneTotal += data.count;
             });
-        }
-    
+
+            let laneColor = '';
+            if (laneTotal <= 10) {
+                laneColor = 'green';
+            } else if (laneTotal <= 30) {
+                laneColor = 'orange';
+            } else {
+                laneColor = 'red';
+            }
+
+            const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
+                <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
+            </tr>`);
+
+            laneRow.on('click', function() {
+                const nextRows = $(this).nextUntil('.laneRow');
+                nextRows.toggle();
+            });
+
+            tbody.append(laneRow);
+
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                // Visualizza il CPT solo nelle righe delle lane
+                const row = $('<tr class="locationRow"></tr>');
+                row.append(`<td>${location}</td>`);
+                row.append(`<td>${data.count}</td>`);
+                row.append(`<td>${data.cpt ? convertTimestampToLocalTime(data.cpt) : 'N/A'}</td>`);
+                tbody.append(row);
+            });
+
+            totalContainers += laneTotal;
+        });
+
         const tfoot = $('<tfoot></tfoot>');
-        const globalTotalRow = $('<tr><td colspan="3" style="text-align:right; font-weight: bold;">Totale Globale: ' + Object.keys(sortedSummary).length + '</td></tr>');
+        const globalTotalRow = $('<tr><td colspan="3" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
         tfoot.append(globalTotalRow);
-    
+
         table.append(thead);
         table.append(tbody);
         table.append(tfoot);
         contentContainer.append(table);
-    
+
         $('body').append(contentContainer);
-    
-        // Gestione degli input
+
         $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function(event) {
             if (event.key === "Enter") {
                 selectedBufferFilter = $(this).val();
                 fetchBufferSummary();
             }
         });
-    
+
         $('#laneFilterInput').val(selectedLaneFilters.join(', ')).on('keydown', function(event) {
             if (event.key === "Enter") {
                 selectedLaneFilters = $(this).val().split(',').map(filter => filter.trim());
                 fetchBufferSummary();
             }
         });
-    
+
         $('#cptFilterInput').val(selectedCptFilter).on('keydown', function(event) {
             if (event.key === "Enter") {
-                selectedCptFilter = $(this).val();
-                fetchBufferSummary();
+                const newFilter = $(this).val();
+                if (isValidCptFilter(newFilter)) {
+                    selectedCptFilter = newFilter;
+                    fetchBufferSummary();
+                } else {
+                    alert("Il filtro inserito non è valido. Usare valori come '16, 16:15, 16:30'.");
+                }
             }
         });
-    
+        
+        function isValidCptFilter(filter) {
+            const parts = filter.split(',').map(f => f.trim());
+            return parts.every(part => /^(\d{1,2}(:\d{2})?)$/.test(part)); // Es. 16 o 16:15
+        }
+        
         GM_addStyle(`
             #bufferSummaryTable {
                 table-layout: auto;
@@ -277,7 +346,6 @@
             }
         `);
     }
-    
 
     function addToggleButton() {
         const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
