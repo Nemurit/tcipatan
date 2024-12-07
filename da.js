@@ -160,7 +160,7 @@ function processAndDisplay(containers) {
         // Filtro solo i buffer che contengono "BUFFER" e applico il filtro selezionato
         if (
             location.toUpperCase().startsWith("BUFFER") &&
-            (selectedBufferFilter === '' || matchesExactBufferString(location, selectedBufferFilter)) &&  // Usa matchesExactBufferString
+            (selectedBufferFilter === '' || matchesExactBufferString(location, selectedBufferFilter)) &&
             (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
             (selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter)))
         ) {
@@ -176,7 +176,7 @@ function processAndDisplay(containers) {
         }
     });
 
-    console.log("Filtered Summary:", filteredSummary); // Debugging line
+    console.log("Filtered Summary:", filteredSummary);
 
     const sortedSummary = {};
     Object.keys(filteredSummary).forEach(lane => {
@@ -201,6 +201,7 @@ function processAndDisplay(containers) {
         displayTable(sortedSummary);
     }
 
+   
     // Se sortedSummary non è vuoto, generiamo il grafico
     if (Object.keys(sortedSummary).length > 0) {
         generatePieChart(sortedSummary);
