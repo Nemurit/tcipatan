@@ -9,7 +9,6 @@
     let stackingToLaneMap = {};
     let sortedSummary = {}; // Variabile globale per i dati filtrati e ordinati
     let isVisible = false;
-console.log(sortedSummary);  // Verifica i dati nel sortedSummary
 
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
@@ -378,67 +377,74 @@ console.log(sortedSummary);  // Verifica i dati nel sortedSummary
         $('body').append(chartButton);
     }
     
-   function createBufferChart() {
-    // Raccogliamo i dati per il grafico
-    const chartData = [];
-    const chartLabels = [];
-
-    // Raccogli i dati aggregati per ogni buffer
-    Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
-        Object.entries(laneSummary).forEach(([location, data]) => {
-            const bufferName = location; // Prendi il nome del buffer
-            const existingBuffer = chartLabels.indexOf(bufferName);
-
-            if (existingBuffer === -1) {
-                // Se il buffer non è ancora stato aggiunto, aggiungilo
+    function createBufferChart() {
+        // Raccogliamo i dati per il grafico
+        const chartData = [];
+        const chartLabels = [];
+    
+        // Verifica se sortedSummary è popolato
+        if (Object.keys(sortedSummary).length === 0) {
+            console.log("Nessun dato trovato per il grafico");
+            return;  // Se non ci sono dati, non fare nulla
+        }
+    
+        // Raccogli i dati aggregati per ogni buffer dalla colonna "Totale container"
+        Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                const bufferName = location; // Nome del buffer
+                const totalContainers = data['Totale container']; // Estrarre direttamente il dato dalla colonna "Totale container"
+                
+                // Aggiungi i dati per il grafico
                 chartLabels.push(bufferName);
-                chartData.push(data.count);
-            } else {
-                // Se il buffer è già presente, somma i container
-                chartData[existingBuffer] += data.count;
-            }
+                chartData.push(totalContainers);
+            });
         });
-    });
-
-    // Creazione della finestra per il grafico
-    const chartContainerId = 'chartContainer';
-    if (!$(`#${chartContainerId}`).length) {
-        const chartContainer = $(`<div id="${chartContainerId}" style="position: fixed; top: 100px; left: 50%; transform: translateX(-50%); width: 600px; height: 400px; background: white; padding: 10px; border: 1px solid #ddd; z-index: 9999; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
-            <canvas id="bufferChart" style="width: 100%; height: 100%;"></canvas>
-            <button id="closeChartButton" style="position: absolute; top: 5px; right: 5px; background-color: red; color: white; border: none; border-radius: 3px; padding: 5px;">X</button>
-        </div>`);
-        $('body').append(chartContainer);
-
-        $('#closeChartButton').on('click', function() {
-            $(`#${chartContainerId}`).remove();
-        });
-    }
-
-    // Configurazione del grafico con Chart.js
-    const ctx = document.getElementById('bufferChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'pie',  // Tipo grafico a torta
-        data: {
-            labels: chartLabels,
-            datasets: [{
-                label: 'Numero di Container per Buffer',
-                data: chartData,
-                backgroundColor: chartLabels.map(() => `#${Math.floor(Math.random() * 16777215).toString(16)}`), // Colori casuali
-                borderColor: '#fff',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'top'
+    
+        // Verifica se ci sono dati da visualizzare
+        if (chartData.length === 0 || chartLabels.length === 0) {
+            console.log("Non ci sono dati aggregati per il grafico");
+            return;  // Se non ci sono dati, non fare nulla
+        }
+    
+        // Creazione della finestra per il grafico
+        const chartContainerId = 'chartContainer';
+        if (!$(`#${chartContainerId}`).length) {
+            const chartContainer = $(`<div id="${chartContainerId}" style="position: fixed; top: 100px; left: 50%; transform: translateX(-50%); width: 600px; height: 400px; background: white; padding: 10px; border: 1px solid #ddd; z-index: 9999; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+                <canvas id="bufferChart" style="width: 100%; height: 100%;"></canvas>
+                <button id="closeChartButton" style="position: absolute; top: 5px; right: 5px; background-color: red; color: white; border: none; border-radius: 3px; padding: 5px;">X</button>
+            </div>`);
+            $('body').append(chartContainer);
+    
+            $('#closeChartButton').on('click', function() {
+                $(`#${chartContainerId}`).remove();
+            });
+        }
+    
+        // Configurazione del grafico con Chart.js
+        const ctx = document.getElementById('bufferChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'pie',  // Tipo grafico a torta
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    label: 'Numero di Container per Buffer',
+                    data: chartData,
+                    backgroundColor: chartLabels.map(() => `#${Math.floor(Math.random() * 16777215).toString(16)}`), // Colori casuali
+                    borderColor: '#fff',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
                 }
             }
-        }
-    });
-}
-
+        });
+    }
+    
     
     // Aggiunta del pulsante per il grafico
     fetchStackingFilterMap(function() {
