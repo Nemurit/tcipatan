@@ -379,6 +379,8 @@
         $('body').append(button);
     }
     
+    let isChartVisible = false;  // Variabile per monitorare lo stato del grafico
+
     function generatePieChart(filteredSummary) {
         if (!filteredSummary || Object.keys(filteredSummary).length === 0) {
             console.warn("No data to generate the chart.");
@@ -396,29 +398,14 @@
             chartContainer.style.left = '50%';
             chartContainer.style.transform = 'translateX(-50%)';
             chartContainer.style.padding = '20px';
-            chartContainer.style.backgroundColor = '#fff';
+            chartContainer.style.backgroundColor = 'rgba(0, 0, 0, 0)';  // Background transparent
             chartContainer.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
             chartContainer.style.borderRadius = '10px';
             chartContainer.style.width = '500px';
             chartContainer.style.maxWidth = '100%';
             chartContainer.style.zIndex = '1000';
     
-            // Add a close button to hide the chart
-            const closeButton = document.createElement('button');
-            closeButton.innerText = 'Chiudi Grafico';
-            closeButton.style.position = 'absolute';
-            closeButton.style.top = '10px';
-            closeButton.style.right = '10px';
-            closeButton.style.backgroundColor = '#ff4d4d';
-            closeButton.style.color = 'white';
-            closeButton.style.border = 'none';
-            closeButton.style.padding = '5px 10px';
-            closeButton.style.cursor = 'pointer';
-            closeButton.onclick = function() {
-                chartContainer.style.display = 'none';
-            };
-            chartContainer.appendChild(closeButton);
-    
+            // Add a canvas to the container
             const chartCanvas = document.createElement('canvas');
             chartCanvas.id = 'myChart';
             chartCanvas.style.width = '100%';  // Full width inside container
@@ -519,6 +506,7 @@
     
         $('body').append(button);
     }
+    
     
 
 
