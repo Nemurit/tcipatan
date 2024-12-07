@@ -159,8 +159,17 @@
 
     function filterCpt(cpt, filter) {
         const date = new Date(cpt);
-        const hour = date.getHours();
-        return hour.toString().startsWith(filter);
+        const hours = date.getHours();
+        const minutes = date.getMinutes();
+
+        // Se il filtro è solo un'ora (es. "16"), confronta solo le ore
+        if (filter.length === 2) {
+            return hours === parseInt(filter, 10);
+        }
+
+        // Se il filtro contiene i minuti (es. "16:30"), confronta ore e minuti
+        const [filterHours, filterMinutes] = filter.split(':').map(Number);
+        return hours === filterHours && minutes === filterMinutes;
     }
 
     function displayTable(sortedSummary) {
@@ -184,7 +193,7 @@
                     <input id="laneFilterInput" type="text" placeholder="Filtro per LANE (es. Lane1, Lane2)" style="width: 100%; padding: 5px; box-sizing: border-box;">
                 </th>
                 <th>
-                    <input id="cptFilterInput" type="text" placeholder="Filtro per CPT (es. 14)" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                    <input id="cptFilterInput" type="text" placeholder="Filtro per CPT (es. 16, 16:30)" style="width: 100%; padding: 5px; box-sizing: border-box;">
                 </th>
             </tr>
         `);
@@ -235,94 +244,30 @@
                 row.append(`<td>${data.cpt ? convertTimestampToLocalTime(data.cpt) : 'N/A'}</td>`);
                 tbody.append(row);
             });
-
-            totalContainers += laneTotal;
         });
-
-        const tfoot = $('<tfoot></tfoot>');
-        const globalTotalRow = $('<tr><td colspan="3" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
-        tfoot.append(globalTotalRow);
 
         table.append(thead);
         table.append(tbody);
-        table.append(tfoot);
         contentContainer.append(table);
-
         $('body').append(contentContainer);
-
-        $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedBufferFilter = $(this).val();
-                fetchBufferSummary();
-            }
-        });
-
-        $('#laneFilterInput').val(selectedLaneFilters.join(', ')).on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedLaneFilters = $(this).val().split(',').map(filter => filter.trim());
-                fetchBufferSummary();
-            }
-        });
-
-        $('#cptFilterInput').val(selectedCptFilter).on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedCptFilter = $(this).val();
-                fetchBufferSummary();
-            }
-        });
-
-        GM_addStyle(`
-            #bufferSummaryTable {
-                table-layout: auto;
-                margin: 20px 0;
-                border-collapse: collapse;
-                width: 100%;
-            }
-            #bufferSummaryTable th, #bufferSummaryTable td {
-                border: 1px solid #ddd;
-                padding: 10px;
-                text-align: left;
-            }
-            #bufferSummaryTable th {
-                background-color: #f4f4f4;
-                font-weight: bold;
-            }
-            #bufferSummaryTable tfoot {
-                background-color: #f4f4f4;
-            }
-            #bufferSummaryTable input {
-                font-size: 14px;
-                padding: 5px;
-                margin: 0;
-            }
-            .locationRow {
-                display: none;
-            }
-        `);
     }
 
-    function addToggleButton() {
-        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
-
-        toggleButton.on('click', function() {
-            isVisible = !isVisible;
-            if (isVisible) {
-                fetchBufferSummary();
-                $(this).text("Nascondi Recuperi");
-            } else {
-                $('#contentContainer').remove();
-                $(this).text("Mostra Recuperi");
-            }
-        });
-
-        $('body').append(toggleButton);
-    }
-
-    fetchStackingFilterMap(function() {
-        addToggleButton();
+    // Eventi per i filtri
+    $('#bufferFilterInput').on('input', function() {
+        selectedBufferFilter = $(this).val();
         fetchBufferSummary();
     });
 
-    // Aggiorna i dati ogni 3 minuti
-    setInterval(fetchBufferSummary, 180000); // 180,000 ms = 3 minuti
+    $('#laneFilterInput').on('input', function() {
+        selectedLaneFilters = $(this).val().split(',').map(f => f.trim());
+        fetchBufferSummary();
+    });
+
+    $('#cptFilterInput').on('input', function() {
+        selectedCptFilter = $(this).val();
+        fetchBufferSummary();
+    });
+
+    // Inizializzazione della mappa di stacking e recupero dei dati
+    fetchStackingFilterMap(fetchBufferSummary);
 })();
