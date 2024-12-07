@@ -91,7 +91,7 @@
                 location.toUpperCase().startsWith("BUFFER") &&
                 (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
                 (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
-                (selectedCptFilter === '' || (cpt && cpt >= selectedCptFilter))
+                (selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter)))
             ) {
                 if (!filteredSummary[lane]) {
                     filteredSummary[lane] = {};
@@ -149,6 +149,12 @@
         return date.toISOString(); // Restituisce la data in formato ISO 8601
     }
 
+    function filterCpt(cpt, filter) {
+        const date = new Date(cpt);
+        const hour = date.getHours();
+        return hour.toString().startsWith(filter);
+    }
+
     function displayTable(sortedSummary) {
         $('#contentContainer').remove();
 
@@ -170,7 +176,7 @@
                     <input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="width: 100%; padding: 5px; box-sizing: border-box;">
                 </th>
                 <th>
-                    <input id="cptFilterInput" type="text" placeholder="Filtro per CPT" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                    <input id="cptFilterInput" type="text" placeholder="Filtro per CPT (es. 14)" style="width: 100%; padding: 5px; box-sizing: border-box;">
                 </th>
             </tr>
         `);
@@ -203,7 +209,7 @@
             }
 
             const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-                <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
+                <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span> - CPT: ${laneSummary[Object.keys(laneSummary)[0]].cpt ? convertTimestampToUTCPlusOne(laneSummary[Object.keys(laneSummary)[0]].cpt) : 'N/A'}</td>
             </tr>`);
 
             laneRow.on('click', function() {
@@ -226,11 +232,9 @@
                     color = 'red';
                 }
 
-                const cpt = data.cpt ? convertTimestampToUTCPlusOne(data.cpt) : 'N/A';
-
                 row.append(`<td>${location}</td>`);
                 row.append(`<td style="color: ${color};">${count}</td>`);
-                row.append(`<td>${cpt}</td>`);
+                row.append(`<td>${data.cpt ? convertTimestampToUTCPlusOne(data.cpt) : 'N/A'}</td>`);
                 tbody.append(row);
             });
 
