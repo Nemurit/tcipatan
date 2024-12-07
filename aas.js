@@ -8,6 +8,7 @@
     let selectedCptFilter = '';
     let stackingToLaneMap = {};
     let isVisible = false;
+    let isChartVisible = true;  // Initially set the chart as visible
 
     // Aggiungi la libreria Chart.js
     const script = document.createElement('script');
@@ -214,8 +215,26 @@
         $('body').append(toggleButton);
     }
 
+    function addChartToggleButton() {
+        const chartToggleButton = $('<button id="chartToggleButton" style="position: fixed; top: 50px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra/Nascondi Grafico</button>');
+
+        chartToggleButton.on('click', function() {
+            isChartVisible = !isChartVisible;
+            if (isChartVisible) {
+                $('#chartContainer').show();
+                $(this).text("Nascondi Grafico");
+            } else {
+                $('#chartContainer').hide();
+                $(this).text("Mostra Grafico");
+            }
+        });
+
+        $('body').append(chartToggleButton);
+    }
+
     fetchStackingFilterMap(function() {
         addToggleButton();
+        addChartToggleButton();  // Add the chart toggle button
         fetchBufferSummary();
     });
 
