@@ -394,9 +394,9 @@
         // Raccogli i dati aggregati per ogni buffer dalla colonna "Totale container"
         Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
             Object.entries(laneSummary).forEach(([location, data]) => {
-                const bufferName = location; // Nome del buffer
-                const totalContainers = data['Totale container']; // Estrarre direttamente il dato dalla colonna "Totale container"
-                
+                const bufferName = location; // Nome del buffer (location)
+                const totalContainers = data.count; // Numero di container
+    
                 // Aggiungi i dati per il grafico
                 chartLabels.push(bufferName);
                 chartData.push(totalContainers);
@@ -430,7 +430,7 @@
             data: {
                 labels: chartLabels,
                 datasets: [{
-                    label: 'Numero di Container per Buffer',
+                    label: 'Numero di Container per Buffer (Location)',
                     data: chartData,
                     backgroundColor: chartLabels.map(() => `#${Math.floor(Math.random() * 16777215).toString(16)}`), // Colori casuali
                     borderColor: '#fff',
@@ -447,7 +447,6 @@
             }
         });
     }
-    
     
     
     // Aggiunta del pulsante per il grafico
