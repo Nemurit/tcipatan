@@ -1,83 +1,98 @@
-(function() {
+(function () {
     'use strict';
 
     const nodeId = 'MXP6';
     const stackingFilterMapUrl = 'https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/stacking_filter_map.json';
     let selectedBufferFilter = '';
     let selectedLaneFilters = [];
-    let selectedCptFilter = ''; // Nuovo filtro per CPT
+    let selectedCptFilter = '';
     let stackingToLaneMap = {};
     let isVisible = false;
 
-    // Fetch the stacking filter map
+    // Funzione che estrae il numero dal nome del buffer per ordinarlo
+    function parseBufferNumber(bufferName) {
+        const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/); // Cerca il numero dopo "BUFFER"
+        return match ? parseInt(match[1], 10) : 0; // Restituisce il numero o 0 se non trovato
+    }
+
+    // Funzione che confronta il numero esatto nel nome del buffer con il filtro
+    function matchesExactBufferNumber(location, filter) {
+        const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
+        if (match) {
+            const bufferNumber = match[1]; // Estrae il numero
+            return bufferNumber === filter; // Verifica che il numero estratto corrisponda esattamente al filtro
+        }
+        return false;
+    }
+
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
-            method: "GET",
+            method: 'GET',
             url: stackingFilterMapUrl,
-            onload: function(response) {
+            onload: function (response) {
                 try {
                     const laneData = JSON.parse(response.responseText);
+
                     for (const [lane, stackingFilters] of Object.entries(laneData)) {
                         stackingFilters.forEach(filter => {
                             stackingToLaneMap[filter] = lane.split('[')[0];
                         });
                     }
+
                     if (callback) callback();
                 } catch (error) {
-                    console.error("Errore nel parsing della mappa JSON:", error);
+                    console.error('Errore nel parsing della mappa JSON:', error);
                 }
             },
-            onerror: function(error) {
-                console.error("Errore nel caricamento del file JSON:", error);
+            onerror: function (error) {
+                console.error('Errore nel caricamento del file JSON:', error);
             }
         });
     }
 
-    // Fetch buffer summary
     function fetchBufferSummary() {
         const endTime = new Date().getTime();
         const startTime = endTime - 24 * 60 * 60 * 1000;
 
-        const apiUrl = `https://www.amazonlogistics.eu/sortcenter/vista/controller/getContainersDetailByCriteria`;
+        const apiUrl = 'https://www.amazonlogistics.eu/sortcenter/vista/controller/getContainersDetailByCriteria';
         const payload = {
-            entity: "getContainersDetailByCriteria",
+            entity: 'getContainersDetailByCriteria',
             nodeId: nodeId,
             timeBucket: {
-                fieldName: "physicalLocationMoveTimestamp",
+                fieldName: 'physicalLocationMoveTimestamp',
                 startTime: startTime,
                 endTime: endTime
             },
             filterBy: {
-                state: ["Stacked"],
+                state: ['Stacked'],
                 isClosed: [true],
                 isMissing: [false]
             },
-            containerTypes: ["PALLET", "GAYLORD", "CART"]
+            containerTypes: ['PALLET', 'GAYLORD', 'CART']
         };
 
         GM_xmlhttpRequest({
-            method: "GET",
+            method: 'GET',
             url: `${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })}`,
-            onload: function(response) {
+            onload: function (response) {
                 try {
                     const data = JSON.parse(response.responseText);
                     if (data.ret && data.ret.getContainersDetailByCriteriaOutput) {
                         const containers = data.ret.getContainersDetailByCriteriaOutput.containerDetails[0].containerDetails;
                         processAndDisplay(containers);
                     } else {
-                        console.warn("Nessun dato trovato nella risposta API.");
+                        console.warn('Nessun dato trovato nella risposta API.');
                     }
                 } catch (error) {
-                    console.error("Errore nella risposta API:", error);
+                    console.error('Errore nella risposta API:', error);
                 }
             },
-            onerror: function(error) {
-                console.error("Errore nella chiamata API:", error);
+            onerror: function (error) {
+                console.error('Errore nella chiamata API:', error);
             }
         });
     }
 
-    // Process and display data
     function processAndDisplay(containers) {
         const filteredSummary = {};
 
@@ -85,23 +100,23 @@
             const location = container.location || '';
             const stackingFilter = container.stackingFilter || 'N/A';
             const lane = stackingToLaneMap[stackingFilter] || 'N/A';
-            const cpt = container.cpt || 'Unknown'; // Nuova variabile CPT
+            const cpt = container.cpt || 'N/A';
 
             if (
-                location.toUpperCase().startsWith("BUFFER") &&
+                location.toUpperCase().startsWith('BUFFER') &&
                 (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
                 (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
-                (selectedCptFilter === '' || cpt.toUpperCase().includes(selectedCptFilter.toUpperCase())) // Filtra per CPT
+                (selectedCptFilter === '' || cpt.toUpperCase().includes(selectedCptFilter.toUpperCase()))
             ) {
                 if (!filteredSummary[lane]) {
                     filteredSummary[lane] = {};
                 }
+
                 if (!filteredSummary[lane][location]) {
-                    filteredSummary[lane][location] = { count: 0, cpts: {} };
+                    filteredSummary[lane][location] = { count: 0 };
                 }
 
                 filteredSummary[lane][location].count++;
-                filteredSummary[lane][location].cpts[cpt] = (filteredSummary[lane][location].cpts[cpt] || 0) + 1;
             }
         });
 
@@ -112,7 +127,11 @@
                 .sort((a, b) => {
                     const numA = parseBufferNumber(a);
                     const numB = parseBufferNumber(b);
-                    return numA - numB || a.localeCompare(b);
+
+                    if (numA === numB) {
+                        return a.localeCompare(b);
+                    }
+                    return numA - numB;
                 })
                 .reduce((acc, location) => {
                     acc[location] = laneSummary[location];
@@ -125,7 +144,6 @@
         }
     }
 
-    // Display table with additional CPT filter
     function displayTable(sortedSummary) {
         $('#contentContainer').remove();
 
@@ -156,46 +174,87 @@
             <tr>
                 <th>Buffer</th>
                 <th>Totale Container</th>
-                <th>CPT</th>
             </tr>
         `);
 
         const tbody = $('<tbody></tbody>');
+        let totalContainers = 0;
 
         Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
+            let laneTotal = 0;
+
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                laneTotal += data.count;
+            });
+
+            let laneColor = '';
+            if (laneTotal <= 10) {
+                laneColor = 'green';
+            } else if (laneTotal <= 30) {
+                laneColor = 'orange';
+            } else {
+                laneColor = 'red';
+            }
+
+            const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
+                <td colspan="2" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
+            </tr>`);
+
+            laneRow.on('click', function () {
+                const nextRows = $(this).nextUntil('.laneRow');
+                nextRows.toggle();
+            });
+
+            tbody.append(laneRow);
+
             Object.entries(laneSummary).forEach(([location, data]) => {
                 const row = $('<tr class="locationRow"></tr>');
                 const count = data.count;
 
+                let color = '';
+                if (count <= 10) {
+                    color = 'green';
+                } else if (count <= 30) {
+                    color = 'orange';
+                } else {
+                    color = 'red';
+                }
+
                 row.append(`<td>${location}</td>`);
-                row.append(`<td>${count}</td>`);
-                row.append(`<td>${Object.entries(data.cpts).map(([cpt, cptCount]) => `${cpt}: ${cptCount}`).join(', ')}</td>`);
+                row.append(`<td style="color: ${color};">${count}</td>`);
                 tbody.append(row);
             });
+
+            totalContainers += laneTotal;
         });
+
+        const tfoot = $('<tfoot></tfoot>');
+        const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
+        tfoot.append(globalTotalRow);
 
         table.append(thead);
         table.append(tbody);
+        table.append(tfoot);
         contentContainer.append(table);
 
         $('body').append(contentContainer);
 
-        $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function(event) {
-            if (event.key === "Enter") {
+        $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function (event) {
+            if (event.key === 'Enter') {
                 selectedBufferFilter = $(this).val();
                 fetchBufferSummary();
             }
         });
 
-        $('#laneFilterInput').val(selectedLaneFilters.join(', ')).on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedLaneFilters = $(this).val().split(',').map(filter => filter.trim());
+        $('#laneFilterInput').val(selectedLaneFilters.join(',')).on('keydown', function (event) {
+            if (event.key === 'Enter') {
+                selectedLaneFilters = $(this).val().split(',');
                 fetchBufferSummary();
             }
         });
 
-        $('#cptFilterInput').val(selectedCptFilter).on('keydown', function(event) {
-            if (event.key === "Enter") {
+        $('#cptFilterInput').val(selectedCptFilter).on('keydown', function (event) {
+            if (event.key === 'Enter') {
                 selectedCptFilter = $(this).val();
                 fetchBufferSummary();
             }
@@ -203,26 +262,25 @@
     }
 
     function addToggleButton() {
-        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
+        const toggleButton = $('<button id="toggleButton" style="position: fixed; bottom: 10px; right: 10px; z-index: 9999; background: #007bff; color: #fff; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">Buffer Summary</button>');
 
-        toggleButton.on('click', function() {
+        toggleButton.on('click', function () {
             isVisible = !isVisible;
+
             if (isVisible) {
                 fetchBufferSummary();
-                $(this).text("Nascondi Recuperi");
             } else {
                 $('#contentContainer').remove();
-                $(this).text("Mostra Recuperi");
             }
         });
 
         $('body').append(toggleButton);
     }
 
-    fetchStackingFilterMap(function() {
+    fetchStackingFilterMap(function () {
         addToggleButton();
         fetchBufferSummary();
     });
 
-    setInterval(fetchBufferSummary, 200000); // Refresh every 3 minutes
+    setInterval(fetchBufferSummary, 200000); // Refresh ogni 3 minuti
 })();
