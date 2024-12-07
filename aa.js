@@ -148,47 +148,6 @@
     }
 }
 
-function matchesExactBufferString(location, filter) {
-    // Converto entrambi in maiuscolo per evitare problemi di case
-    const locationUpper = location.toUpperCase();
-    const filterUpper = filter.toUpperCase();
-
-    // Caso 1: Se il filtro è la stringa completa (es. "BUFFER E4 - F4")
-    if (locationUpper.includes(filterUpper)) {
-        return true;
-    }
-
-    // Caso 2: Se il filtro è separato in lettera e numero (es. "E4" o "4")
-    const filterParts = filterUpper.split(' ').filter(Boolean);
-    const locationParts = locationUpper.split(' ').filter(Boolean);
-
-    // Se il filtro ha due parti (lettera e numero)
-    if (filterParts.length === 2 && locationParts.length === 2) {
-        const [filterLetter, filterNumber] = filterParts;
-        const [locationLetter, locationNumber] = locationParts;
-
-        // Confronta lettera e numero separatamente
-        return locationLetter === filterLetter && locationNumber === filterNumber;
-    }
-
-    // Se il filtro ha una sola parte (lettera o numero)
-    if (filterParts.length === 1 && locationParts.length === 2) {
-        const [filterLetterOrNumber] = filterParts;
-        const [locationLetter, locationNumber] = locationParts;
-
-        // Se è solo la lettera che corrisponde
-        if (isNaN(filterLetterOrNumber)) {
-            return locationLetter === filterLetterOrNumber;
-        }
-        
-        // Se è solo il numero che corrisponde
-        return locationNumber === filterLetterOrNumber;
-    }
-
-    // Default: se non corrisponde
-    return false;
-}
-
 
 // All'interno della funzione processAndDisplay
 function processAndDisplay(containers) {
@@ -201,12 +160,13 @@ function processAndDisplay(containers) {
         const cpt = container.cpt || null;
 
         // Filtro solo i buffer che contengono "BUFFER" e applico il filtro selezionato
-        if (
-            location.toUpperCase().startsWith("BUFFER") &&
-            (selectedBufferFilter === '' || matchesExactBufferString(location, selectedBufferFilter)) &&  // Usa matchesExactBufferString
-            (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
-            (selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter)))
-        ) {
+         if (
+                location.toUpperCase().startsWith("BUFFER") &&
+                (selectedBufferFilter === '' || matchesBufferByString(location, selectedBufferFilter)) &&
+                (selectedNumberFilter === '' || matchesBufferByNumber(location, selectedNumberFilter)) &&
+                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
+                (selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter)))
+            ) {
             if (!filteredSummary[lane]) {
                 filteredSummary[lane] = {};
             }
