@@ -5,18 +5,11 @@
     const stackingFilterMapUrl = 'https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/stacking_filter_map.json';
     let selectedBufferFilter = '';
     let selectedLaneFilters = [];
+    let selectedCptFilter = ''; // Nuovo filtro per CPT
     let stackingToLaneMap = {};
-    let selectedTimeFilter = ''; // Time filter
     let isVisible = false;
 
-    // Add the toggle button to the page
-    function addToggleButton() {
-        const button = $('<button id="toggleTableButton" style="position: fixed; top: 10px; right: 10px; z-index: 1000; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Toggle Table</button>');
-        button.on('click', toggleTableVisibility);
-        $('body').append(button);
-    }
-
-    // Fetch the stacking filter map (mapping stacking filters to lanes)
+    // Fetch the stacking filter map
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
             method: "GET",
@@ -24,15 +17,11 @@
             onload: function(response) {
                 try {
                     const laneData = JSON.parse(response.responseText);
-                    console.log('Lane Data:', laneData); // Log the lane data to ensure it's correct
-
-                    // Build the stackingToLaneMap
                     for (const [lane, stackingFilters] of Object.entries(laneData)) {
                         stackingFilters.forEach(filter => {
                             stackingToLaneMap[filter] = lane.split('[')[0];
                         });
                     }
-
                     if (callback) callback();
                 } catch (error) {
                     console.error("Errore nel parsing della mappa JSON:", error);
@@ -44,7 +33,7 @@
         });
     }
 
-    // Fetch container data and process it
+    // Fetch buffer summary
     function fetchBufferSummary() {
         const endTime = new Date().getTime();
         const startTime = endTime - 24 * 60 * 60 * 1000;
@@ -72,20 +61,11 @@
             onload: function(response) {
                 try {
                     const data = JSON.parse(response.responseText);
-                    console.log('API Response:', data); // Log the full API response
-
-                    // Check if the data is structured correctly
-                    if (data.ret && data.ret.getContainersDetailByCriteriaOutput && data.ret.getContainersDetailByCriteriaOutput.containerDetails) {
+                    if (data.ret && data.ret.getContainersDetailByCriteriaOutput) {
                         const containers = data.ret.getContainersDetailByCriteriaOutput.containerDetails[0].containerDetails;
-                        console.log('Containers:', containers); // Log the containers array
-
-                        if (containers && containers.length > 0) {
-                            processAndDisplay(containers);
-                        } else {
-                            console.warn("No containers found.");
-                        }
+                        processAndDisplay(containers);
                     } else {
-                        console.error("API response structure is invalid or incomplete.", data);
+                        console.warn("Nessun dato trovato nella risposta API.");
                     }
                 } catch (error) {
                     console.error("Errore nella risposta API:", error);
@@ -97,7 +77,7 @@
         });
     }
 
-    // Process and display the container data
+    // Process and display data
     function processAndDisplay(containers) {
         const filteredSummary = {};
 
@@ -105,46 +85,34 @@
             const location = container.location || '';
             const stackingFilter = container.stackingFilter || 'N/A';
             const lane = stackingToLaneMap[stackingFilter] || 'N/A';
-            const cpt = container.cpt ? new Date(container.cpt) : null; // Recupera il CPT e lo converte in oggetto Date
+            const cpt = container.cpt || 'Unknown'; // Nuova variabile CPT
 
-            // Filter the buffers
             if (
                 location.toUpperCase().startsWith("BUFFER") &&
                 (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
-                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
+                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
+                (selectedCptFilter === '' || cpt.toUpperCase().includes(selectedCptFilter.toUpperCase())) // Filtra per CPT
             ) {
                 if (!filteredSummary[lane]) {
                     filteredSummary[lane] = {};
                 }
-
                 if (!filteredSummary[lane][location]) {
-                    filteredSummary[lane][location] = { count: 0, cpt: [] };
+                    filteredSummary[lane][location] = { count: 0, cpts: {} };
                 }
 
                 filteredSummary[lane][location].count++;
-                if (cpt) filteredSummary[lane][location].cpt.push(cpt); // Storing CPTs for each location
+                filteredSummary[lane][location].cpts[cpt] = (filteredSummary[lane][location].cpts[cpt] || 0) + 1;
             }
         });
 
-        const sortedSummary = filteredSummary || {}; // Ensure it's always an object
-        if (Object.keys(sortedSummary).length === 0) {
-            console.warn("No matching data found after filtering.");
-            return;
-        }
-
-        // Proceed with sorting and displaying the data
-        const sortedData = {};
-        Object.keys(sortedSummary).forEach(lane => {
-            const laneSummary = sortedSummary[lane];
-            sortedData[lane] = Object.keys(laneSummary)
+        const sortedSummary = {};
+        Object.keys(filteredSummary).forEach(lane => {
+            const laneSummary = filteredSummary[lane];
+            sortedSummary[lane] = Object.keys(laneSummary)
                 .sort((a, b) => {
                     const numA = parseBufferNumber(a);
                     const numB = parseBufferNumber(b);
-
-                    if (numA === numB) {
-                        return a.localeCompare(b);
-                    }
-                    return numA - numB;
+                    return numA - numB || a.localeCompare(b);
                 })
                 .reduce((acc, location) => {
                     acc[location] = laneSummary[location];
@@ -153,37 +121,11 @@
         });
 
         if (isVisible) {
-            displayTable(sortedData);
+            displayTable(sortedSummary);
         }
     }
 
-    // Function to convert the CPT date to HH:mm:ss DD/MM/YYYY format
-    function formatCPT(date) {
-        if (!date) return 'N/A';
-        const optionsTime = { timeZone: 'Europe/Rome', hour: '2-digit', minute: '2-digit', second: '2-digit' };
-        const optionsDate = { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', year: 'numeric' };
-        const time = date.toLocaleTimeString('it-IT', optionsTime);
-        const dateStr = date.toLocaleDateString('it-IT', optionsDate);
-        return `${time} ${dateStr}`;
-    }
-
-    // Function to match exact buffer number
-    function matchesExactBufferNumber(location, filter) {
-        const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
-        if (match) {
-            const bufferNumber = match[1];  // Estrae il numero
-            return bufferNumber === filter;  
-        }
-        return false;
-    }
-
-    // Function to parse buffer number for sorting
-    function parseBufferNumber(bufferName) {
-        const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
-        return match ? parseInt(match[1], 10) : 0;  // Estrae solo il numero
-    }
-
-    // Display the sorted data in a table format
+    // Display table with additional CPT filter
     function displayTable(sortedSummary) {
         $('#contentContainer').remove();
 
@@ -194,6 +136,7 @@
         }
 
         const table = $('<table id="bufferSummaryTable" class="performance"></table>');
+
         const thead = $('<thead></thead>');
         thead.append(`
             <tr>
@@ -204,46 +147,82 @@
                     <input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="width: 100%; padding: 5px; box-sizing: border-box;">
                 </th>
                 <th>
-                    <input id="timeFilterInput" type="text" placeholder="Filtro per ORA (es. 14:30)" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                    <input id="cptFilterInput" type="text" placeholder="Filtro per CPT" style="width: 100%; padding: 5px; box-sizing: border-box;">
                 </th>
             </tr>
         `);
 
+        thead.append(`
+            <tr>
+                <th>Buffer</th>
+                <th>Totale Container</th>
+                <th>CPT</th>
+            </tr>
+        `);
+
         const tbody = $('<tbody></tbody>');
-        Object.entries(sortedSummary).forEach(([lane, locations]) => {
-            const laneRow = $('<tr></tr>');
-            laneRow.append(`<td colspan="3"><strong>${lane}</strong></td>`);
 
-            Object.entries(locations).forEach(([location, data]) => {
-                tbody.append(`
-                    <tr>
-                        <td>${location}</td>
-                        <td>${data.count}</td>
-                        <td>${data.cpt.length > 0 ? data.cpt.map(formatCPT).join('<br>') : 'N/A'}</td>
-                    </tr>
-                `);
+        Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                const row = $('<tr class="locationRow"></tr>');
+                const count = data.count;
+
+                row.append(`<td>${location}</td>`);
+                row.append(`<td>${count}</td>`);
+                row.append(`<td>${Object.entries(data.cpts).map(([cpt, cptCount]) => `${cpt}: ${cptCount}`).join(', ')}</td>`);
+                tbody.append(row);
             });
-
-            table.append(thead).append(tbody);
         });
 
+        table.append(thead);
+        table.append(tbody);
         contentContainer.append(table);
+
         $('body').append(contentContainer);
+
+        $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function(event) {
+            if (event.key === "Enter") {
+                selectedBufferFilter = $(this).val();
+                fetchBufferSummary();
+            }
+        });
+
+        $('#laneFilterInput').val(selectedLaneFilters.join(', ')).on('keydown', function(event) {
+            if (event.key === "Enter") {
+                selectedLaneFilters = $(this).val().split(',').map(filter => filter.trim());
+                fetchBufferSummary();
+            }
+        });
+
+        $('#cptFilterInput').val(selectedCptFilter).on('keydown', function(event) {
+            if (event.key === "Enter") {
+                selectedCptFilter = $(this).val();
+                fetchBufferSummary();
+            }
+        });
     }
 
-    // Show or hide the table based on isVisible
-    function toggleTableVisibility() {
-        isVisible = !isVisible;
-        if (isVisible) {
-            fetchBufferSummary();
-        } else {
-            $('#contentContainer').remove();
-        }
+    function addToggleButton() {
+        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
+
+        toggleButton.on('click', function() {
+            isVisible = !isVisible;
+            if (isVisible) {
+                fetchBufferSummary();
+                $(this).text("Nascondi Recuperi");
+            } else {
+                $('#contentContainer').remove();
+                $(this).text("Mostra Recuperi");
+            }
+        });
+
+        $('body').append(toggleButton);
     }
 
-    // Initialize by fetching the stacking filter map
-    fetchStackingFilterMap(() => {
-        // Now fetch the buffer summary once the stacking filter map is loaded
+    fetchStackingFilterMap(function() {
         addToggleButton();
+        fetchBufferSummary();
     });
+
+    setInterval(fetchBufferSummary, 200000); // Refresh every 3 minutes
 })();
