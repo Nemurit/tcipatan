@@ -10,7 +10,7 @@
     let isVisible = false;
     let isChartVisible = false;
     let filteredSummary = {}; // Store filtered summary globally
-
+    
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
             method: "GET",
@@ -563,6 +563,10 @@ function parseBufferNumber(bufferName) {
     
         // Get the canvas context and create the chart
         const ctx = document.getElementById('myChart').getContext('2d');
+        if (window.myChart instanceof Chart) {
+    // Se esiste, distruggi il grafico precedente
+    window.myChart.destroy();
+}
         if (ctx) {
             const chart = new Chart(ctx, {
                 type: 'pie',
