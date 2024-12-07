@@ -7,6 +7,7 @@
     let selectedLaneFilters = [];
     let selectedCptFilter = '';
     let stackingToLaneMap = {};
+    let sortedSummary = {}; // Dichiarazione globale per sortedSummary
     let isVisible = false;
 
     function fetchStackingFilterMap(callback) {
