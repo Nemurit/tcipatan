@@ -138,55 +138,24 @@
     }
 }
 
-function matchesExactBufferNumber(location, filter) {
-    // If the filter is a range (e.g., "E3 - F3")
-    const rangeMatch = filter.match(/^BUFFER\s*([A-Za-z]*)\s*(\d+)\s*-\s*([A-Za-z]*)\s*(\d+)$/);
-    
-    if (rangeMatch) {
-        const startLetter = rangeMatch[1].toUpperCase();
-        const startNumber = parseInt(rangeMatch[2], 10);
-        const endLetter = rangeMatch[3].toUpperCase();
-        const endNumber = parseInt(rangeMatch[4], 10);
-        
-        // Now match the location (e.g., "E3", "F3")
-        const locationMatch = location.match(/BUFFER\s*([A-Za-z]*)\s*(\d+)/);
-        
-        if (locationMatch) {
-            const locLetter = locationMatch[1].toUpperCase();
-            const locNumber = parseInt(locationMatch[2], 10);
-            
-            // Check if the location falls within the range (start to end)
-            const isInRange =
-                (locLetter === startLetter && locNumber >= startNumber) ||
-                (locLetter === endLetter && locNumber <= endNumber) ||
-                (locLetter > startLetter && locLetter < endLetter);
-
-            return isInRange;
-        }
+function matchesExactBufferString(location, filter) {
+    // Se il filtro è esattamente uguale alla location, restituisce true
+    if (location.toUpperCase().includes(filter.toUpperCase())) {
+        return true;
     }
-    
-    // If it's not a range, just match normally (e.g., "E3" or "3")
-    const match = location.match(/BUFFER\s*([A-Za-z]*)\s*(\d+)/);
-    if (match) {
-        const bufferLetter = match[1];  // Optional letter part
-        const bufferNumber = match[2];  // Numeric part
 
-        if (filter.includes(bufferNumber)) {
-            if (bufferLetter) {
-                // If the user entered a letter and number (e.g., "E3"), match that as well
-                return filter.toUpperCase().includes(bufferLetter.toUpperCase() + bufferNumber);
-            }
-            return bufferNumber === filter; // Match just the number part
-        }
-    }
-    
     return false;
 }
 
+
 function parseBufferNumber(bufferName) {
-    const match = bufferName.match(/BUFFER\s*([A-Za-z]*)\s*(\d+)/);
-    return match ? parseInt(match[2], 10) : 0;  // Extract only the numeric part
+    const match = bufferName.match(/BUFFER\s*([A-Za-z]*)\s*(\d+)/);  // Trova eventuali lettere seguite dal numero
+    if (match) {
+        return parseInt(match[2], 10);  // Estrai e restituisci solo la parte numerica
+    }
+    return null;  // Restituisci null se non trova un numero
 }
+
 
 
     function convertTimestampToLocalTime(timestamp) {
