@@ -171,13 +171,30 @@ function matchesExactBufferString(location, filter) {
             return locationLetter === filterLetterOrNumber;
         }
         
-        // Se è solo il numero che corrisponde
-        return locationNumber === filterLetterOrNumber;
+        // Se è solo il numero che corrisponde (confronto numerico)
+        if (!isNaN(filterLetterOrNumber)) {
+            return parseInt(locationNumber, 10) === parseInt(filterLetterOrNumber, 10);
+        }
+    }
+
+    // Caso 3: Se il filtro ha solo una parte (ad esempio solo numero o solo lettera) e location è solo una parte
+    if (filterParts.length === 1 && locationParts.length === 1) {
+        const [filterLetterOrNumber] = filterParts;
+        const [locationLetterOrNumber] = locationParts;
+
+        // Se è solo la lettera che corrisponde
+        if (isNaN(filterLetterOrNumber)) {
+            return locationLetterOrNumber === filterLetterOrNumber;
+        }
+
+        // Se è solo il numero che corrisponde (confronto numerico)
+        return parseInt(locationLetterOrNumber, 10) === parseInt(filterLetterOrNumber, 10);
     }
 
     // Default: se non corrisponde
     return false;
 }
+
 
 
 // All'interno della funzione processAndDisplay
