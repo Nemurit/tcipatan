@@ -138,14 +138,75 @@
     }
 }
 
+// Modifica della funzione di filtro per il buffer
 function matchesExactBufferString(location, filter) {
     // Se il filtro è esattamente uguale alla location, restituisce true
     if (location.toUpperCase().includes(filter.toUpperCase())) {
         return true;
     }
-
     return false;
 }
+
+// All'interno della funzione processAndDisplay
+function processAndDisplay(containers) {
+    const filteredSummary = {};
+
+    containers.forEach(container => {
+        const location = container.location || '';
+        const stackingFilter = container.stackingFilter || 'N/A';
+        const lane = stackingToLaneMap[stackingFilter] || 'N/A';
+        const cpt = container.cpt || null;
+
+        // Filtro solo i buffer che contengono "BUFFER" e applico il filtro selezionato
+        if (
+            location.toUpperCase().startsWith("BUFFER") &&
+            (selectedBufferFilter === '' || matchesExactBufferString(location, selectedBufferFilter)) &&  // Usa matchesExactBufferString
+            (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
+            (selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter)))
+        ) {
+            if (!filteredSummary[lane]) {
+                filteredSummary[lane] = {};
+            }
+
+            if (!filteredSummary[lane][location]) {
+                filteredSummary[lane][location] = { count: 0, cpt: cpt };
+            }
+
+            filteredSummary[lane][location].count++;
+        }
+    });
+
+    console.log("Filtered Summary:", filteredSummary); // Debugging line
+
+    const sortedSummary = {};
+    Object.keys(filteredSummary).forEach(lane => {
+        const laneSummary = filteredSummary[lane];
+        sortedSummary[lane] = Object.keys(laneSummary)
+            .sort((a, b) => {
+                const numA = parseBufferNumber(a);
+                const numB = parseBufferNumber(b);
+
+                if (numA === numB) {
+                    return a.localeCompare(b);
+                }
+                return numA - numB;
+            })
+            .reduce((acc, location) => {
+                acc[location] = laneSummary[location];
+                return acc;
+            }, {});
+    });
+
+    if (isVisible) {
+        displayTable(sortedSummary);
+    }
+
+    // Se sortedSummary non è vuoto, generiamo il grafico
+    if (Object.keys(sortedSummary).length > 0) {
+        generatePieChart(sortedSummary);
+    }
+}
+
 
 
 function parseBufferNumber(bufferName) {
