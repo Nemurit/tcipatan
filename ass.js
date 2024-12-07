@@ -1,3 +1,11 @@
+// Function to parse the buffer number from a string
+function parseBufferNumber(bufferString) {
+    const match = bufferString.match(/\d+/); // Extract the number from the string
+    return match ? parseInt(match[0], 10) : 0; // Return the number or 0 if not found
+}
+
+
+
 (function() {
     'use strict';
 
