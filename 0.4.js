@@ -216,19 +216,11 @@
             tbody.append(laneRow);
 
             Object.entries(laneSummary).forEach(([location, data]) => {
-                const row = $('<tr class="locationRow"></tr>');
-                const count = data.count;
-
-                let color = '';
-                if (count <= 10) {
-                    color = 'green';
-                } else if (count <= 30) {
-                    color = 'orange';
-                } else {
-                    color = 'red';
-                }
-
-                row.append(`<td>${location}</td><td style="color: ${color};">${count}</td><td>${data.cpt}</td>`);
+                const row = $(`<tr class="containerRow" style="display: none;">
+                    <td>${location}</td>
+                    <td style="color: ${laneColor};">${data.count}</td>
+                    <td>${data.cpt}</td>
+                </tr>`);
                 tbody.append(row);
             });
 
@@ -240,7 +232,7 @@
         contentContainer.append(table);
         $('body').append(contentContainer);
 
-        // Funzione per applicare i filtri
+        // Applicazione dei filtri
         $('#bufferFilterInput').on('input', function() {
             selectedBufferFilter = $(this).val();
             fetchBufferSummary();
@@ -257,6 +249,7 @@
         });
     }
 
+    // Funzione per aggiungere il pulsante
     function addToggleButton() {
         const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; z-index: 9999;">Mostra Recuperi</button>');
 
