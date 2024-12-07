@@ -7,7 +7,6 @@
     let selectedLaneFilters = [];
     let selectedCptFilter = '';
     let stackingToLaneMap = {};
-    let sortedSummary = {}; // Variabile globale per i dati filtrati e ordinati
     let isVisible = false;
 
     function fetchStackingFilterMap(callback) {
@@ -78,44 +77,115 @@
         });
     }
 
- function processAndDisplay(containers) {
-     const filteredSummary = {};
-     let hasMatchingFilters = false;
-
-     containers.forEach(container => {
-         // Elaborazione dei dati
-         // ...
-     });
-
-     const sortedSummary = {};
-     Object.keys(filteredSummary).forEach(lane => {
-         const laneSummary = filteredSummary[lane];
-         sortedSummary[lane] = Object.keys(laneSummary)
-             .sort((a, b) => {
-                 const numA = parseBufferNumber(a);
-                 const numB = parseBufferNumber(b);
-                 return numA - numB;
-             })
-             .reduce((acc, location) => {
-                 acc[location] = laneSummary[location];
-                 return acc;
-             }, {});
-     });
-
-     console.log("Dati ordinati:", sortedSummary);  // Aggiungi questo per vedere i dati dopo l'ordinamento
-
-     // Se nessun filtro ha trovato risultati
-     if (!hasMatchingFilters) {
-         console.warn("Nessun risultato trovato, mostrando tutti i dati non filtrati.");
-         displayTable({});
-         return;
-     }
-
-     if (isVisible) {
-         displayTable(sortedSummary);
-     }
- }
-
+    function processAndDisplay(containers) {
+        const filteredSummary = {};
+        let hasMatchingFilters = false; // Variabile per verificare se almeno un dato corrisponde ai filtri
+    
+        containers.forEach(container => {
+            const location = container.location || '';
+            const stackingFilter = container.stackingFilter || 'N/A';
+            const lane = stackingToLaneMap[stackingFilter] || 'N/A';
+            const cpt = container.cpt || null;
+    
+            // Verifica se il container soddisfa i criteri di filtro
+            const matchesBufferFilter = selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter);
+            const matchesLaneFilter = selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()));
+            const matchesCptFilter = selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter));
+    
+            if (
+                location.toUpperCase().startsWith("BUFFER") &&
+                matchesBufferFilter &&
+                matchesLaneFilter &&
+                matchesCptFilter
+            ) {
+                if (!filteredSummary[lane]) {
+                    filteredSummary[lane] = {};
+                }
+    
+                if (!filteredSummary[lane][location]) {
+                    filteredSummary[lane][location] = { count: 0, cpt: cpt };
+                }
+    
+                filteredSummary[lane][location].count++;
+                hasMatchingFilters = true; // Almeno un dato corrisponde ai filtri
+            }
+        });
+    
+        const sortedSummary = {};
+        Object.keys(filteredSummary).forEach(lane => {
+            const laneSummary = filteredSummary[lane];
+            sortedSummary[lane] = Object.keys(laneSummary)
+                .sort((a, b) => {
+                    const numA = parseBufferNumber(a);
+                    const numB = parseBufferNumber(b);
+    
+                    if (numA === numB) {
+                        return a.localeCompare(b);
+                    }
+                    return numA - numB;
+                })
+                .reduce((acc, location) => {
+                    acc[location] = laneSummary[location];
+                    return acc;
+                }, {});
+        });
+    
+        // Se nessun filtro ha prodotto risultati, lascia la tabella visibile come se non fosse applicato alcun filtro
+        if (!hasMatchingFilters) {
+            console.warn("Nessun risultato trovato, mostrando tutti i dati non filtrati.");
+            displayTable({});
+            return;
+        }
+    
+        if (isVisible) {
+            displayTable(sortedSummary);
+            generatePieChart(sortedSummary); // Generate the pie chart with the filtered and sorted data
+        }
+    }
+    
+    // Function to generate the pie chart
+    function generatePieChart(sortedSummary) {
+        // Prepare the data for the pie chart
+        const labels = [];
+        const data = [];
+    
+        // Collect data for the pie chart from the sorted summary
+        Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                labels.push(location); // Use location as the label
+                data.push(data.count);  // Use the count as the value for the chart
+            });
+        });
+    
+        // Create the pie chart
+        const ctx = document.getElementById('pieChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#FF9F40', '#4BC0C0', '#9966FF'], // Colors for each section
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                return tooltipItem.label + ': ' + tooltipItem.raw + ' container(s)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
     
 
     function matchesExactBufferNumber(location, filter) {
@@ -341,91 +411,11 @@
         $('body').append(toggleButton);
     }
 
-    function addChartButton() {
-        const chartButton = $('<button id="chartButton" style="position: fixed; top: 50px; left: calc(50% - 40px); padding: 4px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Grafico</button>');
-    
-        chartButton.on('click', function() {
-            createBufferChart();
-        });
-    
-        $('body').append(chartButton);
-    }
-    
-    function createBufferChart() {
-     console.log("Contenuto di sortedSummary:", sortedSummary);  // Aggiungi questo per vedere cosa contiene sortedSummary
-
-     const chartData = [];
-     const chartLabels = [];
-
-     // Verifica se sortedSummary è vuoto
-     if (Object.keys(sortedSummary).length === 0) {
-         console.log("Nessun dato trovato per il grafico");
-         return;  // Se non ci sono dati, non fare nulla
-     }
-
-     Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
-         Object.entries(laneSummary).forEach(([location, data]) => {
-             const bufferName = location;
-             const totalContainers = data.count;
-
-             chartLabels.push(bufferName);
-             chartData.push(totalContainers);
-         });
-     });
-
-     console.log("Dati per il grafico:", chartData, chartLabels);  // Aggiungi questo per vedere i dati preparati per il grafico
-
-     // Se chartData è vuoto, non fare nulla
-     if (chartData.length === 0 || chartLabels.length === 0) {
-         console.log("Non ci sono dati aggregati per il grafico");
-         return;
-     }
-
-     const chartContainerId = 'chartContainer';
-     if (!$(`#${chartContainerId}`).length) {
-         const chartContainer = $(`<div id="${chartContainerId}" style="position: fixed; top: 100px; left: 50%; transform: translateX(-50%); width: 600px; height: 400px; background: white; padding: 10px; border: 1px solid #ddd; z-index: 9999; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
-             <canvas id="bufferChart" style="width: 100%; height: 100%;"></canvas>
-             <button id="closeChartButton" style="position: absolute; top: 5px; right: 5px; background-color: red; color: white; border: none; border-radius: 3px; padding: 5px;">X</button>
-         </div>`);
-         $('body').append(chartContainer);
-
-         $('#closeChartButton').on('click', function() {
-             $(`#${chartContainerId}`).remove();
-         });
-     }
-
-     const ctx = document.getElementById('bufferChart').getContext('2d');
-     new Chart(ctx, {
-         type: 'pie',
-         data: {
-             labels: chartLabels,
-             datasets: [{
-                 label: 'Numero di Container per Buffer (Location)',
-                 data: chartData,
-                 backgroundColor: chartLabels.map(() => `#${Math.floor(Math.random() * 16777215).toString(16)}`),
-                 borderColor: '#fff',
-                 borderWidth: 1
-             }]
-         },
-         options: {
-             responsive: true,
-             plugins: {
-                 legend: {
-                     position: 'top'
-                 }
-             }
-         }
-     });
- }
-
-    
-    // Aggiunta del pulsante per il grafico
     fetchStackingFilterMap(function() {
         addToggleButton();
-        addChartButton(); // Aggiungiamo il pulsante per il grafico
         fetchBufferSummary();
     });
 
-   // Aggiorna i dati ogni 3 minuti
+    // Aggiorna i dati ogni 3 minuti
     setInterval(fetchBufferSummary, 180000); // 180,000 ms = 3 minuti
 })();
