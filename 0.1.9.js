@@ -276,17 +276,30 @@
         `);
     }
 
-    function getCPTTime(timestamps) {
-        const timeZoneOffset = 1 * 60 * 60 * 1000; // UTC+1
-        const cptTimestamp = Math.max(...timestamps); // Usa il timestamp più recente
+   function getCPTTime(timestamps) {
+    const timeZoneOffset = 1 * 60 * 60 * 1000; // UTC+1
 
-        const cptDate = new Date(cptTimestamp + timeZoneOffset);
-        const hours = cptDate.getHours().toString().padStart(2, '0');
-        const minutes = cptDate.getMinutes().toString().padStart(2, '0');
-        const date = cptDate.toISOString().slice(0, 10); // Data in formato YYYY-MM-DD
+    // Verifica se il timestamp è valido
+    const validTimestamps = timestamps.filter(timestamp => {
+        const date = new Date(timestamp);
+        return !isNaN(date.getTime()); // Verifica se la data è valida
+    });
 
-        return `${hours}:${minutes} ${date}`;
+    // Se non ci sono timestamp validi, ritorna un valore di fallback
+    if (validTimestamps.length === 0) {
+        return "Orario non valido";
     }
+
+    const cptTimestamp = Math.max(...validTimestamps); // Usa il timestamp più recente valido
+
+    const cptDate = new Date(cptTimestamp + timeZoneOffset);
+    const hours = cptDate.getHours().toString().padStart(2, '0');
+    const minutes = cptDate.getMinutes().toString().padStart(2, '0');
+    const date = cptDate.toISOString().slice(0, 10); // Data in formato YYYY-MM-DD
+
+    return `${hours}:${minutes} ${date}`;
+}
+
 
     function matchesTimeFilter(cptTime, timeFilter) {
         const [filterHour, filterMinute] = timeFilter.split(':').map(num => parseInt(num, 10));
