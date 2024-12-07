@@ -308,7 +308,6 @@
                 if (isValidCptFilter(newFilter)) {
                     selectedCptFilter = newFilter;
                     fetchBufferSummary();
-                
             }
         });
         
