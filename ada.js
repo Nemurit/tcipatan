@@ -138,14 +138,17 @@
     }
 }
 
-// Modifica della funzione di filtro per il buffer
 function matchesExactBufferString(location, filter) {
-    // Se il filtro è esattamente uguale alla location, restituisce true
-    if (location.toUpperCase().includes(filter.toUpperCase())) {
-        return true;
-    }
-    return false;
+    const regexFullBuffer = new RegExp(`^BUFFER\\s*${filter}$`, 'i'); // Esatta corrispondenza dell'intera stringa "BUFFER X"
+    const regexPartialBuffer = new RegExp(`^BUFFER\\s*[A-Za-z]*\\s*${filter}$`, 'i'); // Corrispondenza per lettere seguite da un numero
+    
+    // Se il filtro è vuoto, accetta tutto
+    if (!filter) return true;
+
+    // Controlla se la location soddisfa uno dei due scenari
+    return regexFullBuffer.test(location) || regexPartialBuffer.test(location);
 }
+
 
 // All'interno della funzione processAndDisplay
 function processAndDisplay(containers) {
