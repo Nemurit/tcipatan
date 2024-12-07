@@ -1,11 +1,3 @@
-// Function to parse the buffer number from a string
-function parseBufferNumber(bufferString) {
-    const match = bufferString.match(/\d+/); // Extract the number from the string
-    return match ? parseInt(match[0], 10) : 0; // Return the number or 0 if not found
-}
-
-
-
 (function() {
     'use strict';
 
@@ -16,7 +8,11 @@ function parseBufferNumber(bufferString) {
     let selectedCptFilter = '';
     let stackingToLaneMap = {};
     let isVisible = false;
-    let isChartVisible = false; // Track visibility of the pie chart
+
+    // Aggiungi la libreria Chart.js
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+    document.head.appendChild(script);
 
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
@@ -106,36 +102,13 @@ function parseBufferNumber(bufferString) {
                 matchesLaneFilter &&
                 matchesCptFilter
             ) {
-                if (!filteredSummary[lane]) {
-                    filteredSummary[lane] = {};
+                if (!filteredSummary[location]) {
+                    filteredSummary[location] = { count: 0, cpt: cpt };
                 }
 
-                if (!filteredSummary[lane][location]) {
-                    filteredSummary[lane][location] = { count: 0, cpt: cpt };
-                }
-
-                filteredSummary[lane][location].count++;
+                filteredSummary[location].count++;
                 hasMatchingFilters = true;
             }
-        });
-
-        const sortedSummary = {};
-        Object.keys(filteredSummary).forEach(lane => {
-            const laneSummary = filteredSummary[lane];
-            sortedSummary[lane] = Object.keys(laneSummary)
-                .sort((a, b) => {
-                    const numA = parseBufferNumber(a);
-                    const numB = parseBufferNumber(b);
-
-                    if (numA === numB) {
-                        return a.localeCompare(b);
-                    }
-                    return numA - numB;
-                })
-                .reduce((acc, location) => {
-                    acc[location] = laneSummary[location];
-                    return acc;
-                }, {});
         });
 
         if (!hasMatchingFilters) {
@@ -144,22 +117,13 @@ function parseBufferNumber(bufferString) {
             return;
         }
 
-        if (isVisible) {
-            displayTable(sortedSummary);
-            generatePieChart(sortedSummary);
-        }
+        displayTable(filteredSummary);
+        generatePieChart(filteredSummary);
     }
 
-    function generatePieChart(sortedSummary) {
-        const labels = [];
-        const data = [];
-
-        Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
-            Object.entries(laneSummary).forEach(([location, data]) => {
-                labels.push(location);
-                data.push(data.count);
-            });
-        });
+    function generatePieChart(filteredSummary) {
+        const labels = Object.keys(filteredSummary);
+        const data = labels.map(location => filteredSummary[location].count);
 
         const ctx = document.getElementById('pieChart').getContext('2d');
         new Chart(ctx, {
@@ -189,107 +153,72 @@ function parseBufferNumber(bufferString) {
         });
     }
 
-    function displayTable(sortedSummary) {
+    function displayTable(filteredSummary) {
         $('#contentContainer').remove();
 
         const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
-
-        if (Object.keys(sortedSummary).length === 0) {
-            return;
-        }
-
+        
         const table = $('<table id="bufferSummaryTable" class="performance"></table>');
-
         const thead = $('<thead></thead>');
-        thead.append(`
-            <tr>
-                <th>
-                    <input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="width: 100%; padding: 5px; box-sizing: border-box;">
-                </th>
-                <th>
-                    <input id="laneFilterInput" type="text" placeholder="Filtro per LANE (es. Lane1, Lane2)" style="width: 100%; padding: 5px; box-sizing: border-box;">
-                </th>
-                <th>
-                    <input id="cptFilterInput" type="text" placeholder="Filtro per CPT (es. 14)" style="width: 100%; padding: 5px; box-sizing: border-box;">
-                </th>
-            </tr>
-        `);
-
         thead.append(`
             <tr>
                 <th>Buffer</th>
                 <th>Totale Container</th>
-                <th>CPT</th>
             </tr>
         `);
 
         const tbody = $('<tbody></tbody>');
         let totalContainers = 0;
 
-        Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
-            let laneTotal = 0;
+        Object.entries(filteredSummary).forEach(([location, data]) => {
+            const row = $('<tr></tr>');
+            row.append(`<td>${location}</td>`);
+            row.append(`<td>${data.count}</td>`);
+            tbody.append(row);
 
-            Object.entries(laneSummary).forEach(([location, data]) => {
-                laneTotal += data.count;
-            });
-
-            let laneColor = '';
-            if (laneTotal <= 10) {
-                laneColor = 'green';
-            } else if (laneTotal <= 30) {
-                laneColor = 'orange';
-            } else {
-                laneColor = 'red';
-            }
-
-            const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-                <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
-            </tr>`);
-
-            laneRow.on('click', function() {
-                const nextRows = $(this).nextUntil('.laneRow');
-                nextRows.toggle();
-            });
-
-            tbody.append(laneRow);
-
-            Object.entries(laneSummary).forEach(([location, data]) => {
-                const row = $('<tr class="locationRow"></tr>');
-                row.append(`<td>${location}</td>`);
-                row.append(`<td>${data.count}</td>`);
-                row.append(`<td>${data.cpt}</td>`);
-
-                tbody.append(row);
-            });
-
-            totalContainers += laneTotal;
+            totalContainers += data.count;
         });
+
+        const tfoot = $('<tfoot></tfoot>');
+        const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
+        tfoot.append(globalTotalRow);
 
         table.append(thead);
         table.append(tbody);
-
+        table.append(tfoot);
         contentContainer.append(table);
+
         $('body').append(contentContainer);
 
-        const tableButton = $('<button id="toggleTableButton">Toggle Table</button>');
-        tableButton.on('click', function() {
-            $('#contentContainer').toggle();
+        const chartContainer = $('<div id="chartContainer" style="position: fixed; top: 10px; left: 10px; width: 400px; height: 400px;"></div>');
+        const canvas = $('<canvas id="pieChart" width="400" height="400"></canvas>');
+        chartContainer.append(canvas);
+        $('body').append(chartContainer);
+    }
+
+    function addToggleButton() {
+        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
+
+        toggleButton.on('click', function() {
             isVisible = !isVisible;
+            if (isVisible) {
+                fetchBufferSummary();
+                $(this).text("Nascondi Recuperi");
+            } else {
+                $('#contentContainer').remove();
+                $('#chartContainer').remove();
+                $(this).text("Mostra Recuperi");
+            }
         });
 
-        const chartButton = $('<button id="toggleChartButton">Toggle Chart</button>');
-        chartButton.on('click', function() {
-            $('#chartContainer').toggle();
-            isChartVisible = !isChartVisible;
-        });
-
-        $('body').append(tableButton);
-        $('body').append(chartButton);
+        $('body').append(toggleButton);
     }
 
-    function init() {
-        fetchStackingFilterMap(fetchBufferSummary);
-    }
+    fetchStackingFilterMap(function() {
+        addToggleButton();
+        fetchBufferSummary();
+    });
 
-    init();
+    // Aggiorna i dati ogni 3 minuti
+    setInterval(fetchBufferSummary, 180000); // 180,000 ms = 3 minuti
 })();
