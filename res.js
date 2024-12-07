@@ -143,18 +143,18 @@
         return match ? parseInt(match[1], 10) : 0;
     }
 
-    function convertTimestampToUTCPlusOne(timestamp) {
+    function convertTimestampToLocalTime(timestamp) {
         const date = new Date(timestamp);
-        // Aggiunge 1 ora per UTC+1
-        date.setHours(date.getHours() + 1);
-
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        const seconds = String(date.getSeconds()).padStart(2, '0');
-        return `${hours}:${minutes}:${seconds} ${day}/${month}/${year}`;
+        // Ottieni l'ora locale
+        const options = {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+            day: '2-digit',
+            month: '2-digit',
+            year: '2-digit'
+        };
+        return date.toLocaleString('it-IT', options);
     }
 
     function filterCpt(cpt, filter) {
@@ -228,11 +228,11 @@
             tbody.append(laneRow);
 
             Object.entries(laneSummary).forEach(([location, data]) => {
-                // Non visualizzare il CPT nelle righe dei buffer
+                // Visualizza il CPT solo nelle righe delle lane
                 const row = $('<tr class="locationRow"></tr>');
                 row.append(`<td>${location}</td>`);
                 row.append(`<td>${data.count}</td>`);
-                row.append(`<td>${data.cpt ? convertTimestampToUTCPlusOne(data.cpt) : 'N/A'}</td>`);
+                row.append(`<td>${data.cpt ? convertTimestampToLocalTime(data.cpt) : 'N/A'}</td>`);
                 tbody.append(row);
             });
 
