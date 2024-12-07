@@ -5,6 +5,7 @@
     const stackingFilterMapUrl = 'https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/stacking_filter_map.json';
     let selectedBufferFilter = '';
     let selectedLaneFilters = [];
+    let selectedCptFilter = '';
     let stackingToLaneMap = {};
     let isVisible = false;
 
@@ -76,75 +77,116 @@
         });
     }
 
- function processAndDisplay(containers) {
-    const filteredSummary = {};
+    function processAndDisplay(containers) {
+        const filteredSummary = {};
 
-    containers.forEach(container => {
-        const location = container.location || '';
-        const stackingFilter = container.stackingFilter || 'N/A';
-        const lane = stackingToLaneMap[stackingFilter] || 'N/A';
+        containers.forEach(container => {
+            const location = container.location || '';
+            const stackingFilter = container.stackingFilter || 'N/A';
+            const lane = stackingToLaneMap[stackingFilter] || 'N/A';
+            const cpt = container.cpt || null;
 
-        // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
-        if (
-            location.toUpperCase().startsWith("BUFFER") &&
-            (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
-            (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
-        ) {
-            if (!filteredSummary[lane]) {
-                filteredSummary[lane] = {};
-            }
-
-            if (!filteredSummary[lane][location]) {
-                filteredSummary[lane][location] = { count: 0 };
-            }
-
-            filteredSummary[lane][location].count++;
-        }
-    });
-
-    const sortedSummary = {};
-    Object.keys(filteredSummary).forEach(lane => {
-        const laneSummary = filteredSummary[lane];
-        sortedSummary[lane] = Object.keys(laneSummary)
-            .sort((a, b) => {
-                const numA = parseBufferNumber(a);
-                const numB = parseBufferNumber(b);
-
-                if (numA === numB) {
-                    return a.localeCompare(b);
+            // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
+            if (
+                location.toUpperCase().startsWith("BUFFER") &&
+                (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
+                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
+                (selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter)))
+            ) {
+                if (!filteredSummary[lane]) {
+                    filteredSummary[lane] = {};
                 }
-                return numA - numB;
-            })
-            .reduce((acc, location) => {
-                acc[location] = laneSummary[location];
-                return acc;
-            }, {});
-    });
 
-    if (isVisible) {
-        displayTable(sortedSummary);
+                if (!filteredSummary[lane][location]) {
+                    filteredSummary[lane][location] = { count: 0, cpt: cpt };
+                }
+
+                filteredSummary[lane][location].count++;
+            }
+        });
+
+        const sortedSummary = {};
+        Object.keys(filteredSummary).forEach(lane => {
+            const laneSummary = filteredSummary[lane];
+            sortedSummary[lane] = Object.keys(laneSummary)
+                .sort((a, b) => {
+                    const numA = parseBufferNumber(a);
+                    const numB = parseBufferNumber(b);
+
+                    if (numA === numB) {
+                        return a.localeCompare(b);
+                    }
+                    return numA - numB;
+                })
+                .reduce((acc, location) => {
+                    acc[location] = laneSummary[location];
+                    return acc;
+                }, {});
+        });
+
+        if (isVisible) {
+            displayTable(sortedSummary);
+        }
     }
-}
 
-// Funzione che confronta il numero esatto nel nome del buffer con il filtro
-function matchesExactBufferNumber(location, filter) {
-    const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
-    if (match) {
-        const bufferNumber = match[1];  // Estrae il numero
-        // Verifica che il numero estratto corrisponda esattamente al filtro
-        return bufferNumber === filter;  
+    function matchesExactBufferNumber(location, filter) {
+        const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
+        if (match) {
+            const bufferNumber = match[1];  // Estrae il numero
+            return bufferNumber === filter;
+        }
+        return false;
     }
-    return false;
-}
 
-// Funzione che estrae il numero dal nome del buffer per ordinarlo
-function parseBufferNumber(bufferName) {
-    const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
-    return match ? parseInt(match[1], 10) : 0;  // Estrae solo il numero
-}
+    function parseBufferNumber(bufferName) {
+        const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
+        return match ? parseInt(match[1], 10) : 0;
+    }
 
+    function convertTimestampToLocalTime(timestamp) {
+        const date = new Date(timestamp);
+        // Ottieni l'ora locale
+        const options = {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+            day: '2-digit',
+            month: '2-digit',
+            year: '2-digit'
+        };
+        return date.toLocaleString('it-IT', options);
+    }
 
-
+    function filterCpt(cpt, filter) {
+        try {
+            // Converte CPT al fuso orario locale e formato "HH:MM"
+            const date = new Date(cpt);
+            const cptLocalTime = date.toLocaleTimeString('it-IT', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+    
+            // Dividiamo il filtro in parti (es. "16", "16:15", ecc.)
+            const filterParts = filter.split(',').map(f => f.trim());
+    
+            // Confrontiamo ogni parte del filtro con l'orario locale "HH:MM"
+            return filterParts.some(part => {
+                if (/^\d{1,2}$/.test(part)) {
+                    // Se il filtro è solo "HH", confronta solo l'ora
+                    const hour = part.padStart(2, '0');
+                    return cptLocalTime.startsWith(hour + ':'); // HH corrisponde
+                }
+                // Se il filtro è "HH:MM", confronta l'intero valore
+                return part === cptLocalTime;
+            });
+        } catch (error) {
+            console.warn("Errore nel filtro CPT o valore non valido:", error);
+            return false;
+        }
+    }
+    
+    
     function displayTable(sortedSummary) {
         $('#contentContainer').remove();
 
@@ -163,7 +205,10 @@ function parseBufferNumber(bufferName) {
                     <input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="width: 100%; padding: 5px; box-sizing: border-box;">
                 </th>
                 <th>
-                    <input id="laneFilterInput" type="text" placeholder="Filtro per LANE" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                    <input id="laneFilterInput" type="text" placeholder="Filtro per LANE (es. Lane1, Lane2)" style="width: 100%; padding: 5px; box-sizing: border-box;">
+                </th>
+                <th>
+                    <input id="cptFilterInput" type="text" placeholder="Filtro per CPT (es. 14)" style="width: 100%; padding: 5px; box-sizing: border-box;">
                 </th>
             </tr>
         `);
@@ -172,6 +217,7 @@ function parseBufferNumber(bufferName) {
             <tr>
                 <th>Buffer</th>
                 <th>Totale Container</th>
+                <th>CPT</th>
             </tr>
         `);
 
@@ -195,7 +241,7 @@ function parseBufferNumber(bufferName) {
             }
 
             const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-                <td colspan="2" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
+                <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
             </tr>`);
 
             laneRow.on('click', function() {
@@ -206,20 +252,11 @@ function parseBufferNumber(bufferName) {
             tbody.append(laneRow);
 
             Object.entries(laneSummary).forEach(([location, data]) => {
+                // Visualizza il CPT solo nelle righe delle lane
                 const row = $('<tr class="locationRow"></tr>');
-                const count = data.count;
-
-                let color = '';
-                if (count <= 10) {
-                    color = 'green';
-                } else if (count <= 30) {
-                    color = 'orange';
-                } else {
-                    color = 'red';
-                }
-
                 row.append(`<td>${location}</td>`);
-                row.append(`<td style="color: ${color};">${count}</td>`);
+                row.append(`<td>${data.count}</td>`);
+                row.append(`<td>${data.cpt ? convertTimestampToLocalTime(data.cpt) : 'N/A'}</td>`);
                 tbody.append(row);
             });
 
@@ -227,7 +264,7 @@ function parseBufferNumber(bufferName) {
         });
 
         const tfoot = $('<tfoot></tfoot>');
-        const globalTotalRow = $('<tr><td colspan="2" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
+        const globalTotalRow = $('<tr><td colspan="3" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
         tfoot.append(globalTotalRow);
 
         table.append(thead);
@@ -251,6 +288,23 @@ function parseBufferNumber(bufferName) {
             }
         });
 
+        $('#cptFilterInput').val(selectedCptFilter).on('keydown', function(event) {
+            if (event.key === "Enter") {
+                const newFilter = $(this).val();
+                if (isValidCptFilter(newFilter)) {
+                    selectedCptFilter = newFilter;
+                    fetchBufferSummary();
+                } else {
+                    alert("Il filtro inserito non è valido. Usare valori come '16, 16:15, 16:30'.");
+                }
+            }
+        });
+        
+        function isValidCptFilter(filter) {
+            const parts = filter.split(',').map(f => f.trim());
+            return parts.every(part => /^(\d{1,2}(:\d{2})?)$/.test(part)); // Es. 16 o 16:15
+        }
+        
         GM_addStyle(`
             #bufferSummaryTable {
                 table-layout: auto;
@@ -303,7 +357,6 @@ function parseBufferNumber(bufferName) {
         fetchBufferSummary();
     });
 
-    // Aggiorna i dati ogni 5 minuti
-    setInterval(fetchBufferSummary, 200000); // 200,000 ms = 3 minuti
-
+    // Aggiorna i dati ogni 3 minuti
+    setInterval(fetchBufferSummary, 180000); // 180,000 ms = 3 minuti
 })();
