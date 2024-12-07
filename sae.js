@@ -342,57 +342,86 @@
             }
         `);
     }
-    function generatePieChart(filteredSummary) {
-        if (!filteredSummary || Object.keys(filteredSummary).length === 0) return;
-    
-        // Create the canvas element dynamically if it doesn't exist
-        let chartCanvas = document.getElementById('myChart');
-        if (!chartCanvas) {
-            chartCanvas = document.createElement('canvas');
-            chartCanvas.id = 'myChart';
-            chartCanvas.style.width = '300px';  // Smaller canvas width
-            chartCanvas.style.height = '300px'; // Smaller canvas height
-            document.body.appendChild(chartCanvas);
-        }
-    
-        // Aggregate data by buffer location
-        const bufferLocations = {};  // To store the total count of containers per buffer location
-    
-        Object.entries(filteredSummary).forEach(([lane, laneSummary]) => {
-            Object.entries(laneSummary).forEach(([location, data]) => {
-                if (location.startsWith("BUFFER")) {
-                    if (!bufferLocations[location]) {
-                        bufferLocations[location] = 0;
-                    }
-                    bufferLocations[location] += data.count;  // Add up the count of containers for the buffer location
-                }
-            });
-        });
-    
-        const labels = Object.keys(bufferLocations);
-        const data = labels.map(location => bufferLocations[location]);
-    
-        const chartData = {
-            labels: labels,
-            datasets: [{
-                data: data,
-                backgroundColor: ['#ff0000', '#ff7f00', '#ffff00', '#7fff00', '#00ff00', '#0000ff', '#8a2be2'],
-                borderColor: '#ffffff',
-                borderWidth: 1
-            }]
-        };
-    
-        // Get the canvas context and create the chart
-        const ctx = chartCanvas.getContext('2d');
-        if (ctx) {
-            new Chart(ctx, {
-                type: 'pie',
-                data: chartData
-            });
-        } else {
-            console.error("Canvas context could not be found.");
-        }
+   function generatePieChart(filteredSummary) {
+    if (!filteredSummary || Object.keys(filteredSummary).length === 0) {
+        console.warn("No data to generate the chart.");
+        return;
     }
+
+    // Create the canvas element dynamically if it doesn't exist
+    let chartCanvas = document.getElementById('myChart');
+    if (!chartCanvas) {
+        chartCanvas = document.createElement('canvas');
+        chartCanvas.id = 'myChart';
+        chartCanvas.style.width = '300px';  // Smaller canvas width
+        chartCanvas.style.height = '300px'; // Smaller canvas height
+        chartCanvas.style.margin = '20px auto'; // Center the canvas
+        chartCanvas.style.display = 'block'; // Ensure it is a block element to be displayed
+        document.body.appendChild(chartCanvas);
+    }
+
+    // Aggregate data by buffer location
+    const bufferLocations = {};  // To store the total count of containers per buffer location
+
+    Object.entries(filteredSummary).forEach(([lane, laneSummary]) => {
+        Object.entries(laneSummary).forEach(([location, data]) => {
+            if (location.startsWith("BUFFER")) {
+                if (!bufferLocations[location]) {
+                    bufferLocations[location] = 0;
+                }
+                bufferLocations[location] += data.count;  // Add up the count of containers for the buffer location
+            }
+        });
+    });
+
+    // Prepare data for the chart
+    const labels = Object.keys(bufferLocations);
+    const data = labels.map(location => bufferLocations[location]);
+
+    if (data.length === 0) {
+        console.warn("No buffer locations to chart.");
+        return;
+    }
+
+    const chartData = {
+        labels: labels,
+        datasets: [{
+            data: data,
+            backgroundColor: ['#ff0000', '#ff7f00', '#ffff00', '#7fff00', '#00ff00', '#0000ff', '#8a2be2'],
+            borderColor: '#ffffff',
+            borderWidth: 1
+        }]
+    };
+
+    // Get the canvas context and create the chart
+    const ctx = chartCanvas.getContext('2d');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'pie',
+            data: chartData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(tooltipItem) {
+                                const label = tooltipItem.label || '';
+                                const value = tooltipItem.raw || 0;
+                                return `${label}: ${value}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } else {
+        console.error("Canvas context could not be found.");
+    }
+}
+
     
     
         function addChartToggleButton() {
