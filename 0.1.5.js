@@ -62,11 +62,14 @@
             onload: function(response) {
                 try {
                     const data = JSON.parse(response.responseText);
+                    console.log("API Response:", data);  // Log the entire response
                     if (data.ret && data.ret.getContainersDetailByCriteriaOutput) {
-                        const containers = data.ret.getContainersDetailByCriteriaOutput.containerDetails[0].containerDetails;
-                        processAndDisplay(containers);
-                    } else {
-                        console.warn("Nessun dato trovato nella risposta API.");
+                        const containers = data.ret.getContainersDetailByCriteriaOutput.containerDetails;
+if (Array.isArray(containers) && containers.length > 0) {
+    processAndDisplay(containers[0].containerDetails); // Assuming the first item contains the container details
+} else {
+    console.warn("I dati dei container non sono disponibili o non sono strutturati correttamente.");
+}
                     }
                 } catch (error) {
                     console.error("Errore nella risposta API:", error);
@@ -76,60 +79,63 @@
                 console.error("Errore nella chiamata API:", error);
             }
         });
-    }
+    }        
 
- function processAndDisplay(containers) {
-    const filteredSummary = {};
-
-    containers.forEach(container => {
-        const location = container.location || '';
-        const stackingFilter = container.stackingFilter || 'N/A';
-        const lane = stackingToLaneMap[stackingFilter] || 'N/A';
-        const cpt = container.cpt ? new Date(container.cpt) : null; // Recupera il CPT e lo converte in oggetto Date
-
-
-        // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
-        if (
-            location.toUpperCase().startsWith("BUFFER") &&
-            (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
-            (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
-        ) {
-            if (!filteredSummary[lane]) {
-                filteredSummary[lane] = {};
-            }
-
-            if (!filteredSummary[lane][location]) {
-                filteredSummary[lane][location] = { count: 0 };
-            }
-
-            filteredSummary[lane][location].count++;
+    function processAndDisplay(containers) {
+        if (!containers || !Array.isArray(containers)) {
+            console.warn("Nessun dato trovato nei containers.");
+            return;
         }
-    });
-
-    const sortedSummary = {};
-    Object.keys(filteredSummary).forEach(lane => {
-        const laneSummary = filteredSummary[lane];
-        sortedSummary[lane] = Object.keys(laneSummary)
-            .sort((a, b) => {
-                const numA = parseBufferNumber(a);
-                const numB = parseBufferNumber(b);
-
-                if (numA === numB) {
-                    return a.localeCompare(b);
+    
+        const filteredSummary = {};
+    
+        containers.forEach(container => {
+            const location = container.location || '';
+            const stackingFilter = container.stackingFilter || 'N/A';
+            const lane = stackingToLaneMap[stackingFilter] || 'N/A';
+    
+            // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
+            if (
+                location.toUpperCase().startsWith("BUFFER") &&
+                (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
+                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
+            ) {
+                if (!filteredSummary[lane]) {
+                    filteredSummary[lane] = {};
                 }
-                return numA - numB;
-            })
-            .reduce((acc, location) => {
-                acc[location] = laneSummary[location];
-                return acc;
-            }, {});
-    });
-
-    if (isVisible) {
-        displayTable(sortedSummary);
+    
+                if (!filteredSummary[lane][location]) {
+                    filteredSummary[lane][location] = { count: 0 };
+                }
+    
+                filteredSummary[lane][location].count++;
+            }
+        });
+    
+        const sortedSummary = {};
+        Object.keys(filteredSummary).forEach(lane => {
+            const laneSummary = filteredSummary[lane];
+            sortedSummary[lane] = Object.keys(laneSummary)
+                .sort((a, b) => {
+                    const numA = parseBufferNumber(a);
+                    const numB = parseBufferNumber(b);
+    
+                    if (numA === numB) {
+                        return a.localeCompare(b);
+                    }
+                    return numA - numB;
+                })
+                .reduce((acc, location) => {
+                    acc[location] = laneSummary[location];
+                    return acc;
+                }, {});
+        });
+    
+        if (isVisible) {
+            displayTable(sortedSummary);
+        }
     }
-}
-
+    
 // Funzione per convertire una data in formato HH:mm:ss DD/MM/YYYY
 function formatCPT(date) {
     if (!date) return 'N/A';
@@ -162,7 +168,7 @@ function parseBufferNumber(bufferName) {
     function displayTable(sortedSummary) {
         $('#contentContainer').remove();
 
-        const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
+         ontentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
 
         if (Object.keys(sortedSummary).length === 0) {
             return;
