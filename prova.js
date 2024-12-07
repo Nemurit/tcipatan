@@ -477,19 +477,8 @@
     }
     
     function addChartToggleButton() {
-        const button = $('<button id="toggleChartButton">Mostra Grafico</button>');
-        button.css({
-            position: 'fixed',
-            bottom: '10px',
-            left: '10px',
-            padding: '10px',
-            background: '#4CAF50',
-            color: '#fff',
-            border: 'none',
-            cursor: 'pointer',
-            borderRadius: '5px',
-            fontSize: '14px'
-        });
+        const button = $('<button id="toggleChartButton"  style="position: fixed; top: 35px; left: calc(50% - 22px); padding: 10px; background: rgb(0, 123, 255); color: white; border: none; cursor: pointer; border-radius: 5px; font-size: 14px;">Mostra grafico recuperi</button>');
+        
     
         button.on('click', function() {
             const chartContainer = document.getElementById('chartContainer');
