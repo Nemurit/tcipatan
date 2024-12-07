@@ -83,7 +83,7 @@ function processAndDisplay(containers) {
         const location = container.location || '';
         const stackingFilter = container.stackingFilter || 'N/A';
         const lane = stackingToLaneMap[stackingFilter] || 'N/A';
-        const cpt = container.cpt || 'N/A'; // Aggiungiamo CPT dal contenitore
+        const cpt = container.cpt || 'N/A'; // Recupera il CPT (o un valore predefinito)
 
         // Filtra solo i buffer che contengono "BUFFER" e gestisce correttamente il filtro numerico
         if (
@@ -130,12 +130,11 @@ function processAndDisplay(containers) {
 function displayTable(sortedSummary) {
     $('#contentContainer').remove();
 
-    const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
-
     if (Object.keys(sortedSummary).length === 0) {
-        return;
+        return; // Evita di mostrare la tabella se non ci sono dati
     }
 
+    const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
     const table = $('<table id="bufferSummaryTable" class="performance"></table>');
 
     const thead = $('<thead></thead>');
@@ -181,7 +180,7 @@ function displayTable(sortedSummary) {
         }
 
         const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-            <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - CPT: ${laneSummary.cpt} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
+            <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
         </tr>`);
 
         laneRow.on('click', function() {
@@ -242,8 +241,7 @@ function displayTable(sortedSummary) {
         if (event.key === "Enter") {
             const filterCPT = $(this).val();
             if (filterCPT) {
-                const [start, end] = filterCPT.split('-').map(t => t.trim());
-                filterByCPT(start, end);
+                applyCPTFilter(filterCPT, sortedSummary);
             }
         }
     });
@@ -277,6 +275,7 @@ function displayTable(sortedSummary) {
         }
     `);
 }
+
 
 
     function addToggleButton() {
