@@ -140,22 +140,23 @@
 
 
 function matchesExactBufferNumber(location, filter) {
-    // Gestisce il formato "BUFFER B11 - B12"
-    const rangeMatch = filter.match(/^([A-Za-z]+)(\d+)\s*-\s*(\d+)$/);
+    // Gestisce il formato intervallo "BUFFER B11 - B12"
+    const rangeMatch = filter.match(/^BUFFER\s*([A-Za-z]+)(\d+)\s*-\s*(\d+)$/);
     if (rangeMatch) {
-        const prefix = rangeMatch[1];
-        const startNum = parseInt(rangeMatch[2], 10);
-        const endNum = parseInt(rangeMatch[3], 10);
+        const prefix = rangeMatch[1];  // "B" (o altro prefisso)
+        const startNum = parseInt(rangeMatch[2], 10);  // Numero di inizio
+        const endNum = parseInt(rangeMatch[3], 10);  // Numero di fine
 
+        // Controlla se il buffer ha lo stesso prefisso e un numero nel range
         const bufferMatch = location.match(/^BUFFER\s*([A-Za-z]+)(\d+)$/);
         if (bufferMatch && bufferMatch[1] === prefix) {
             const bufferNum = parseInt(bufferMatch[2], 10);
-            return bufferNum >= startNum && bufferNum <= endNum;
+            return bufferNum >= startNum && bufferNum <= endNum;  // Verifica se il numero è nell'intervallo
         }
     }
 
     // Gestisce il formato "BUFFER B11" o "BUFFER 11"
-    const singleMatch = filter.match(/^([A-Za-z]+)?(\d+)$/);
+    const singleMatch = filter.match(/^BUFFER\s*([A-Za-z]+)?(\d+)$/);
     if (singleMatch) {
         const prefix = singleMatch[1] || '';  // Può essere vuoto se non c'è una lettera
         const filterNumber = parseInt(singleMatch[2], 10);
@@ -165,14 +166,16 @@ function matchesExactBufferNumber(location, filter) {
             const locationPrefix = bufferMatch[1] || '';  // Preleva il prefisso (B, C, ecc.)
             const locationNumber = parseInt(bufferMatch[2], 10);
 
+            // Se il prefisso è vuoto o corrisponde al prefisso del filtro
             if (prefix === '' || locationPrefix === prefix) {
-                return locationNumber === filterNumber;
+                return locationNumber === filterNumber;  // Verifica se il numero corrisponde
             }
         }
     }
 
-    return false;
+    return false;  // Se non corrisponde a nessuna delle condizioni
 }
+
 
 
 
