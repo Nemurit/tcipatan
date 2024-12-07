@@ -8,6 +8,7 @@
     let selectedCptFilter = '';
     let stackingToLaneMap = {};
     let isVisible = false;
+    let isChartVisible = false; // Track visibility of the pie chart
 
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
@@ -79,19 +80,18 @@
 
     function processAndDisplay(containers) {
         const filteredSummary = {};
-        let hasMatchingFilters = false; // Variabile per verificare se almeno un dato corrisponde ai filtri
-    
+        let hasMatchingFilters = false;
+
         containers.forEach(container => {
             const location = container.location || '';
             const stackingFilter = container.stackingFilter || 'N/A';
             const lane = stackingToLaneMap[stackingFilter] || 'N/A';
             const cpt = container.cpt || null;
-    
-            // Verifica se il container soddisfa i criteri di filtro
+
             const matchesBufferFilter = selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter);
             const matchesLaneFilter = selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()));
             const matchesCptFilter = selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter));
-    
+
             if (
                 location.toUpperCase().startsWith("BUFFER") &&
                 matchesBufferFilter &&
@@ -101,16 +101,16 @@
                 if (!filteredSummary[lane]) {
                     filteredSummary[lane] = {};
                 }
-    
+
                 if (!filteredSummary[lane][location]) {
                     filteredSummary[lane][location] = { count: 0, cpt: cpt };
                 }
-    
+
                 filteredSummary[lane][location].count++;
-                hasMatchingFilters = true; // Almeno un dato corrisponde ai filtri
+                hasMatchingFilters = true;
             }
         });
-    
+
         const sortedSummary = {};
         Object.keys(filteredSummary).forEach(lane => {
             const laneSummary = filteredSummary[lane];
@@ -118,7 +118,7 @@
                 .sort((a, b) => {
                     const numA = parseBufferNumber(a);
                     const numB = parseBufferNumber(b);
-    
+
                     if (numA === numB) {
                         return a.localeCompare(b);
                     }
@@ -129,39 +129,30 @@
                     return acc;
                 }, {});
         });
-    
-        // Se nessun filtro ha prodotto risultati, lascia la tabella visibile come se non fosse applicato alcun filtro
+
         if (!hasMatchingFilters) {
             console.warn("Nessun risultato trovato, mostrando tutti i dati non filtrati.");
             displayTable({});
             return;
         }
-    
+
         if (isVisible) {
             displayTable(sortedSummary);
-            generatePieChart(sortedSummary); // Generate the pie chart with the filtered and sorted data
+            generatePieChart(sortedSummary);
         }
     }
-    
-    // Function to generate the pie chart
+
     function generatePieChart(sortedSummary) {
-        // Prepare the data for the pie chart
         const labels = [];
         const data = [];
-    
-        // Collect data for the pie chart from the sorted summary
+
         Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
             Object.entries(laneSummary).forEach(([location, data]) => {
-                labels.push(location); // Use location as the label
-                data.push(data.count);  // Use the count as the value for the chart
+                labels.push(location);
+                data.push(data.count);
             });
         });
-    const chartContainer = $('<div id="chartContainer" style="position: fixed; top: 10px; left: 10px; width: 400px; height: 400px;"></div>');
-const canvas = $('<canvas id="pieChart" width="400" height="400"></canvas>');
-chartContainer.append(canvas);
-$('body').append(chartContainer);
 
-        // Create the pie chart
         const ctx = document.getElementById('pieChart').getContext('2d');
         new Chart(ctx, {
             type: 'pie',
@@ -169,7 +160,7 @@ $('body').append(chartContainer);
                 labels: labels,
                 datasets: [{
                     data: data,
-                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#FF9F40', '#4BC0C0', '#9966FF'], // Colors for each section
+                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#FF9F40', '#4BC0C0', '#9966FF'],
                 }]
             },
             options: {
@@ -189,67 +180,7 @@ $('body').append(chartContainer);
             }
         });
     }
-    
-    
 
-    function matchesExactBufferNumber(location, filter) {
-        const match = location.match(/BUFFER\s*[A-Za-z](\d+)/); // Trova la lettera seguita dal numero
-        if (match) {
-            const bufferNumber = match[1];  // Estrae il numero
-            return bufferNumber === filter;
-        }
-        return false;
-    }
-
-    function parseBufferNumber(bufferName) {
-        const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/);
-        return match ? parseInt(match[1], 10) : 0;
-    }
-
-    function convertTimestampToLocalTime(timestamp) {
-        const date = new Date(timestamp);
-        // Ottieni l'ora locale
-        const options = {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-            day: '2-digit',
-            month: '2-digit',
-            year: '2-digit'
-        };
-        return date.toLocaleString('it-IT', options);
-    }
-
-    function filterCpt(cpt, filter) {
-        try {
-            // Converte CPT al fuso orario locale e formato "HH:MM"
-            const date = new Date(cpt);
-            const cptLocalTime = date.toLocaleTimeString('it-IT', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-            });
-    
-            // Dividiamo il filtro in parti (es. "16", "16:15", ecc.)
-            const filterParts = filter.split(',').map(f => f.trim());
-    
-            // Confrontiamo ogni parte del filtro con l'orario locale "HH:MM"
-            return filterParts.some(part => {
-                if (/^\d{1,2}$/.test(part)) {
-                    // Se il filtro è solo "HH", confronta solo l'ora
-                    const hour = part.padStart(2, '0');
-                    return cptLocalTime.startsWith(hour + ':'); // HH corrisponde
-                }
-                // Se il filtro è "HH:MM", confronta l'intero valore
-                return part === cptLocalTime;
-            });
-        } catch (error) {
-            console.warn("Errore nel filtro CPT o valore non valido:", error);
-            return false;
-        }
-    }
-    
-    
     function displayTable(sortedSummary) {
         $('#contentContainer').remove();
 
@@ -315,111 +246,42 @@ $('body').append(chartContainer);
             tbody.append(laneRow);
 
             Object.entries(laneSummary).forEach(([location, data]) => {
-                // Visualizza il CPT solo nelle righe delle lane
                 const row = $('<tr class="locationRow"></tr>');
                 row.append(`<td>${location}</td>`);
                 row.append(`<td>${data.count}</td>`);
-                row.append(`<td>${data.cpt ? convertTimestampToLocalTime(data.cpt) : 'N/A'}</td>`);
+                row.append(`<td>${data.cpt}</td>`);
+
                 tbody.append(row);
             });
 
             totalContainers += laneTotal;
         });
 
-        const tfoot = $('<tfoot></tfoot>');
-        const globalTotalRow = $('<tr><td colspan="3" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
-        tfoot.append(globalTotalRow);
-
         table.append(thead);
         table.append(tbody);
-        table.append(tfoot);
-        contentContainer.append(table);
 
+        contentContainer.append(table);
         $('body').append(contentContainer);
 
-        $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedBufferFilter = $(this).val();
-                fetchBufferSummary();
-            }
-        });
-
-        $('#laneFilterInput').val(selectedLaneFilters.join(', ')).on('keydown', function(event) {
-            if (event.key === "Enter") {
-                selectedLaneFilters = $(this).val().split(',').map(filter => filter.trim());
-                fetchBufferSummary();
-            }
-        });
-
-        $('#cptFilterInput').val(selectedCptFilter).on('keydown', function(event) {
-            if (event.key === "Enter") {
-                const newFilter = $(this).val();
-                if (isValidCptFilter(newFilter)) {
-                    selectedCptFilter = newFilter;
-                    fetchBufferSummary();
-                } else {
-                    alert("Il filtro inserito non è valido. Usare valori come '16, 16:15, 16:30'.");
-                }
-            }
-        });
-        
-        function isValidCptFilter(filter) {
-            const parts = filter.split(',').map(f => f.trim());
-            return parts.every(part => /^(\d{1,2}(:\d{2})?)$/.test(part)); // Es. 16 o 16:15
-        }
-        
-        GM_addStyle(`
-            #bufferSummaryTable {
-                table-layout: auto;
-                margin: 20px 0;
-                border-collapse: collapse;
-                width: 100%;
-            }
-            #bufferSummaryTable th, #bufferSummaryTable td {
-                border: 1px solid #ddd;
-                padding: 10px;
-                text-align: left;
-            }
-            #bufferSummaryTable th {
-                background-color: #f4f4f4;
-                font-weight: bold;
-            }
-            #bufferSummaryTable tfoot {
-                background-color: #f4f4f4;
-            }
-            #bufferSummaryTable input {
-                font-size: 14px;
-                padding: 5px;
-                margin: 0;
-            }
-            .locationRow {
-                display: none;
-            }
-        `);
-    }
-
-    function addToggleButton() {
-        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
-
-        toggleButton.on('click', function() {
+        const tableButton = $('<button id="toggleTableButton">Toggle Table</button>');
+        tableButton.on('click', function() {
+            $('#contentContainer').toggle();
             isVisible = !isVisible;
-            if (isVisible) {
-                fetchBufferSummary();
-                $(this).text("Nascondi Recuperi");
-            } else {
-                $('#contentContainer').remove();
-                $(this).text("Mostra Recuperi");
-            }
         });
 
-        $('body').append(toggleButton);
+        const chartButton = $('<button id="toggleChartButton">Toggle Chart</button>');
+        chartButton.on('click', function() {
+            $('#chartContainer').toggle();
+            isChartVisible = !isChartVisible;
+        });
+
+        $('body').append(tableButton);
+        $('body').append(chartButton);
     }
 
-    fetchStackingFilterMap(function() {
-        addToggleButton();
-        fetchBufferSummary();
-    });
+    function init() {
+        fetchStackingFilterMap(fetchBufferSummary);
+    }
 
-    // Aggiorna i dati ogni 3 minuti
-    setInterval(fetchBufferSummary, 180000); // 180,000 ms = 3 minuti
+    init();
 })();
