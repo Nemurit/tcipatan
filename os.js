@@ -78,33 +78,38 @@
     }
 
     function processAndDisplay(containers) {
-        const filteredSummary = {};
+    const filteredSummary = {};
 
-        containers.forEach(container => {
-            const location = container.location || '';
-            const stackingFilter = container.stackingFilter || 'N/A';
-            const lane = stackingToLaneMap[stackingFilter] || 'N/A';
-            const cpt = container.physicalLocationMoveTimestamp || 0;
-            const cptDate = new Date(cpt);
-            const cptFormatted = formatCPT(cptDate); // Formattazione CPT
+    containers.forEach(container => {
+        const location = container.location || '';
+        const stackingFilter = container.stackingFilter || 'N/A';
+        const lane = stackingToLaneMap[stackingFilter] || 'N/A';
+        const cpt = container.physicalLocationMoveTimestamp || 0;
 
-            if (
-                location.toUpperCase().startsWith("BUFFER") &&
-                (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
-                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
-            ) {
-                if (!filteredSummary[lane]) {
-                    filteredSummary[lane] = { containers: {} };
-                }
+        if (isNaN(cpt) || cpt <= 0) {
+            console.warn(`Invalid CPT timestamp for container at location ${location}:`, cpt);
+        }
 
-                if (!filteredSummary[lane].containers[location]) {
-                    filteredSummary[lane].containers[location] = { count: 0, cpt: cptFormatted };
-                }
+        const cptDate = new Date(cpt);
+        const cptFormatted = (isNaN(cptDate.getTime())) ? 'N/A' : formatCPT(cptDate); // Controlla se la data è valida
 
-                filteredSummary[lane].containers[location].count++;
+        if (
+            location.toUpperCase().startsWith("BUFFER") &&
+            (selectedBufferFilter === '' || matchesExactBufferNumber(location, selectedBufferFilter)) &&
+            (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase())))
+        ) {
+            if (!filteredSummary[lane]) {
+                filteredSummary[lane] = { containers: {} };
             }
-        });
 
+            if (!filteredSummary[lane].containers[location]) {
+                filteredSummary[lane].containers[location] = { count: 0, cpt: cptFormatted };
+            }
+
+            filteredSummary[lane].containers[location].count++;
+        }
+    });
+        
         const sortedSummary = {};
         Object.keys(filteredSummary).forEach(lane => {
             const laneSummary = filteredSummary[lane];
