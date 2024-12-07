@@ -156,7 +156,11 @@
                 data.push(data.count);  // Use the count as the value for the chart
             });
         });
-    
+    const chartContainer = $('<div id="chartContainer" style="position: fixed; top: 10px; left: 10px; width: 400px; height: 400px;"></div>');
+const canvas = $('<canvas id="pieChart" width="400" height="400"></canvas>');
+chartContainer.append(canvas);
+$('body').append(chartContainer);
+
         // Create the pie chart
         const ctx = document.getElementById('pieChart').getContext('2d');
         new Chart(ctx, {
