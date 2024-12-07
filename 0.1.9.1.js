@@ -9,6 +9,13 @@
     let isVisible = false;
     let selectedTimeFilter = ''; // Variabile per il filtro orario
 
+    // Funzione che estrae il numero dal nome del buffer per ordinarlo
+function parseBufferNumber(bufferName) {
+    const match = bufferName.match(/BUFFER\s*[A-Za-z](\d+)/); // Cerca la parola "BUFFER" seguita da una lettera e un numero
+    return match ? parseInt(match[1], 10) : 0;  // Estrae solo il numero
+}
+
+
     function fetchStackingFilterMap(callback) {
         GM_xmlhttpRequest({
             method: "GET",
