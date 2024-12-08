@@ -66,7 +66,8 @@
                     if (data.ret && data.ret.getContainersDetailByCriteriaOutput) {
                         const containers = data.ret.getContainersDetailByCriteriaOutput.containerDetails[0].containerDetails;
                         processAndDisplay(containers);
-                        console.log("API Response:", data);
+                        console.log("API Response Data:", data);
+
 
                     } else {
                         console.warn("Nessun dato trovato nella risposta API.");
