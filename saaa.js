@@ -55,8 +55,11 @@
                 isMissing: [false]
             },
             containerTypes: ["PALLET", "GAYLORD", "CART"],
-            includeFields: ["contentCount"] // Aggiungi un campo per includere contentCount (se supportato)
+            includeFields: ["contentCount"],
+            includeFields: ["childCount"]// Aggiungi un campo per includere contentCount (se supportato)
         };
+  console.log("API Payload:", payload);
+console.log("API Response:", data);
 
         GM_xmlhttpRequest({
             method: "GET",
@@ -67,7 +70,7 @@
                     if (data.ret && data.ret.getContainersDetailByCriteriaOutput) {
                         const containers = data.ret.getContainersDetailByCriteriaOutput.containerDetails[0].containerDetails;
                         processAndDisplay(containers);
-                        console.log("API Response Data:", data);
+                     
 
 
                     } else {
