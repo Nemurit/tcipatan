@@ -488,9 +488,10 @@ function parseBufferNumber(bufferName) {
         $('body').append(button);
     }
     
-  function generateAreaPieChart(filteredSummary, areaMap) {
-    const areaData = {};
+function generateAreaPieChart(filteredSummary, areaMap) {
+    const areaData = {}; // Oggetto per aggregare i dati per macro area
     
+    // Raggruppa i buffer per macro area
     for (const [lane, laneSummary] of Object.entries(filteredSummary)) {
         for (const [location, data] of Object.entries(laneSummary)) {
             for (const [area, buffers] of Object.entries(areaMap)) {
@@ -498,40 +499,84 @@ function parseBufferNumber(bufferName) {
                     if (!areaData[area]) {
                         areaData[area] = 0;
                     }
-                    areaData[area] += data.count;
+                    areaData[area] += data.count; // Aggiunge il conteggio dei container
                 }
             }
         }
     }
 
-    const labels = Object.keys(areaData);
-    const data = Object.values(areaData);
+    // Preparazione dei dati per il grafico
+    const labels = Object.keys(areaData); // Macro aree come etichette
+    const data = Object.values(areaData); // Conteggi aggregati per ogni area
+
+    if (data.length === 0) {
+        console.warn("Nessun dato disponibile per le macro aree.");
+        return;
+    }
 
     const chartData = {
         labels: labels,
         datasets: [{
             data: data,
-            backgroundColor: ['#ff0000', '#00ff00', '#0000ff'], // Colori personalizzati
+            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
             borderColor: '#ffffff',
             borderWidth: 1
         }]
     };
 
+    // Creazione dinamica del canvas se non esiste
+    let chartContainer = document.getElementById('chartContainer');
+    if (!chartContainer) {
+        chartContainer = document.createElement('div');
+        chartContainer.id = 'chartContainer';
+        chartContainer.style.position = 'fixed';
+        chartContainer.style.top = '60px';
+        chartContainer.style.left = '50%';
+        chartContainer.style.transform = 'translateX(-50%)';
+        chartContainer.style.backgroundColor = '#fff';
+        chartContainer.style.padding = '20px';
+        chartContainer.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
+        chartContainer.style.borderRadius = '8px';
+        chartContainer.style.zIndex = '1000';
+
+        const chartCanvas = document.createElement('canvas');
+        chartCanvas.id = 'myChart';
+        chartCanvas.style.width = '100%';
+        chartCanvas.style.height = '400px';
+        chartContainer.appendChild(chartCanvas);
+
+        document.body.appendChild(chartContainer);
+    }
+
     const ctx = document.getElementById('myChart').getContext('2d');
-    new Chart(ctx, {
+
+    // Creazione o aggiornamento del grafico
+    if (window.areaChart) {
+        window.areaChart.destroy(); // Distrugge il grafico esistente
+    }
+    window.areaChart = new Chart(ctx, {
         type: 'pie',
         data: chartData,
-        options: { responsive: true }
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(tooltipItem) {
+                            const label = tooltipItem.label || '';
+                            const value = tooltipItem.raw || 0;
+                            return `${label}: ${value}`;
+                        }
+                    }
+                }
+            }
+        }
     });
 }
-fetch('https://raw.githubusercontent.com/Nemurit/tcipatan/refs/heads/main/buffer.json')
-    .then(response => response.json())
-    .then(areaMap => {
-        generateAreaPieChart(filteredSummary, areaMap);
-    })
-    .catch(error => console.error('Errore nel caricamento delle macro aree:', error));
 
-    
     
     function addChartToggleButton() {
         const button = $('<button id="toggleChartButton"  style="position: fixed; top: 35px; left: calc(50% - 22px); padding: 10px; background: rgb(0, 123, 255); color: white; border: none; cursor: pointer; border-radius: 5px; font-size: 14px;">Mostra grafico recuperi</button>');
