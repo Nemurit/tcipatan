@@ -197,24 +197,41 @@
         });
     }
 
+    // Pulsante per mostrare/nascondere la tabella dei recuperi
     function addToggleButton() {
-        const button = $('<button style="position: fixed; top: 10px; left: 10px;">Toggle Summary</button>');
-        button.on('click', () => {
+        const toggleButton = $('<button id="toggleButton" style="position: fixed; top: 10px; left: calc(50% - 20px); padding: 4px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Mostra Recuperi</button>');
+        
+        toggleButton.on('click', function() {
             isVisible = !isVisible;
-            if (isVisible) fetchBufferSummary();
-            else $('#contentContainer').remove();
+            if (isVisible) {
+                fetchBufferSummary();
+                $(this).text("Nascondi Recuperi");
+            } else {
+                $('#contentContainer').remove();
+                $(this).text("Mostra Recuperi");
+            }
         });
-        $('body').append(button);
+
+        $('body').append(toggleButton);
     }
 
+    // Pulsante per mostrare/nascondere il grafico
     function addChartToggleButton() {
-        const button = $('<button style="position: fixed; top: 50px; left: 10px;">Toggle Chart</button>');
-        button.on('click', () => {
-            isChartVisible = !isChartVisible;
-            if (isChartVisible) generatePieChart(filteredSummary);
-            else $('#chartContainer').remove();
+        const chartButton = $('<button id="toggleChartButton" style="position: fixed; top: 35px; left: calc(50% - 22px); padding: 10px; background: rgb(0, 123, 255); color: white; border: none; cursor: pointer; border-radius: 5px; font-size: 14px;">Mostra Grafico</button>');
+        
+        chartButton.on('click', function() {
+            const chartContainer = document.getElementById('chartContainer');
+            if (chartContainer.style.display === 'none') {
+                chartContainer.style.display = 'block';
+                generatePieChart(filteredSummary);
+                $(this).text('Nascondi Grafico');
+            } else {
+                chartContainer.style.display = 'none';
+                $(this).text('Mostra Grafico');
+            }
         });
-        $('body').append(button);
+
+        $('body').append(chartButton);
     }
 
     fetchStackingFilterMap(() => {
