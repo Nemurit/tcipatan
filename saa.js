@@ -58,7 +58,7 @@
             includeFields: ["contentCount"],
             includeFields: ["childCount"]// Aggiungi un campo per includere contentCount (se supportato)
         };
-  x
+  
         GM_xmlhttpRequest({
             method: "GET",
             url: `${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })}`,
