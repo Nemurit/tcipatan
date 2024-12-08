@@ -55,7 +55,6 @@
                 isMissing: [false]
             },
             containerTypes: ["PALLET", "GAYLORD", "CART"],
-            includeFields: ["contentCount"],
             includeFields: ["childCount"]// Aggiungi un campo per includere contentCount (se supportato)
         };
   
