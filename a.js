@@ -54,7 +54,8 @@
                 isClosed: [true],
                 isMissing: [false]
             },
-            containerTypes: ["PALLET", "GAYLORD", "CART"]
+            containerTypes: ["PALLET", "GAYLORD", "CART"],
+            includeFields: ["contentCount"] // Aggiungi un campo per includere contentCount (se supportato)
         };
 
         GM_xmlhttpRequest({
