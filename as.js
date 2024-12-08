@@ -144,7 +144,7 @@
 
     // If sortedSummary is not empty, pass it to the chart generation function
     if (Object.keys(sortedSummary).length > 0) {
-        generatePieChart(sortedSummary);
+        generateAreaPieChart(sortedSummary);
     }
 }
 
@@ -246,7 +246,7 @@ function processAndDisplay(containers) {
 
     // Se sortedSummary non è vuoto, generiamo il grafico
     if (Object.keys(sortedSummary).length > 0) {
-        generatePieChart(sortedSummary);
+        generateAreaPieChart(sortedSummary);
     }
 }
 
@@ -477,7 +477,7 @@ function parseBufferNumber(bufferName) {
         button.on('click', function() {
             isChartVisible = !isChartVisible;
             if (isChartVisible) {
-                generatePieChart(filteredSummary);
+                generateAreaPieChart(filteredSummary);
                 $(this).text('Chiudi Grafico'); // Cambia testo del pulsante quando il grafico è visibile
             } else {
                 $('#chartContainer').remove(); // Rimuovi il grafico quando viene chiuso
@@ -586,7 +586,7 @@ function generateAreaPieChart(filteredSummary, areaMap) {
             const chartContainer = document.getElementById('chartContainer');
             if (chartContainer.style.display === 'none') {
                 chartContainer.style.display = 'block';  // Show the chart container
-                generatePieChart(filteredSummary);  // Generate chart if it's not already done
+                generateAreaPieChart(filteredSummary);  // Generate chart if it's not already done
                 $(this).text('Nascondi Grafico');
             } else {
                 chartContainer.style.display = 'none';  // Hide the chart container
