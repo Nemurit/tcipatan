@@ -69,7 +69,6 @@
                         const containers = data.ret.getContainersDetailByCriteriaOutput.containerDetails[0].containerDetails;
                         processAndDisplay(containers);
                      
-console.log("API Payload:", payload);
 console.log("API Response:", JSON.stringify(data, null, 2));
 
 
