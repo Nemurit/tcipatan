@@ -242,91 +242,106 @@ function matchesExactBufferNumber(location, filter) {
     
     
     function displayTable(sortedSummary) {
-        $('#contentContainer').remove();
+    $('#contentContainer').remove(); // Rimuove contenitori precedenti
 
-        const contentContainer = $('<div id="contentContainer" style="position: fixed; top: 10px; right: 10px; height: 90vh; width: 400px; overflow-y: auto; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); background: white; padding: 10px; border: 1px solid #ddd;"></div>');
+    const contentContainer = document.createElement('div'); // Usa il metodo DOM standard
+    contentContainer.id = 'contentContainer';
+    contentContainer.style.cssText = `
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        height: 90vh;
+        width: 400px;
+        overflow-y: auto;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        background: white;
+        padding: 10px;
+        border: 1px solid #ddd;
+    `;
 
-        if (Object.keys(sortedSummary).length === 0) {
-            return;
-        }
+    if (Object.keys(sortedSummary).length === 0) {
+        return; // Se non ci sono dati, esci
+    }
 
-        const table = $('<table id="bufferSummaryTable" class="performance"></table>');
+    const table = document.createElement('table');
+    table.id = 'bufferSummaryTable';
+    table.className = 'performance';
 
-        const thead = $('<thead></thead>');
-        thead.append(`
-            <tr>
-                <th>
-                    <input id="bufferFilterInput" type="text" placeholder="Filtro per BUFFER" style="width: 100%; padding: 5px; box-sizing: border-box;">
-                </th>
-                <th>
-                    <input id="laneFilterInput" type="text" placeholder="Filtro per LANE (es. Lane1, Lane2)" style="width: 100%; padding: 5px; box-sizing: border-box;">
-                </th>
-                <th>
-                    <input id="cptFilterInput" type="text" placeholder="Filtro per CPT (es. 14)" style="width: 100%; padding: 5px; box-sizing: border-box;">
-                </th>
-            </tr>
-        `);
+    // Aggiungi l'header
+    const thead = document.createElement('thead');
+    thead.innerHTML = `
+        <tr>
+            <th>Buffer</th>
+            <th>Totale Container</th>
+            <th>Content Count</th>
+            <th>CPT</th>
+        </tr>
+    `;
+    table.appendChild(thead);
 
-        thead.append(`
-            <tr>
-                <th>Buffer</th>
-                <th>Totale Container</th>
-                <th>CPT</th>
-            </tr>
-        `);
+    // Aggiungi il corpo
+    const tbody = document.createElement('tbody');
+    let totalContainers = 0;
+    let totalContentCount = 0;
 
-        const tbody = $('<tbody></tbody>');
-        let totalContainers = 0;
+    Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
+        let laneTotal = 0;
+        let laneContentCount = 0;
 
-        Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
-            let laneTotal = 0;
-
-            Object.entries(laneSummary).forEach(([location, data]) => {
-                laneTotal += data.count;
-            });
-
-            let laneColor = '';
-            if (laneTotal <= 10) {
-                laneColor = 'green';
-            } else if (laneTotal <= 30) {
-                laneColor = 'orange';
-            } else {
-                laneColor = 'red';
-            }
-
-            const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-                <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
-            </tr>`);
-
-            laneRow.on('click', function() {
-                const nextRows = $(this).nextUntil('.laneRow');
-                nextRows.toggle();
-            });
-
-            tbody.append(laneRow);
-
-            Object.entries(laneSummary).forEach(([location, data]) => {
-                // Visualizza il CPT solo nelle righe delle lane
-                const row = $('<tr class="locationRow"></tr>');
-                row.append(`<td>${location}</td>`);
-                row.append(`<td>${data.count}</td>`);
-                row.append(`<td>${data.cpt ? convertTimestampToLocalTime(data.cpt) : 'N/A'}</td>`);
-                tbody.append(row);
-            });
-
-            totalContainers += laneTotal;
+        Object.entries(laneSummary).forEach(([location, data]) => {
+            laneTotal += data.count;
+            laneContentCount += data.contentCountTotal;
         });
 
-        const tfoot = $('<tfoot></tfoot>');
-        const globalTotalRow = $('<tr><td colspan="3" style="text-align:right; font-weight: bold;">Totale Globale: ' + totalContainers + '</td></tr>');
-        tfoot.append(globalTotalRow);
+        // Riga della lane
+        const laneRow = document.createElement('tr');
+        laneRow.className = 'laneRow';
+        laneRow.style.cursor = 'pointer';
+        laneRow.innerHTML = `
+            <td colspan="4" style="font-weight: bold; text-align: left;">
+                Lane: ${lane} - Totale Containers: ${laneTotal}, Content Count: ${laneContentCount}
+            </td>
+        `;
 
-        table.append(thead);
-        table.append(tbody);
-        table.append(tfoot);
-        contentContainer.append(table);
+        laneRow.addEventListener('click', () => {
+            const nextRows = $(laneRow).nextUntil('.laneRow');
+            nextRows.toggle();
+        });
+        tbody.appendChild(laneRow);
 
-        $('body').append(contentContainer);
+        // Righe delle location
+        Object.entries(laneSummary).forEach(([location, data]) => {
+            const row = document.createElement('tr');
+            row.className = 'locationRow';
+            row.innerHTML = `
+                <td>${location}</td>
+                <td>${data.count}</td>
+                <td>${data.contentCountTotal}</td>
+                <td>${data.cpt ? convertTimestampToLocalTime(data.cpt) : 'N/A'}</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        totalContainers += laneTotal;
+        totalContentCount += laneContentCount;
+    });
+
+    table.appendChild(tbody);
+
+    // Aggiungi il footer
+    const tfoot = document.createElement('tfoot');
+    tfoot.innerHTML = `
+        <tr>
+            <td colspan="2" style="text-align:right; font-weight: bold;">Totale Globale Containers: ${totalContainers}</td>
+            <td colspan="2" style="text-align:right; font-weight: bold;">Totale Globale Content Count: ${totalContentCount}</td>
+        </tr>
+    `;
+    table.appendChild(tfoot);
+
+    contentContainer.appendChild(table);
+    document.body.appendChild(contentContainer);
+}
+
 
         $('#bufferFilterInput').val(selectedBufferFilter).on('keydown', function(event) {
             if (event.key === "Enter") {
