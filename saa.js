@@ -58,9 +58,7 @@
             includeFields: ["contentCount"],
             includeFields: ["childCount"]// Aggiungi un campo per includere contentCount (se supportato)
         };
-  console.log("API Payload:", payload);
-console.log("API Response:", data);
-
+  x
         GM_xmlhttpRequest({
             method: "GET",
             url: `${apiUrl}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })}`,
@@ -71,6 +69,8 @@ console.log("API Response:", data);
                         const containers = data.ret.getContainersDetailByCriteriaOutput.containerDetails[0].containerDetails;
                         processAndDisplay(containers);
                      
+console.log("API Payload:", payload);
+console.log("API Response:", data);
 
 
                     } else {
