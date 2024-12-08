@@ -70,7 +70,8 @@
                         processAndDisplay(containers);
                      
 console.log("API Payload:", payload);
-console.log("API Response:", data);
+console.log("API Response:", JSON.stringify(data, null, 2));
+
 
 
                     } else {
