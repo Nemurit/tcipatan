@@ -209,6 +209,10 @@
     dataContainer.style.padding = '10px';
     dataContainer.style.display = 'none';
     dataContainer.style.zIndex = '999';
+    dataContainer.style.maxHeight = '400px'; // Altezza massima del container
+    dataContainer.style.overflowY = 'auto'; // Abilita lo scroll verticale
+    dataContainer.style.overflowX = 'hidden'; // Impedisce lo scroll orizzontale (opzionale)
+
 
     // Aggiungi l'animazione per il lampeggio del pallino verde
     const style = document.createElement('style');
