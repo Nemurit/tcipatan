@@ -927,41 +927,46 @@
     }
 
     function addContainerCalculationButton() {
+    // Trova un pulsante esistente per posizionare il nuovo pulsante accanto
     const existingButton = document.getElementById('expand-all-button');
     if (!existingButton) {
         console.error('Elemento di riferimento non trovato.');
         return;
     }
 
+    // Crea e aggiungi il nuovo pulsante
     const newButton = document.createElement('button');
     newButton.innerHTML = '<b>Calcola Container per Due Destinazioni</b>';
     newButton.style.marginLeft = '5px';
     existingButton.parentNode.insertBefore(newButton, existingButton.nextSibling);
 
-    newButton.addEventListener('click', function() {
-        const trucks = Array.from(document.querySelectorAll('.truckRow')); // Modifica il selettore con quello corretto nella tua UI.
+    // Funzione attivata dal click del pulsante
+    newButton.addEventListener('click', function () {
+        const rows = Array.from(document.querySelectorAll('table.dataTable tbody tr')); // Adatta il selettore
         const results = [];
 
-        trucks.forEach(truck => {
-            const destinations = Array.from(truck.querySelectorAll('.destinationCol'))
+        rows.forEach(row => {
+            // Ottieni le destinazioni dalla riga
+            const destinations = Array.from(row.querySelectorAll('.destinationCol')) // Sostituisci con il selettore corretto
                 .map(el => el.textContent.trim());
-            
-            const uniqueDestinations = [...new Set(destinations)];
-            
-            // Considera solo camion con esattamente due destinazioni.
+
+            const uniqueDestinations = [...new Set(destinations)]; // Filtra destinazioni uniche
+
+            // Considera solo camion con due destinazioni uniche
             if (uniqueDestinations.length === 2) {
-                const containers = Array.from(truck.querySelectorAll('.contType.ColContType, .conType.ColContType'))
+                const containers = Array.from(row.querySelectorAll('.contType, .conType')) // Selettori corretti per container
                     .map(el => el.textContent.trim())
                     .filter(text => ['CART', 'GAYLORD', 'PALLET'].includes(text));
 
                 results.push({
-                    truckId: truck.getAttribute('data-truck-id'), // Modifica secondo l'attributo o identificativo disponibile.
-                    destinations: uniqueDestinations.join('-'),
+                    truckId: row.getAttribute('data-truck-id') || 'Sconosciuto', // Cambia con l'identificativo effettivo
+                    destinations: uniqueDestinations.join(' - '),
                     containers: containers
                 });
             }
         });
 
+        // Mostra i risultati
         if (results.length === 0) {
             alert('Nessun camion con due destinazioni trovato.');
         } else {
@@ -974,10 +979,10 @@
     });
 }
 
-window.onload = function() {
+// Esegui all'avvio della pagina
+window.onload = function () {
     addContainerCalculationButton();
 };
-
 
     function containerCountButton() {
         var existingButton = document.getElementById('expand-all-button');
