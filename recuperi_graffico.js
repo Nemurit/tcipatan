@@ -144,7 +144,7 @@
 
     // If sortedSummary is not empty, pass it to the chart generation function
     if (Object.keys(sortedSummary).length > 0) {
-        generateAreaPieChart(sortedSummary);
+        generatePieChart(sortedSummary);
     }
 }
 
@@ -246,7 +246,7 @@ function processAndDisplay(containers) {
 
     // Se sortedSummary non è vuoto, generiamo il grafico
     if (Object.keys(sortedSummary).length > 0) {
-        generateAreaPieChart(sortedSummary);
+        generatePieChart(sortedSummary);
     }
 }
 
@@ -477,7 +477,7 @@ function parseBufferNumber(bufferName) {
         button.on('click', function() {
             isChartVisible = !isChartVisible;
             if (isChartVisible) {
-                generateAreaPieChart(filteredSummary);
+                generatePieChart(filteredSummary);
                 $(this).text('Chiudi Grafico'); // Cambia testo del pulsante quando il grafico è visibile
             } else {
                 $('#chartContainer').remove(); // Rimuovi il grafico quando viene chiuso
@@ -488,95 +488,111 @@ function parseBufferNumber(bufferName) {
         $('body').append(button);
     }
     
-function generateAreaPieChart(filteredSummary, areaMap) {
-    const areaData = {}; // Oggetto per aggregare i dati per macro area
-    
-    // Raggruppa i buffer per macro area
-    for (const [lane, laneSummary] of Object.entries(filteredSummary)) {
-        for (const [location, data] of Object.entries(laneSummary)) {
-            for (const [area, buffers] of Object.entries(areaMap)) {
-                if (buffers.includes(location)) {
-                    if (!areaData[area]) {
-                        areaData[area] = 0;
-                    }
-                    areaData[area] += data.count; // Aggiunge il conteggio dei container
-                }
-            }
+    function generatePieChart(filteredSummary) {
+        if (!filteredSummary || Object.keys(filteredSummary).length === 0) {
+            console.warn("No data to generate the chart.");
+            return;
         }
-    }
-
-    // Preparazione dei dati per il grafico
-    const labels = Object.keys(areaData); // Macro aree come etichette
-    const data = Object.values(areaData); // Conteggi aggregati per ogni area
-
-    if (data.length === 0) {
-        console.warn("Nessun dato disponibile per le macro aree.");
-        return;
-    }
-
-    const chartData = {
-        labels: labels,
-        datasets: [{
-            data: data,
-            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
-            borderColor: '#ffffff',
-            borderWidth: 1
-        }]
-    };
-
-    // Creazione dinamica del canvas se non esiste
-    let chartContainer = document.getElementById('chartContainer');
-    if (!chartContainer) {
-        chartContainer = document.createElement('div');
-        chartContainer.id = 'chartContainer';
-        chartContainer.style.position = 'fixed';
-        chartContainer.style.top = '60px';
-        chartContainer.style.left = '50%';
-        chartContainer.style.transform = 'translateX(-50%)';
-        chartContainer.style.backgroundColor = '#fff';
-        chartContainer.style.padding = '20px';
-        chartContainer.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
-        chartContainer.style.borderRadius = '8px';
-        chartContainer.style.zIndex = '1000';
-
-        const chartCanvas = document.createElement('canvas');
-        chartCanvas.id = 'myChart';
-        chartCanvas.style.width = '100%';
-        chartCanvas.style.height = '400px';
-        chartContainer.appendChild(chartCanvas);
-
-        document.body.appendChild(chartContainer);
-    }
-
-    const ctx = document.getElementById('myChart').getContext('2d');
-
-    // Creazione o aggiornamento del grafico
-    if (window.areaChart) {
-        window.areaChart.destroy(); // Distrugge il grafico esistente
-    }
-    window.areaChart = new Chart(ctx, {
-        type: 'pie',
-        data: chartData,
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'top',
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(tooltipItem) {
-                            const label = tooltipItem.label || '';
-                            const value = tooltipItem.raw || 0;
-                            return `${label}: ${value}`;
+    
+        // Create the chart container dynamically if it doesn't exist
+        let chartContainer = document.getElementById('chartContainer');
+        if (!chartContainer) {
+            chartContainer = document.createElement('div');
+            chartContainer.id = 'chartContainer';
+            chartContainer.style.display = 'none'; // Initially hidden
+            chartContainer.style.position = 'fixed';
+            chartContainer.style.top = '60px';
+            chartContainer.style.left = '50%';
+            chartContainer.style.padding = '20px';
+            chartContainer.style.backgroundColor = 'rgba(0, 0, 0, 0)';  // Background transparent
+            chartContainer.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
+            chartContainer.style.width = '500px';
+            chartContainer.style.maxWidth = '100%';
+            chartContainer.style.zIndex = '1000';
+            chartContainer.style.boxSizing = 'border-box'; // Ensure padding is included in the width/height calculation
+    
+            // Add a canvas to the container
+            const chartCanvas = document.createElement('canvas');
+            chartCanvas.id = 'myChart';
+            chartCanvas.style.width = '100%';  // Full width inside container
+            chartCanvas.style.height = '400px'; // Fixed height for chart
+            chartContainer.appendChild(chartCanvas);
+    
+            document.body.appendChild(chartContainer);
+        }
+    
+        // Aggregate data by buffer location
+        const bufferLocations = {};  // To store the total count of containers per buffer location
+    
+        Object.entries(filteredSummary).forEach(([lane, laneSummary]) => {
+            Object.entries(laneSummary).forEach(([location, data]) => {
+                if (location.startsWith("BUFFER")) {
+                    if (!bufferLocations[location]) {
+                        bufferLocations[location] = 0;
+                    }
+                    bufferLocations[location] += data.count;  // Add up the count of containers for the buffer location
+                }
+            });
+        });
+    
+        // Prepare data for the chart
+        const labels = Object.keys(bufferLocations);
+        const data = labels.map(location => bufferLocations[location]);
+    
+        if (data.length === 0) {
+            console.warn("No buffer locations to chart.");
+            return;
+        }
+    
+        const chartData = {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: ['#ff0000', '#ff7f00', '#ffff00', '#7fff00', '#00ff00', '#0000ff', '#8a2be2'],
+                borderColor: '#ffffff',
+                borderWidth: 1
+            }]
+        };
+    
+        // Get the canvas context and create the chart
+        const ctx = document.getElementById('myChart').getContext('2d');
+        if (ctx) {
+            const chart = new Chart(ctx, {
+                type: 'pie',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    const label = tooltipItem.label || '';
+                                    const value = tooltipItem.raw || 0;
+                                    return `${label}: ${value}`;
+                                }
+                            }
+                        }
+                    },
+                    onClick: function(event, elements) {
+                        if (elements.length > 0) {
+                            // Get the label of the clicked slice (buffer location)
+                            const clickedLabel = chart.data.labels[elements[0].index];
+                            // Set the buffer filter to the clicked label
+                            selectedBufferFilter = clickedLabel;
+                            $('#bufferFilterInput').val(selectedBufferFilter);  // Update the input field
+                            fetchBufferSummary();  // Fetch the updated data based on the new filter
                         }
                     }
                 }
-            }
+            });
+        } else {
+            console.error("Canvas context could not be found.");
         }
-    });
-}
-
+    }
+    
     
     function addChartToggleButton() {
         const button = $('<button id="toggleChartButton"  style="position: fixed; top: 35px; left: calc(50% - 22px); padding: 10px; background: rgb(0, 123, 255); color: white; border: none; cursor: pointer; border-radius: 5px; font-size: 14px;">Mostra grafico recuperi</button>');
@@ -586,7 +602,7 @@ function generateAreaPieChart(filteredSummary, areaMap) {
             const chartContainer = document.getElementById('chartContainer');
             if (chartContainer.style.display === 'none') {
                 chartContainer.style.display = 'block';  // Show the chart container
-                generateAreaPieChart(filteredSummary);  // Generate chart if it's not already done
+                generatePieChart(filteredSummary);  // Generate chart if it's not already done
                 $(this).text('Nascondi Grafico');
             } else {
                 chartContainer.style.display = 'none';  // Hide the chart container
