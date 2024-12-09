@@ -166,10 +166,12 @@
     function toggleDataDisplay() {
         if (tableVisible) {
             dataContainer.style.display = 'none';
+            printButton.style.display = 'none'; // Nascondi pulsante Stampa
             button.textContent = "Mostra Scarichi";
         } else {
             loadYardPageAndExtractData(function (data) {
                 displayData(data);
+                printButton.style.display = 'none'; // Nascondi pulsante Stampa
             });
             button.textContent = "Nascondi Scarichi";
         }
@@ -181,7 +183,7 @@
         const originalStyles = document.body.innerHTML;
 
         // Mostra solo il contenuto del container
-        const containerHTML = dataContainer.innerHTML;
+        const containerHTML = dataContainer.outerHTML; // Include il pallino
         document.body.innerHTML = `<div>${containerHTML}</div>`;
 
         // Avvia la stampa
@@ -226,6 +228,7 @@
     printButton.style.borderRadius = '5px';
     printButton.style.cursor = 'pointer';
     printButton.style.zIndex = '1000';
+    printButton.style.display = 'none'; // Nascondi pulsante Stampa
     printButton.addEventListener('click', printContainerContent);
 
     dataContainer = document.createElement('div');
