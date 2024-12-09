@@ -169,9 +169,10 @@
             printButton.style.display = 'none'; // Nascondi pulsante Stampa
             button.textContent = "Mostra Scarichi";
         } else {
+            printButton.style.display = 'block'; // Mostra pulsante Stampa immediatamente
+            dataContainer.style.display = 'block'; // Mostra il contenitore (anche se vuoto inizialmente)
             loadYardPageAndExtractData(function (data) {
-                displayData(data);
-                printButton.style.display = 'none'; // Nascondi pulsante Stampa
+                displayData(data); // Popola il contenitore
             });
             button.textContent = "Nascondi Scarichi";
         }
