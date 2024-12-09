@@ -175,6 +175,22 @@
         }
         tableVisible = !tableVisible;
     }
+ 
+    function printContainerContent() {
+        // Salva gli stili attuali della pagina
+        const originalStyles = document.body.innerHTML;
+
+        // Mostra solo il contenuto del container
+        const containerHTML = dataContainer.innerHTML;
+        document.body.innerHTML = `<div>${containerHTML}</div>`;
+
+        // Avvia la stampa
+        window.print();
+
+        // Ripristina gli stili originali
+        document.body.innerHTML = originalStyles;
+        location.reload(); // Ricarica la pagina per ripristinare gli eventi
+    }
 
     setInterval(() => {
         if (tableVisible) {
@@ -197,6 +213,20 @@
     button.style.borderRadius = '5px';
     button.style.cursor = 'pointer';
     button.style.zIndex = '1000';
+
+    const printButton = document.createElement('button');
+    printButton.textContent = "Stampa";
+    printButton.style.position = 'fixed';
+    printButton.style.top = '550px';
+    printButton.style.left = '150px';
+    printButton.style.padding = '10px';
+    printButton.style.backgroundColor = '#28a745';
+    printButton.style.color = 'white';
+    printButton.style.border = 'none';
+    printButton.style.borderRadius = '5px';
+    printButton.style.cursor = 'pointer';
+    printButton.style.zIndex = '1000';
+    printButton.addEventListener('click', printContainerContent);
 
     dataContainer = document.createElement('div');
     dataContainer.style.position = 'fixed';
@@ -228,5 +258,6 @@
     button.addEventListener('click', toggleDataDisplay);
 
     document.body.appendChild(button);
+    document.body.appendChild(printButton);
     document.body.appendChild(dataContainer);
 })();
