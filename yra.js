@@ -196,4 +196,30 @@
     printButton.addEventListener('click', printContainerContent);
 
     dataContainer = document.createElement('div');
-    d
+    dataContainer.style.position = 'fixed';
+    dataContainer.style.top = '600px';
+    dataContainer.style.left = '10px';
+    dataContainer.style.backgroundColor = 'white';
+    dataContainer.style.border = '1px solid #ddd';
+    dataContainer.style.borderRadius = '5px';
+    dataContainer.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
+    dataContainer.style.padding = '10px';
+    dataContainer.style.display = 'none';
+    dataContainer.style.zIndex = '999';
+    dataContainer.style.overflow = 'auto';
+    dataContainer.style.maxHeight = '300px';
+
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.2; }
+            100% { opacity: 1; }
+        }
+    `;
+    document.head.appendChild(style);
+
+    document.body.appendChild(button);
+    document.body.appendChild(printButton);
+    document.body.appendChild(dataContainer);
+})();
