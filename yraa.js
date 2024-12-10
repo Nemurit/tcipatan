@@ -147,24 +147,52 @@
         tableVisible = !tableVisible;
     }
 
-    function printContainerContent() {
-        const printWindow = window.open('', '_blank');
-        const containerHTML = `
-            <html>
-                <head>
-                    <style>
-                        body { font-family: Arial; margin: 20px; }
-                        table { width: 100%; border-collapse: collapse; }
-                        td, th { border: 1px solid black; padding: 5px; }
-                        span { width: 10px; height: 10px; background: green; display: inline-block; border-radius: 50%; }
-                    </style>
-                </head>
-                <body>${dataContainer.outerHTML}</body>
-            </html>`;
-        printWindow.document.write(containerHTML);
-        printWindow.document.close();
-        printWindow.print();
-    }
+   function printContainerContent() {
+    const printWindow = window.open('', '_blank');
+    const containerHTML = `
+        <html>
+            <head>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 0;
+                        display: flex;
+                        justify-content: center;
+                        align-items: flex-start;
+                        height: 100%;
+                    }
+                    table {
+                        width: 80%;
+                        border-collapse: collapse;
+                        margin-top: 20px;
+                    }
+                    th, td {
+                        border: 1px solid black;
+                        padding: 8px;
+                        text-align: left;
+                    }
+                    th {
+                        background-color: #f4f4f4;
+                    }
+                    span {
+                        width: 10px;
+                        height: 10px;
+                        background: green;
+                        display: inline-block;
+                        border-radius: 50%;
+                    }
+                </style>
+            </head>
+            <body>
+                ${dataContainer.outerHTML}
+            </body>
+        </html>`;
+    printWindow.document.write(containerHTML);
+    printWindow.document.close();
+    printWindow.print();
+}
+
 
     const button = document.createElement('button');
     button.textContent = "Mostra Scarichi";
