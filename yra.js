@@ -3,17 +3,16 @@
 
     let tableVisible = false; // Stato della tabella
     let dataContainer; // Variabile per il container
+    let isDataLoaded = false; // Flag per sapere se i dati sono stati caricati
 
+    // Funzione per caricare i dati
     function loadYardPageAndExtractData(callback) {
-        // Rimuovi eventuali iframe esistenti
         const existingIframe = document.querySelector('iframe[data-yard="true"]');
-        if (existingIframe) {
-            existingIframe.remove();
-        }
+        if (existingIframe) existingIframe.remove();
 
         const iframe = document.createElement('iframe');
-        iframe.style.display = 'none'; // Nasconde l'iframe
-        iframe.setAttribute('data-yard', 'true'); // Per identificare facilmente questo iframe
+        iframe.style.display = 'none';
+        iframe.setAttribute('data-yard', 'true');
         iframe.src = "https://www.amazonlogistics.eu/yms/shipclerk";
 
         iframe.onload = function () {
@@ -30,11 +29,11 @@
                 const data = [];
 
                 rows.forEach(row => {
-                    const col1 = row.querySelector('td.col1'); // Location
-                    const col8 = row.querySelector('td.col8'); // DSSMITH check
-                    const col9 = row.querySelector('td.col9'); // Tipo di Transfer
-                    const col11 = row.querySelector('td.col11'); // Note da mostrare
-                    const tractorIcon = row.querySelector('.yard-asset-icon.yard-asset-icon-TRACTOR'); // Icona del Tractor
+                    const col1 = row.querySelector('td.col1');
+                    const col8 = row.querySelector('td.col8');
+                    const col9 = row.querySelector('td.col9');
+                    const col11 = row.querySelector('td.col11');
+                    const tractorIcon = row.querySelector('.yard-asset-icon.yard-asset-icon-TRACTOR');
 
                     if (col1 && col9 && col11) {
                         const location = col1.innerText.trim();
@@ -56,16 +55,15 @@
                     }
                 });
 
-                console.log("Dati estratti:", data);
                 callback(data);
-
                 iframe.remove();
-            }, 5000); // Aspetta 5 secondi
+            }, 5000);
         };
 
         document.body.appendChild(iframe);
     }
 
+    // Funzione per mostrare i dati nella tabella
     function displayData(data) {
         dataContainer.innerHTML = "";
 
@@ -75,19 +73,25 @@
         dataTable.style.fontFamily = 'Arial, sans-serif';
         dataTable.style.textAlign = 'left';
         dataTable.style.border = '1px solid #ddd';
-        dataTable.style.width = '100%';
+        dataTable.style.width = 'auto';
 
         const thead = dataTable.createTHead();
         const tbody = dataTable.createTBody();
 
         const headerRow = thead.insertRow();
-        ["Location", "Note"].forEach(text => {
-            const th = document.createElement('th');
-            th.textContent = text;
+        const th1 = document.createElement('th');
+        th1.textContent = "Location";
+        headerRow.appendChild(th1);
+
+        const th2 = document.createElement('th');
+        th2.textContent = "Note";
+        headerRow.appendChild(th2);
+
+        [th1, th2].forEach(th => {
             th.style.padding = '8px';
             th.style.border = '1px solid #ddd';
             th.style.backgroundColor = '#f4f4f4';
-            headerRow.appendChild(th);
+            th.style.color = '#333';
         });
 
         if (data.length === 0) {
@@ -103,6 +107,7 @@
         } else {
             data.forEach(rowData => {
                 const row = tbody.insertRow();
+
                 const firstTd = row.insertCell();
                 firstTd.textContent = rowData[0];
 
@@ -124,15 +129,17 @@
                 [firstTd, lastTd].forEach(td => {
                     td.style.padding = '8px';
                     td.style.border = '1px solid #ddd';
+                    td.style.whiteSpace = 'nowrap';
                 });
             });
         }
 
         dataContainer.appendChild(dataTable);
+        isDataLoaded = true;
         dataContainer.style.display = 'block';
-        printButton.style.display = 'inline-block';
     }
 
+    // Funzione per alternare la visualizzazione dei dati
     function toggleDataDisplay() {
         if (tableVisible) {
             dataContainer.style.display = 'none';
@@ -141,59 +148,15 @@
         } else {
             loadYardPageAndExtractData(function (data) {
                 displayData(data);
+                dataContainer.style.display = 'block';
+                printButton.style.display = 'inline-block';
             });
             button.textContent = "Nascondi Scarichi";
         }
         tableVisible = !tableVisible;
     }
 
-   function printContainerContent() {
-    const printWindow = window.open('', '_blank');
-    const containerHTML = `
-        <html>
-            <head>
-                <style>
-                    body {
-                        font-family: Arial, sans-serif;
-                        margin: 0;
-                        padding: 0;
-                        display: flex;
-                        justify-content: center;
-                        align-items: flex-start;
-                        height: 100%;
-                    }
-                    table {
-                        width: 80%;
-                        border-collapse: collapse;
-                        margin-top: 20px;
-                    }
-                    th, td {
-                        border: 1px solid black;
-                        padding: 8px;
-                        text-align: left;
-                    }
-                    th {
-                        background-color: #f4f4f4;
-                    }
-                    span {
-                        width: 10px;
-                        height: 10px;
-                        background: green;
-                        display: inline-block;
-                        border-radius: 50%;
-                    }
-                </style>
-            </head>
-            <body>
-                ${dataContainer.outerHTML}
-            </body>
-        </html>`;
-    printWindow.document.write(containerHTML);
-    printWindow.document.close();
-    printWindow.print();
-}
-
-
+    // Creazione del pulsante "Mostra/Nascondi"
     const button = document.createElement('button');
     button.textContent = "Mostra Scarichi";
     button.style.position = 'fixed';
@@ -208,11 +171,12 @@
     button.style.zIndex = '1000';
     button.addEventListener('click', toggleDataDisplay);
 
+    // Creazione del pulsante "Stampa"
     const printButton = document.createElement('button');
     printButton.textContent = "Stampa";
     printButton.style.position = 'fixed';
     printButton.style.top = '550px';
-    printButton.style.left = '130px';
+    printButton.style.left = '140px';
     printButton.style.padding = '10px';
     printButton.style.backgroundColor = '#28a745';
     printButton.style.color = 'white';
@@ -221,8 +185,44 @@
     printButton.style.cursor = 'pointer';
     printButton.style.zIndex = '1000';
     printButton.style.display = 'none';
-    printButton.addEventListener('click', printContainerContent);
+    printButton.addEventListener('click', function () {
+        if (dataContainer) {
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                  <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Stampa Tabella</title>
+                        <style>
+                            table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin-bottom: 20px;
+                                font-family: Arial, sans-serif;
+                                font-size: 14px;
+                                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                            }
+                            th, td {
+                                border: 1px solid #ccc;
+                                padding: 8px;
+                                text-align: left;
+                            }
+                            th {
+                                background-color: #f4f4f4;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${tableContainer.innerHTML}
+                    </body>
+                    </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        }
+    });
 
+    // Creazione del contenitore dati
     dataContainer = document.createElement('div');
     dataContainer.style.position = 'fixed';
     dataContainer.style.top = '600px';
@@ -234,18 +234,8 @@
     dataContainer.style.padding = '10px';
     dataContainer.style.display = 'none';
     dataContainer.style.zIndex = '999';
+    dataContainer.style.maxHeight = '70vh';
     dataContainer.style.overflow = 'auto';
-    dataContainer.style.maxHeight = '300px';
-
-    const style = document.createElement('style');
-    style.innerHTML = `
-        @keyframes blink {
-            0% { opacity: 1; }
-            50% { opacity: 0.2; }
-            100% { opacity: 1; }
-        }
-    `;
-    document.head.appendChild(style);
 
     document.body.appendChild(button);
     document.body.appendChild(printButton);
