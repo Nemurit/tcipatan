@@ -124,6 +124,7 @@
                     dot.style.borderRadius = '50%';
                     dot.style.backgroundColor = 'green';
                     dot.style.marginLeft = '10px';
+                    dot.style.animation = 'blink 1s infinite';
                     firstTd.appendChild(dot);
                 }
 
@@ -138,8 +139,8 @@
         }
 
         dataContainer.appendChild(dataTable);
-        isDataLoaded = true;
         dataContainer.style.display = 'block';
+        printButton.style.display = 'block';
     }
 
     function toggleDataDisplay() {
@@ -148,11 +149,9 @@
             printButton.style.display = 'none';
             button.textContent = "Mostra Scarichi";
         } else {
-            printButton.style.display = 'block';
             loadYardPageAndExtractData(function (data) {
                 displayData(data);
             });
-            dataContainer.style.display = 'block';
             button.textContent = "Nascondi Scarichi";
         }
         tableVisible = !tableVisible;
@@ -179,15 +178,58 @@
 
     const button = document.createElement('button');
     button.textContent = "Mostra Scarichi";
+    button.style.position = 'fixed';
+    button.style.top = '550px';
+    button.style.left = '10px';
+    button.style.padding = '10px';
+    button.style.backgroundColor = '#007bff';
+    button.style.color = 'white';
+    button.style.border = 'none';
+    button.style.borderRadius = '5px';
+    button.style.cursor = 'pointer';
+    button.style.zIndex = '1000';
     button.addEventListener('click', toggleDataDisplay);
 
     const printButton = document.createElement('button');
     printButton.textContent = "Stampa";
+    printButton.style.position = 'fixed';
+    printButton.style.top = '600px';
+    printButton.style.left = '10px';
+    printButton.style.padding = '10px';
+    printButton.style.backgroundColor = '#28a745';
+    printButton.style.color = 'white';
+    printButton.style.border = 'none';
+    printButton.style.borderRadius = '5px';
+    printButton.style.cursor = 'pointer';
+    printButton.style.zIndex = '1000';
     printButton.style.display = 'none';
     printButton.addEventListener('click', printContainerContent);
 
     dataContainer = document.createElement('div');
-    document.body.appendChild(dataContainer);
+    dataContainer.style.position = 'fixed';
+    dataContainer.style.top = '650px';
+    dataContainer.style.left = '10px';
+    dataContainer.style.backgroundColor = 'white';
+    dataContainer.style.border = '1px solid #ddd';
+    dataContainer.style.borderRadius = '5px';
+    dataContainer.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
+    dataContainer.style.padding = '10px';
+    dataContainer.style.display = 'none';
+    dataContainer.style.zIndex = '999';
+    dataContainer.style.overflow = 'auto';
+    dataContainer.style.maxHeight = '300px';
+
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.2; }
+            100% { opacity: 1; }
+        }
+    `;
+    document.head.appendChild(style);
+
     document.body.appendChild(button);
     document.body.appendChild(printButton);
+    document.body.appendChild(dataContainer);
 })();
