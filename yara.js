@@ -3,10 +3,8 @@
 
     let tableVisible = false; // Stato della tabella
     let dataContainer; // Variabile per il container
-    let isDataLoaded = false; // Flag per sapere se i dati sono stati caricati
 
     function loadYardPageAndExtractData(callback) {
-        console.log("Caricamento dati dall'iframe...");
         // Rimuovi eventuali iframe esistenti
         const existingIframe = document.querySelector('iframe[data-yard="true"]');
         if (existingIframe) {
@@ -19,7 +17,6 @@
         iframe.src = "https://www.amazonlogistics.eu/yms/shipclerk";
 
         iframe.onload = function () {
-            console.log("Iframe caricato. Estrazione dati...");
             setTimeout(() => {
                 const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
 
@@ -29,7 +26,6 @@
                     return;
                 }
 
-                // Seleziona tutte le righe
                 const rows = iframeDoc.querySelectorAll('tr');
                 const data = [];
 
@@ -41,11 +37,10 @@
                     const tractorIcon = row.querySelector('.yard-asset-icon.yard-asset-icon-TRACTOR'); // Icona del Tractor
 
                     if (col1 && col9 && col11) {
-                        const location = col1.innerText.trim(); // Testo della colonna Location
-                        let note = col11.innerText.trim(); // Testo della colonna Note (col11)
-                        const isTractorPresent = tractorIcon !== null; // Verifica se l'icona Tractor è presente
+                        const location = col1.innerText.trim();
+                        let note = col11.innerText.trim();
+                        const isTractorPresent = tractorIcon !== null;
 
-                        // Filtraggio dei dati
                         if (/TransfersCarts/i.test(col9?.innerText || '')) {
                             data.push([location, note, isTractorPresent, false]);
                         } else if (/Transfers/i.test(col9?.innerText || '') && /Ricarica/i.test(note)) {
@@ -55,7 +50,7 @@
                         }
 
                         if (col8 && (/DSSMITH/i.test(col8.innerText) || /ZETAC/i.test(col8.innerText))) {
-                            note = "Non Inventory"; // Cambia le note in "Non Inventory"
+                            note = "Non Inventory";
                             data.push([location, note, isTractorPresent, true]);
                         }
                     }
@@ -64,7 +59,6 @@
                 console.log("Dati estratti:", data);
                 callback(data);
 
-                // Rimuove l'iframe dopo l'elaborazione
                 iframe.remove();
             }, 5000); // Aspetta 5 secondi
         };
@@ -73,8 +67,6 @@
     }
 
     function displayData(data) {
-        console.log("Visualizzazione dati nel container...");
-        // Pulisci il contenuto del container
         dataContainer.innerHTML = "";
 
         const dataTable = document.createElement('table');
@@ -83,12 +75,11 @@
         dataTable.style.fontFamily = 'Arial, sans-serif';
         dataTable.style.textAlign = 'left';
         dataTable.style.border = '1px solid #ddd';
-        dataTable.style.width = 'auto';
+        dataTable.style.width = '100%';
 
         const thead = dataTable.createTHead();
         const tbody = dataTable.createTBody();
 
-        // Intestazione
         const headerRow = thead.insertRow();
         ["Location", "Note"].forEach(text => {
             const th = document.createElement('th');
@@ -96,7 +87,6 @@
             th.style.padding = '8px';
             th.style.border = '1px solid #ddd';
             th.style.backgroundColor = '#f4f4f4';
-            th.style.color = '#333';
             headerRow.appendChild(th);
         });
 
@@ -140,7 +130,7 @@
 
         dataContainer.appendChild(dataTable);
         dataContainer.style.display = 'block';
-        printButton.style.display = 'block';
+        printButton.style.display = 'inline-block';
     }
 
     function toggleDataDisplay() {
@@ -163,8 +153,8 @@
             <html>
                 <head>
                     <style>
-                        body { font-family: Arial; }
-                        table { border-collapse: collapse; }
+                        body { font-family: Arial; margin: 20px; }
+                        table { width: 100%; border-collapse: collapse; }
                         td, th { border: 1px solid black; padding: 5px; }
                         span { width: 10px; height: 10px; background: green; display: inline-block; border-radius: 50%; }
                     </style>
@@ -193,8 +183,8 @@
     const printButton = document.createElement('button');
     printButton.textContent = "Stampa";
     printButton.style.position = 'fixed';
-    printButton.style.top = '600px';
-    printButton.style.left = '10px';
+    printButton.style.top = '550px';
+    printButton.style.left = '130px';
     printButton.style.padding = '10px';
     printButton.style.backgroundColor = '#28a745';
     printButton.style.color = 'white';
@@ -206,30 +196,4 @@
     printButton.addEventListener('click', printContainerContent);
 
     dataContainer = document.createElement('div');
-    dataContainer.style.position = 'fixed';
-    dataContainer.style.top = '650px';
-    dataContainer.style.left = '10px';
-    dataContainer.style.backgroundColor = 'white';
-    dataContainer.style.border = '1px solid #ddd';
-    dataContainer.style.borderRadius = '5px';
-    dataContainer.style.boxShadow = '0px 4px 6px rgba(0, 0, 0, 0.1)';
-    dataContainer.style.padding = '10px';
-    dataContainer.style.display = 'none';
-    dataContainer.style.zIndex = '999';
-    dataContainer.style.overflow = 'auto';
-    dataContainer.style.maxHeight = '300px';
-
-    const style = document.createElement('style');
-    style.innerHTML = `
-        @keyframes blink {
-            0% { opacity: 1; }
-            50% { opacity: 0.2; }
-            100% { opacity: 1; }
-        }
-    `;
-    document.head.appendChild(style);
-
-    document.body.appendChild(button);
-    document.body.appendChild(printButton);
-    document.body.appendChild(dataContainer);
-})();
+    d
