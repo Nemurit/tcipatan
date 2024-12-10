@@ -143,16 +143,16 @@
     }
 
     function toggleDataDisplay() {
-        printButton.style.display = 'block';
         if (tableVisible) {
             dataContainer.style.display = 'none';
             printButton.style.display = 'none';
             button.textContent = "Mostra Scarichi";
         } else {
-            dataContainer.style.display = 'block';
+            printButton.style.display = 'block';
             loadYardPageAndExtractData(function (data) {
                 displayData(data);
             });
+            dataContainer.style.display = 'block';
             button.textContent = "Nascondi Scarichi";
         }
         tableVisible = !tableVisible;
