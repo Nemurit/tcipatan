@@ -213,7 +213,7 @@
                         </style>
                     </head>
                     <body>
-                        ${tableContainer.innerHTML}
+                        ${dataContainer.innerHTML}
                     </body>
                     </html>
             `);
