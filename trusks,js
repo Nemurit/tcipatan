@@ -11,7 +11,7 @@
     let printButton = null;
     let rowCountDisplay = null;
     let vrIdInputBox = null;
-    let laneInputBox = null; // Aggiunto per il filtro LANE
+    let laneInputBox = null;
     let containermain = null;
 
     // Costanti
@@ -22,14 +22,15 @@
     // Funzione per creare il pulsante di caricamento dati con funzione toggle
     function createButtonForPageLoadAndDataExtraction() {
         const button = document.createElement('button');
+        button.id = "visualizzaTrucksButton";
         button.innerHTML = 'Visualizza TRUCKS';
-        button.style.padding = '3px';
+        button.style.padding = '10px';
         button.style.backgroundColor = '#4CAF50';
         button.style.color = 'white';
         button.style.border = 'none';
-        button.style.borderRadius = '3px';
-        button.style.marginRight = '5px';
+        button.style.borderRadius = '5px';
         button.style.cursor = 'pointer';
+        button.style.fontSize = '14px';
 
         let isTableVisible = false;
 
@@ -58,7 +59,7 @@
         dropdown.value = 'Tutti';
         timeInputBox.value = DEFAULT_HOURS;
         vrIdInputBox.value = '';
-        laneInputBox.value = ''; // Resetta il filtro LANE
+        laneInputBox.value = '';
         loadIframeAndWait(DEFAULT_HOURS);
     }
 
@@ -170,26 +171,28 @@
         const vrIdFilter = vrIdInputBox.value.trim().toLowerCase();
         const laneFilter = laneInputBox.value.trim().toLowerCase();
 
-        let filteredRows;
+        let filteredRows = allRows;
 
         if (vrIdFilter) {
-            filteredRows = allRows.filter(row => 
+            filteredRows = filteredRows.filter(row =>
                 row.vrId.toLowerCase().includes(vrIdFilter)
             );
-        } else {
-            filteredRows = allRows.filter(row => 
+        }
+
+        if (laneFilter) {
+            filteredRows = filteredRows.filter(row =>
+                row.lane.toLowerCase().includes(laneFilter)
+            );
+        }
+
+        if (!vrIdFilter && !laneFilter) {
+            filteredRows = filteredRows.filter(row =>
                 row.date >= now && row.date <= maxDate
             );
 
             if (status !== 'Tutti') {
                 filteredRows = filteredRows.filter(row => row.extraText === status);
             }
-        }
-
-        if (laneFilter) {
-            filteredRows = filteredRows.filter(row => 
-                row.lane.toLowerCase().includes(laneFilter)
-            );
         }
 
         showDataInTable(filteredRows);
@@ -219,7 +222,6 @@
         table.style.borderCollapse = 'collapse';
         table.style.fontFamily = 'Arial, sans-serif';
         table.style.fontSize = '14px';
-        table.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
         table.innerHTML = `
             <thead style="background-color: #f4f4f4; border-bottom: 2px solid #ccc;">
                 <tr>
@@ -253,7 +255,7 @@
         dropdown.style.display = 'inline-block';
         timeInputBox.style.display = 'inline-block';
         vrIdInputBox.style.display = 'inline-block';
-        laneInputBox.style.display = 'inline-block'; // Mostra il filtro LANE
+        laneInputBox.style.display = 'inline-block';
         printButton.style.display = 'inline-block';
         rowCountDisplay.style.display = 'inline-block';
     }
@@ -317,68 +319,30 @@
             filterAndShowData(timeInputBox.value ? parseInt(timeInputBox.value, 10) : INITIAL_HOURS);
         });
 
+        rowCountDisplay = document.createElement('span');
+        rowCountDisplay.style.marginLeft = '10px';
+        rowCountDisplay.style.fontWeight = 'bold';
+        rowCountDisplay.style.display = 'none';
+
         printButton = document.createElement('button');
         printButton.innerHTML = 'Stampa';
-        printButton.style.padding = '3px';
-        printButton.style.marginRight = '5px';
+        printButton.style.padding = '5px';
+        printButton.style.marginLeft = '10px';
         printButton.style.display = 'none';
         printButton.addEventListener('click', function () {
-            if (tableContainer) {
-                const printWindow = window.open('', '_blank');
-                const printDocument = printWindow.document;
-
-                printDocument.open();
-                printDocument.write(`
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <title>Stampa Tabella</title>
-                        <style>
-                            table {
-                                width: 100%;
-                                border-collapse: collapse;
-                                margin-bottom: 20px;
-                                font-family: Arial, sans-serif;
-                                font-size: 14px;
-                                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-                            }
-                            th, td {
-                                border: 1px solid #ccc;
-                                padding: 8px;
-                                text-align: left;
-                            }
-                            th {
-                                background-color: #f4f4f4;
-                            }
-                            tr:nth-child(even) {
-                                background-color: #f9f9f9;
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        ${tableContainer.innerHTML}
-                    </body>
-                    </html>
-                `);
-                printDocument.close();
-                printWindow.print();
-            }
+            window.print();
         });
-
-        rowCountDisplay = document.createElement('div');
-        rowCountDisplay.style.display = 'none';
-        rowCountDisplay.style.fontSize = '14px';
-        rowCountDisplay.style.fontWeight = 'bold';
 
         containermain.appendChild(dropdown);
         containermain.appendChild(timeInputBox);
         containermain.appendChild(vrIdInputBox);
-        containermain.appendChild(laneInputBox); // Aggiunto
+        containermain.appendChild(laneInputBox);
         containermain.appendChild(printButton);
         containermain.appendChild(rowCountDisplay);
 
         document.body.appendChild(containermain);
     }
 
+    // Inizializza l'interfaccia
     createButtons();
 })();
