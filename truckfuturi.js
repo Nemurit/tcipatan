@@ -1,6 +1,8 @@
 (function () {
     'use strict';
-
+    
+document.title = "Clerk Handover"
+    
     const url = "https://trans-logistics-eu.amazon.com/ssp/dock/hrz/ob/fetchdata?";
     const entityName = "getDefaultOutboundDockView";
     const payload = `entity=${entityName}&nodeId=MXP6&startDate=1733700600000&endDate=1733873400000&loadCategories=outboundScheduled,outboundInProgress,outboundReadyToDepart,outboundDeparted,outboundCancelled`;
@@ -14,8 +16,8 @@
     let printButton = null;
     let rowCountDisplay = null;
     let filtersContainer = null;
-    let isDataFetched = false;
-    let isTableVisible = false;
+    let isDataFetched = false;  // Flag per sapere se i dati sono stati recuperati
+    let isTableVisible = false; // Flag per sapere se la tabella è visibile
 
     // Funzione per recuperare i dati
     function fetchData(hours) {
@@ -58,14 +60,8 @@
 
         allRows = apiData.map(item => {
             const load = item.load || {};
-
-            // Verifica il formato della lane
-            const isLaneTransfer = load.route && /^MXP6->.{4}$/.test(load.route);
-
-            // Determina il tipo di truck
-            const truckType = isLaneTransfer
-                ? "TRANSFER"
-                : (load.scheduledDepartureTime === load.criticalPullTime ? "CPT" : "COLLECTION");
+            const truckType = load.route && load.route.startsWith("WT") ? "TRANSFER" :
+                load.scheduledDepartureTime === load.criticalPullTime ? "CPT" : "COLLECTION";
 
             return {
                 lane: load.route || "N/A",
@@ -88,10 +84,12 @@
         const now = new Date();
         const maxDate = new Date(now.getTime() + hours * 60 * 60 * 1000);
 
+        // Ottieni i filtri
         const status = dropdown ? dropdown.value : 'Tutti';
         const vrIdFilter = vrIdInputBox.value.trim().toLowerCase();
         const laneFilter = laneInputBox ? laneInputBox.value.trim().toLowerCase() : '';
 
+        // Filtra prima tutti i dati, indipendentemente dalla finestra temporale
         let filteredRows = allRows;
 
         if (vrIdFilter) {
@@ -106,10 +104,12 @@
             filteredRows = filteredRows.filter(row => row.lane.toLowerCase().includes(laneFilter));
         }
 
+        // Ora applica la finestra temporale, solo se non ci sono filtri VR ID o Lane
         if (!vrIdFilter && !laneFilter) {
             filteredRows = filteredRows.filter(row => row.date >= now && row.date <= maxDate);
         }
 
+        // Mostra i dati filtrati nella tabella
         showDataInTable(filteredRows);
         updateRowCount(filteredRows.length);
     }
@@ -193,27 +193,33 @@
             const hours = timeInputBox.value ? parseInt(timeInputBox.value, 10) : 1;
 
             if (isTableVisible) {
+                // Nascondi la tabella e i filtri
                 tableContainer.style.display = 'none';
                 filtersContainer.style.display = 'none';
                 button.innerHTML = 'Visualizza TRUCKS';
                 isTableVisible = false;
             } else {
+                // Mostra i filtri
                 filtersContainer.style.display = 'block';
 
                 if (!isDataFetched) {
-                    fetchData(hours);
-                    isDataFetched = true;
+                    fetchData(hours); // Fetch i dati la prima volta
+                    isDataFetched = true; // Impostiamo il flag su true
                 }
 
+                // Cambia il testo del pulsante in "Nascondi TRUCKS"
                 button.innerHTML = 'Nascondi TRUCKS';
+
+                // Mostra la tabella
                 tableContainer.style.display = 'block';
                 filtersContainer.style.display = 'block';
                 isTableVisible = true;
             }
         });
 
+        // Aggiungi i filtri
         filtersContainer = document.createElement('div');
-        filtersContainer.style.display = 'none';
+        filtersContainer.style.display = 'none';  // I filtri sono inizialmente nascosti
         filtersContainer.style.marginTop = '10px';
 
         dropdown = document.createElement('select');
@@ -306,11 +312,12 @@
         document.body.appendChild(containermain);
     }
 
+    // Funzione per aggiornare ogni 5 minuti
     setInterval(function() {
         if (isDataFetched) {
-            fetchData(1);
+            fetchData(1); // Per esempio, recuperiamo i dati per l'ora corrente ogni 5 minuti
         }
-    }, 300000);
+    }, 300000); // 300000ms = 5 minuti
 
     createButtons();
 })();
