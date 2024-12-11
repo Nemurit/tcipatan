@@ -707,10 +707,10 @@ document.title = "Clerk Handover"
 
     allRows = apiData.map(item => {
         const load = item.load || {};
-        let truckType = "COLLECTION"; // Default è "COLLECTION"
+        let truckType = "TUTTI"; // Default è "TUTTI"
         
-        // Controllo se la lane inizia con "MXP6" e se è seguita esattamente da 4 caratteri
-        if (load.route && load.route.startsWith("MXP6->") && load.route.length === 8) {
+        // Controllo se la lane è un TRANSSHIPMENT
+        if (load.shippingPurposeType == "TRANSSHIPMENT") {
             truckType = "TRANSFER"; // Se la condizione è soddisfatta, cambia il tipo a "TRANSFER"
         }
         // Se la condizione del "TRANSFER" non è soddisfatta, verifica se è "CPT"
