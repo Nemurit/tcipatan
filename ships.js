@@ -702,30 +702,39 @@ document.title = "Clerk Handover"
     }
 
     function processFetchedData(apiData, hours) {
-        const now = new Date();
-        const maxDate = new Date(now.getTime() + hours * 60 * 60 * 1000);
+    const now = new Date();
+    const maxDate = new Date(now.getTime() + hours * 60 * 60 * 1000);
 
-        allRows = apiData.map(item => {
-            const load = item.load || {};
-            const truckType = load.route && load.route.startsWith("WT") ? "TRANSFER" :
-                load.scheduledDepartureTime === load.criticalPullTime ? "CPT" : "COLLECTION";
+    allRows = apiData.map(item => {
+        const load = item.load || {};
+        let truckType = "COLLECTION"; // Default è "COLLECTION"
+        
+        // Controllo se la lane inizia con "MXP6" e se è seguita esattamente da 4 caratteri
+        if (load.route && load.route.startsWith("MXP6") && load.route.length === 8) {
+            truckType = "TRANSFER"; // Se la condizione è soddisfatta, cambia il tipo a "TRANSFER"
+        }
+        // Se la condizione del "TRANSFER" non è soddisfatta, verifica se è "CPT"
+        else if (load.scheduledDepartureTime === load.criticalPullTime) {
+            truckType = "CPT";
+        }
 
-            return {
-                lane: load.route || "N/A",
-                sdt: load.scheduledDepartureTime || "N/A",
-                cpt: load.criticalPullTime || "N/A",
-                vrId: load.vrId || "N/A",
-                date: new Date(load.scheduledDepartureTime),
-                extraText: truckType,
-                highlightColor: truckType === "TRANSFER" ? "violet" : truckType === "CPT" ? "green" : "orange",
-            };
-        });
+        return {
+            lane: load.route || "N/A",
+            sdt: load.scheduledDepartureTime || "N/A",
+            cpt: load.criticalPullTime || "N/A",
+            vrId: load.vrId || "N/A",
+            date: new Date(load.scheduledDepartureTime),
+            extraText: truckType,
+            highlightColor: truckType === "TRANSFER" ? "violet" : truckType === "CPT" ? "green" : "orange",
+        };
+    });
 
-        // Ordina i dati per SDT (Scheduled Departure Time)
-        allRows.sort((a, b) => a.date - b.date);
+    // Ordina i dati per SDT (Scheduled Departure Time)
+    allRows.sort((a, b) => a.date - b.date);
 
-        filterAndShowData(hours);
-    }
+    filterAndShowData(hours);
+}
+
 
     function filterAndShowData(hours) {
         const now = new Date();
