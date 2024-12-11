@@ -1210,69 +1210,41 @@ document.title = "Clerk Handover"
 })();
 
 // DOCK CONGESTION
-(function() {
+(function () {
     'use strict';
 
-    // Function to fetch and display data
+    // Funzione per recuperare e visualizzare i dati
     function fetchAndDisplayData() {
-        // URL parameters
-        const params = {
-            _enabledColumns: "on",
-            WorkPool: "ManifestPending",
-            enabledColumns: [
-                "ASIN_TITLES",
-                "FC_SKU",
-                "LAST_EXSD",
-                "LPN",
-                "OUTER_SCANNABLE_ID",
-                "SORT_CODE",
-                "FULFILLMENT_REFERENCE_ID",
-                "OUTER_OUTER_CONTAINER_TYPE",
-                "OUTER_OUTER_SCANNABLE_ID",
-                "STACKING_FILTER",
-                "LABEL",
-                "SSP_STATE",
-                "TRAILER"
-            ].join(','),
-            ExSDRange_RangeStartMillis: "1731643199999", // Make sure these are correct
-            ExSDRange_RangeEndMillis: "1734064260000",   // Make sure these are correct
-            Fracs: "NON_FRACS",
-            shipmentType: "CUSTOMER_SHIPMENTS"
-        };
+        const apiUrl = "https://rodeo-dub.amazon.com/MXP6/ExSD;jsessionid=36226D8DA8CFCCE67C6E346CBE0E3BCB?yAxis=WORK_POOL&zAxis=NONE&shipmentTypes=CUSTOMER_SHIPMENTS&exSDRange.quickRange=PLUS_MINUS_1_DAY&exSDRange.dailyStart=00:00&exSDRange.dailyEnd=00:00&giftOption=ALL&fulfillmentServiceClass=ALL&fracs=NON_FRACS&isEulerExSDMiss=ALL&isEulerPromiseMiss=ALL&isEulerUpgraded=ALL&isReactiveTransfer=ALL&workPool=PredictedCharge&workPool=PlannedShipment&workPool=ReadyToPick&workPool=ReadyToPickHardCapped&workPool=ReadyToPickUnconstrained&workPool=PickingNotYetPicked&workPool=PickingNotYetPickedPrioritized&workPool=PickingNotYetPickedNotPrioritized&workPool=PickingNotYetPickedHardCapped&workPool=CrossdockNotYetPicked&workPool=PickingPicked&workPool=PickingPickedInProgress&workPool=PickingPickedInTransit&workPool=PickingPickedRouting&workPool=PickingPickedAtDestination&workPool=Inducted&workPool=RebinBuffered&workPool=Sorted&workPool=GiftWrap&workPool=Packing&workPool=Scanned&workPool=ProblemSolving&workPool=ProcessPartial&workPool=SoftwareException&workPool=Crossdock&workPool=PreSort&workPool=TransshipSorted&workPool=Palletized&workPool=ManifestPending&workPool=ManifestPendingVerification&workPool=Manifested&workPool=Loaded&workPool=TransshipManifested&_workPool=on&_workPool=on&_workPool=on&_workPool=on&processPath=&minPickPriority=MIN_PRIORITY&shipMethod=&shipOption=&sortCode=&fnSku=";
 
-        // Convert params to query string
-        const queryString = Object.entries(params)
-            .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-            .join('&');
-
-        // Full URL
-        const apiUrl = `https://rodeo-dub.amazon.com/MXP6/ItemList?${queryString}`;
-
-        // Fetch data using GM_xmlhttpRequest
         GM_xmlhttpRequest({
             method: "GET",
             url: apiUrl,
-            onload: function(response) {
+            onload: function (response) {
                 if (response.status >= 200 && response.status < 300) {
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(response.responseText, 'text/html');
 
-                    // Try to locate the element containing the result (fix the selector)
-                    const totalResultsElement = doc.querySelector('.shipment-list.warn-pagination.pager-result-size');
-                    let totalResults = 0;
+                    // Trova il <th> con class="row-label" e testo "ManifestPending"
+                    const rowLabel = Array.from(doc.querySelectorAll('th.row-label'))
+                        .find(th => th.textContent.trim() === "ManifestPending");
 
-                    if (totalResultsElement) {
-                        // Assuming the number is contained within the element as text
-                        totalResults = parseInt(totalResultsElement.textContent.trim().replace(/[^0-9]/g, ''));
-                        console.log(`Total Results: ${totalResults}`);
+                    let manifestPendingValue = "N/A";
+                    if (rowLabel) {
+                        // Trova il <td class="subtotal"> corrispondente
+                        const subtotalCell = rowLabel.parentElement.querySelector('td.subtotal');
+                        if (subtotalCell) {
+                            manifestPendingValue = subtotalCell.textContent.trim();
+                        } else {
+                            console.warn('TD con class="subtotal" non trovato!');
+                        }
                     } else {
-                        console.warn('Element with the results not found!');
+                        console.warn('TH con testo "ManifestPending" non trovato!');
                     }
 
-                    // Create or update the table to display the results
+                    // Aggiorna o crea la tabella per visualizzare i risultati
                     let tableContainer = document.getElementById('dockCongestionTable');
                     if (!tableContainer) {
-                        // Create the table if it doesn't exist
                         tableContainer = document.createElement('div');
                         tableContainer.id = 'dockCongestionTable';
                         tableContainer.style.position = 'fixed';
@@ -1289,6 +1261,7 @@ document.title = "Clerk Handover"
                         const table = document.createElement('table');
                         table.style.margin = '0 auto';
                         table.style.borderCollapse = 'collapse';
+
                         const header = document.createElement('thead');
                         const headerRow = document.createElement('tr');
                         headerRow.innerHTML = '<th colspan="2">DOCK CONGESTION</th>';
@@ -1296,24 +1269,29 @@ document.title = "Clerk Handover"
                         table.appendChild(header);
 
                         const tbody = document.createElement('tbody');
+
+                        // Riga per lo stato
                         const row = document.createElement('tr');
                         const statusCell = document.createElement('td');
                         statusCell.setAttribute('colspan', '2');
                         statusCell.style.fontSize = '18px';
-
                         row.appendChild(statusCell);
                         tbody.appendChild(row);
+
                         table.appendChild(tbody);
                         tableContainer.appendChild(table);
                         document.body.appendChild(tableContainer);
                     }
 
-                    // Update the status cell with the total results and the appropriate color/status
-                    const statusCell = tableContainer.querySelector('td');
+                    // Aggiorna le celle
+                    const statusCell = tableContainer.querySelector('td[colspan="2"]');
+
+                    // Calcola lo stato basato sul totale
+                    const totalResults = parseInt(manifestPendingValue.replace(/[^0-9]/g, '')) || 0;
                     let statusText = '';
                     if (totalResults <= 125000) {
                         statusCell.style.color = 'green';
-                        statusText = `Dock OK: ${totalResults.toLocaleString()}`; // Adds commas for readability
+                        statusText = `Dock OK: ${totalResults.toLocaleString()}`; // Aggiunge le virgole per leggibilità
                     } else if (totalResults <= 150000) {
                         statusCell.style.color = 'orange';
                         statusText = `Contingency: ${totalResults.toLocaleString()}`;
@@ -1323,23 +1301,20 @@ document.title = "Clerk Handover"
                         statusText = `Safety Issue: ${totalResults.toLocaleString()}`;
                     }
 
-                    // Update the table with the status text
                     statusCell.textContent = statusText;
-
                 } else {
-                    console.error(`HTTP error! status: ${response.status}`);
+                    console.error(`Errore HTTP! Stato: ${response.status}`);
                 }
             },
-            onerror: function(error) {
-                console.error('Error fetching data:', error);
+            onerror: function (error) {
+                console.error('Errore durante il recupero dei dati:', error);
             }
         });
     }
 
-    // Fetch and display data initially
+    // Recupera e visualizza i dati inizialmente
     fetchAndDisplayData();
 
-    // Update the data every 5 minutes (300000 ms)
+    // Aggiorna i dati ogni 5 minuti (300000 ms)
     setInterval(fetchAndDisplayData, 300000);
-
 })();
