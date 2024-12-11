@@ -29,7 +29,7 @@ document.title = "Clerk Handover"
                 "Accept": "application/json, text/javascript, */*; q=0.01",
                 "X-Requested-With": "XMLHttpRequest",
                 "Referer": "https://trans-logistics-eu.amazon.com/ssp/dock/hrz/ob",
-                "Cookie": "session-id=261-8897614-8675915"
+                
             },
             data: payload,
             onload: function (response) {
