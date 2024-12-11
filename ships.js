@@ -710,7 +710,7 @@ document.title = "Clerk Handover"
         let truckType = "COLLECTION"; // Default è "COLLECTION"
         
         // Controlla se la lane inizia con "MXP6->" o se shippingPurposeType è "TRANSSHIPMENT"
-        if ((load.route && load.route.startsWith("MXP6->")) || load.shippingPurposeType === "TRANSSHIPMENT") {
+        if ((load.shippingPurposeType === "TRANSSHIPMENT") {
             truckType = "TRANSFER"; // Se la lane inizia con "MXP6->" o shippingPurposeType è "TRANSSHIPMENT", è un "TRANSFER"
         }
         // Se la lane non è "TRANSFER", verifica se è "CPT"
