@@ -710,7 +710,7 @@ document.title = "Clerk Handover"
         let truckType = "COLLECTION"; // Default è "COLLECTION"
         
         // Controllo se la lane inizia con "MXP6" e se è seguita esattamente da 4 caratteri
-        if (load.route && load.route.startsWith("MXP6 ->") && load.route.length === 8) {
+        if (load.route && load.route.startsWith("MXP6->") && load.route.length === 8) {
             truckType = "TRANSFER"; // Se la condizione è soddisfatta, cambia il tipo a "TRANSFER"
         }
         // Se la condizione del "TRANSFER" non è soddisfatta, verifica se è "CPT"
