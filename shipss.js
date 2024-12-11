@@ -701,7 +701,7 @@ document.title = "Clerk Handover"
         });
     }
 
-    function processFetchedData(apiData, hours) {
+   function processFetchedData(apiData, hours) {
     const now = new Date();
     const maxDate = new Date(now.getTime() + hours * 60 * 60 * 1000);
 
@@ -709,11 +709,11 @@ document.title = "Clerk Handover"
         const load = item.load || {};
         let truckType = "COLLECTION"; // Default è "COLLECTION"
         
-        // Controllo se la lane inizia con "MXP6" e se è seguita esattamente da 4 caratteri
-        if (load.route && load.route.startsWith("MXP6->") && load.route.length === 8) {
-            truckType = "TRANSFER"; // Se la condizione è soddisfatta, cambia il tipo a "TRANSFER"
+        // Controlla se la lane inizia con "MXP6->" o se shippingPurposeType è "TRANSSHIPMENT"
+        if ((load.route && load.route.startsWith("MXP6->")) || load.shippingPurposeType === "TRANSSHIPMENT") {
+            truckType = "TRANSFER"; // Se la lane inizia con "MXP6->" o shippingPurposeType è "TRANSSHIPMENT", è un "TRANSFER"
         }
-        // Se la condizione del "TRANSFER" non è soddisfatta, verifica se è "CPT"
+        // Se la lane non è "TRANSFER", verifica se è "CPT"
         else if (load.scheduledDepartureTime === load.criticalPullTime) {
             truckType = "CPT";
         }
