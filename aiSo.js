@@ -707,7 +707,7 @@ document.title = "Clerk Handover"
 
     allRows = apiData.map(item => {
         const load = item.load || {};
-        let truckType = "TUTTI"; // Default è "TUTTI"
+        let truckType = "COLLECTION"; // Default è "TUTTI"
         
         // Controllo se la lane è un TRANSSHIPMENT
         if (load.shippingPurposeType == "TRANSSHIPMENT") {
@@ -881,7 +881,7 @@ document.title = "Clerk Handover"
         dropdown = document.createElement('select');
         dropdown.style.marginRight = '5px';
         dropdown.style.padding = '3px';
-        ['Tutti', 'CPT', 'COLLECTION', 'TRANSFER'].forEach(option => {
+        ['TUTTI', 'CPT', 'COLLECTION', 'TRANSFER'].forEach(option => {
             const opt = document.createElement('option');
             opt.value = option;
             opt.innerHTML = option;
