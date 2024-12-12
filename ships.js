@@ -701,31 +701,44 @@ document.title = "Clerk Handover"
         });
     }
 
-    function processFetchedData(apiData, hours) {
+      function processFetchedData(apiData, hours) {
     const now = new Date();
     const maxDate = new Date(now.getTime() + hours * 60 * 60 * 1000);
 
     allRows = apiData.map(item => {
         const load = item.load || {};
-        let truckType = "TUTTI"; // Default è "TUTTI"
-        
-        // Controllo se la lane è un TRANSSHIPMENT
-        if (load.shippingPurposeType == "TRANSSHIPMENT") {
-            truckType = "TRANSFER"; // Se la condizione è soddisfatta, cambia il tipo a "TRANSFER"
-        }
-        // Se la condizione del "TRANSFER" non è soddisfatta, verifica se è "CPT"
-        else if (load.scheduledDepartureTime === load.criticalPullTime) {
+        const lane = load.route || "N/A";
+
+        // Verifica la logica per determinare il tipo di truck
+        let truckType = "COLLECTION"; // Default
+
+        // Se la lane inizia con MXP6 -> e non contiene LH, CC, o AMZL, oppure se finisce con _PALLET
+        if ((lane.startsWith("MXP6->") &&
+            !lane.includes("LH") &&
+            !lane.includes("CC") &&
+            !lane.includes("AIR") &&
+            !lane.includes("AMZL")) || lane.endsWith("_PALLET")) {
+
+            // Se la lane finisce con _PALLET, rimane "TRANSFER" senza considerare scheduledDepartureTime e criticalPullTime
+            if (lane.endsWith("_PALLET")) {
+                truckType = "TRANSFER";
+            } else {
+                // Imposta "TRANSFER", ma se scheduledDepartureTime == criticalPullTime, imposta "TSO"
+                truckType = (load.scheduledDepartureTime === load.criticalPullTime) ? "TSO" : "TRANSFER";
+            }
+        } else if (load.scheduledDepartureTime === load.criticalPullTime) {
+            // Se scheduledDepartureTime == criticalPullTime, imposta "CPT"
             truckType = "CPT";
         }
 
         return {
-            lane: load.route || "N/A",
+            lane: lane,
             sdt: load.scheduledDepartureTime || "N/A",
             cpt: load.criticalPullTime || "N/A",
             vrId: load.vrId || "N/A",
             date: new Date(load.scheduledDepartureTime),
             extraText: truckType,
-            highlightColor: truckType === "TRANSFER" ? "violet" : truckType === "CPT" ? "green" : "orange",
+            highlightColor: truckType === "TRANSFER" ? "violet" : truckType === "CPT" ? "green" : truckType === "TSO" ? "brown" : "orange",
         };
     });
 
@@ -741,7 +754,7 @@ document.title = "Clerk Handover"
         const maxDate = new Date(now.getTime() + hours * 60 * 60 * 1000);
 
         // Ottieni i filtri
-        const status = dropdown ? dropdown.value : 'Tutti';
+        const status = dropdown ? dropdown.value : 'TUTTI';
         const vrIdFilter = vrIdInputBox.value.trim().toLowerCase();
         const laneFilter = laneInputBox ? laneInputBox.value.trim().toLowerCase() : '';
 
@@ -752,7 +765,7 @@ document.title = "Clerk Handover"
             filteredRows = filteredRows.filter(row => row.vrId.toLowerCase().includes(vrIdFilter));
         }
 
-        if (status !== 'Tutti') {
+        if (status !== 'TUTTI') {
             filteredRows = filteredRows.filter(row => row.extraText === status);
         }
 
@@ -881,7 +894,7 @@ document.title = "Clerk Handover"
         dropdown = document.createElement('select');
         dropdown.style.marginRight = '5px';
         dropdown.style.padding = '3px';
-        ['Tutti', 'CPT', 'COLLECTION', 'TRANSFER'].forEach(option => {
+        ['Tutti', 'CPT', 'COLLECTION','TSO', 'TRANSFER'].forEach(option => {
             const opt = document.createElement('option');
             opt.value = option;
             opt.innerHTML = option;
