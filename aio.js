@@ -718,7 +718,7 @@ document.title = "Clerk Handover"
     truckType = "TSO"; // Imposta il truckType a TSO per ATSWarehouseTransfers
         }
         // Se la condizione del "TRANSFER" non è soddisfatta, verifica se è "CPT"
-        else  (load.scheduledDepartureTime === load.criticalPullTime) {
+        else if (load.scheduledDepartureTime === load.criticalPullTime) {
             truckType = "CPT";
         }
 
@@ -729,7 +729,7 @@ document.title = "Clerk Handover"
             vrId: load.vrId || "N/A",
             date: new Date(load.scheduledDepartureTime),
             extraText: truckType,
-            highlightColor: truckType === "TRANSFER" ? "violet" : truckType === "CPT" ? "green" : truckTipe === "TSO" ? "brown" : "orange",
+            highlightColor: truckType === "TRANSFER" ? "violet" : truckType === "CPT" ? "green" : truckType === "TSO" ? "blue" : "orange",
         };
     });
 
