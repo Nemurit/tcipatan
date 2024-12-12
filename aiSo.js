@@ -718,7 +718,7 @@ document.title = "Clerk Handover"
     truckType = "TSO"; // Imposta il truckType a TSO per ATSWarehouseTransfers
         }
         // Se la condizione del "TRANSFER" non è soddisfatta, verifica se è "CPT"
-        else if (load.scheduledDepartureTime === load.criticalPullTime) {
+        else  (load.scheduledDepartureTime === load.criticalPullTime) {
             truckType = "CPT";
         }
 
