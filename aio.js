@@ -545,11 +545,25 @@ function parseBufferNumber(bufferName) {
             return;
         }
 
+        
+    // Function to generate a random color
+    function generateRandomColor() {
+        const letters = '0123456789ABCDEF';
+        let color = '#';
+        for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
+
+    // Create an array of unique colors for each bar
+    const barColors = labels.map(() => generateRandomColor());
+
         const chartData = {
             labels: labels,
             datasets: [{
                 data: data,
-                backgroundColor: ['#ff0000', '#ff7f00', '#ffff00', '#7fff00', '#00ff00', '#0000ff', '#8a2be2'],
+                backgroundColor: barColors,
                 borderColor: '#ffffff',
                 borderWidth: 1,
                 barThickness: 30
@@ -566,7 +580,14 @@ function parseBufferNumber(bufferName) {
                     responsive: true,
                     plugins: {
                         legend: {
-                            position: 'top',
+                            display: true, // Legenda visibile
+                            labels: {
+                                // Modifica l'etichetta della legenda se necessario
+                                filter: function(legendItem, chartData) {
+                                    // Puoi personalizzare quali elementi mostrare nella legenda
+                                    return false; // Mostra sempre l'elemento (niente di speciale qui, ma puoi modificare)
+                                }
+                            }
                         },
                         tooltip: {
                             callbacks: {
@@ -646,6 +667,7 @@ function parseBufferNumber(bufferName) {
     // Aggiorna i dati ogni 3 minuti
     setInterval(fetchBufferSummary, 180000); // 180,000 ms = 3 minuti
 })();
+
 
 
 
