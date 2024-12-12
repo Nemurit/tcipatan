@@ -707,11 +707,15 @@ document.title = "Clerk Handover"
 
     allRows = apiData.map(item => {
         const load = item.load || {};
-        let truckType = "COLLECTION"; // Default è "TUTTI"
+        let truckType = "A"; // Default è "TUTTI"
         
         // Controllo se la lane è un TRANSSHIPMENT
-        if (load.shippingPurposeType == "TRANSSHIPMENT") {
-            truckType = "TRANSFER"; // Se la condizione è soddisfatta, cambia il tipo a "TRANSFER"
+       if (load.shippingPurposeType === "TRANSSHIPMENT" || 
+    load.shippingPurposeType.startsWith("Transfer") || 
+    load.shippingPurposeType.startsWith("Transfers")) {
+    truckType = "TRANSFER"; // Imposta il truckType a TRANSFER
+} else if (load.shippingPurposeType.startsWith("ATSWarehouseTransfers")) {
+    truckType = "TSO"; // Imposta il truckType a TSO per ATSWarehouseTransfers
         }
         // Se la condizione del "TRANSFER" non è soddisfatta, verifica se è "CPT"
         else if (load.scheduledDepartureTime === load.criticalPullTime) {
@@ -725,7 +729,7 @@ document.title = "Clerk Handover"
             vrId: load.vrId || "N/A",
             date: new Date(load.scheduledDepartureTime),
             extraText: truckType,
-            highlightColor: truckType === "TRANSFER" ? "violet" : truckType === "CPT" ? "green" : "orange",
+            highlightColor: truckType === "TRANSFER" ? "violet" : truckType === "CPT" ? "green" : truckTipe === "TSO" ? "brown" : "orange",
         };
     });
 
@@ -881,7 +885,7 @@ document.title = "Clerk Handover"
         dropdown = document.createElement('select');
         dropdown.style.marginRight = '5px';
         dropdown.style.padding = '3px';
-        ['TUTTI', 'CPT', 'COLLECTION', 'TRANSFER'].forEach(option => {
+        ['TUTTI', 'CPT', 'COLLECTION', 'TSO', 'TRANSFER'].forEach(option => {
             const opt = document.createElement('option');
             opt.value = option;
             opt.innerHTML = option;
