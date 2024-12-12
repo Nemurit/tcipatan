@@ -146,7 +146,7 @@
 
     // If sortedSummary is not empty, pass it to the chart generation function
     if (Object.keys(sortedSummary).length > 0) {
-        generatePieChart(sortedSummary);
+        generateBarChart(sortedSummary);
     }
 }
 
@@ -182,7 +182,7 @@ function matchesExactBufferString(location, filter) {
         if (isNaN(filterLetterOrNumber)) {
             return locationLetter === filterLetterOrNumber;
         }
-        
+
         // Se è solo il numero che corrisponde
         return locationNumber === filterLetterOrNumber;
     }
@@ -248,7 +248,7 @@ function processAndDisplay(containers) {
 
     // Se sortedSummary non è vuoto, generiamo il grafico
     if (Object.keys(sortedSummary).length > 0) {
-        generatePieChart(sortedSummary);
+        generateBarChart(sortedSummary);
     }
 }
 
@@ -287,10 +287,10 @@ function parseBufferNumber(bufferName) {
                 minute: '2-digit',
                 hour12: false
             });
-    
+
             // Dividiamo il filtro in parti (es. "16", "16:15", ecc.)
             const filterParts = filter.split(',').map(f => f.trim());
-    
+
             // Confrontiamo ogni parte del filtro con l'orario locale "HH:MM"
             return filterParts.some(part => {
                 if (/^\d{1,2}$/.test(part)) {
@@ -306,8 +306,8 @@ function parseBufferNumber(bufferName) {
             return false;
         }
     }
-    
-    
+
+
     function displayTable(sortedSummary) {
         $('#contentContainer').remove();
 
@@ -426,12 +426,12 @@ function parseBufferNumber(bufferName) {
         }
     }
 });
-        
+
         function isValidCptFilter(filter) {
             const parts = filter.split(',').map(f => f.trim());
             return parts.every(part => /^(\d{1,2}(:\d{2})?)$/.test(part)); // Es. 16 o 16:15
         }
-        
+
         GM_addStyle(`
             #bufferSummaryTable {
                 table-layout: auto;
@@ -475,27 +475,27 @@ function parseBufferNumber(bufferName) {
             borderRadius: '5px',
             fontSize: '14px'
         });
-    
+
         button.on('click', function() {
             isChartVisible = !isChartVisible;
             if (isChartVisible) {
-                generatePieChart(filteredSummary);
+                generateBarChart(filteredSummary);
                 $(this).text('Chiudi Grafico'); // Cambia testo del pulsante quando il grafico è visibile
             } else {
                 $('#chartContainer').remove(); // Rimuovi il grafico quando viene chiuso
                 $(this).text('Mostra Grafico'); // Ripristina il testo del pulsante
             }
         });
-    
+
         $('body').append(button);
     }
-    
-    function generatePieChart(filteredSummary) {
+
+    function generateBarChart(filteredSummary) {
         if (!filteredSummary || Object.keys(filteredSummary).length === 0) {
             console.warn("No data to generate the chart.");
             return;
         }
-    
+
         // Create the chart container dynamically if it doesn't exist
         let chartContainer = document.getElementById('chartContainer');
         if (!chartContainer) {
@@ -512,20 +512,20 @@ function parseBufferNumber(bufferName) {
             chartContainer.style.maxWidth = '100%';
             chartContainer.style.zIndex = '1000';
             chartContainer.style.boxSizing = 'border-box'; // Ensure padding is included in the width/height calculation
-    
+
             // Add a canvas to the container
             const chartCanvas = document.createElement('canvas');
             chartCanvas.id = 'myChart';
             chartCanvas.style.width = '100%';  // Full width inside container
             chartCanvas.style.height = '400px'; // Fixed height for chart
             chartContainer.appendChild(chartCanvas);
-    
+
             document.body.appendChild(chartContainer);
         }
-    
+
         // Aggregate data by buffer location
         const bufferLocations = {};  // To store the total count of containers per buffer location
-    
+
         Object.entries(filteredSummary).forEach(([lane, laneSummary]) => {
             Object.entries(laneSummary).forEach(([location, data]) => {
                 if (location.startsWith("BUFFER")) {
@@ -536,37 +536,59 @@ function parseBufferNumber(bufferName) {
                 }
             });
         });
-    
+
         // Prepare data for the chart
         const labels = Object.keys(bufferLocations);
         const data = labels.map(location => bufferLocations[location]);
-    
+
         if (data.length === 0) {
             console.warn("No buffer locations to chart.");
             return;
         }
-    
+
+        
+    // Function to generate a random color
+    function generateRandomColor() {
+        const letters = '0123456789ABCDEF';
+        let color = '#';
+        for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
+
+    // Create an array of unique colors for each bar
+    const barColors = labels.map(() => generateRandomColor());
+
         const chartData = {
             labels: labels,
             datasets: [{
                 data: data,
-                backgroundColor: ['#ff0000', '#ff7f00', '#ffff00', '#7fff00', '#00ff00', '#0000ff', '#8a2be2'],
+                backgroundColor: barColors,
                 borderColor: '#ffffff',
-                borderWidth: 1
+                borderWidth: 1,
+                barThickness: 30
             }]
         };
-    
+
         // Get the canvas context and create the chart
         const ctx = document.getElementById('myChart').getContext('2d');
         if (ctx) {
             const chart = new Chart(ctx, {
-                type: 'pie',
+                type: 'bar',
                 data: chartData,
                 options: {
                     responsive: true,
                     plugins: {
                         legend: {
-                            position: 'top',
+                            display: true, // Legenda visibile
+                            labels: {
+                                // Modifica l'etichetta della legenda se necessario
+                                filter: function(legendItem, chartData) {
+                                    // Puoi personalizzare quali elementi mostrare nella legenda
+                                    return false; // Mostra sempre l'elemento (niente di speciale qui, ma puoi modificare)
+                                }
+                            }
                         },
                         tooltip: {
                             callbacks: {
@@ -576,6 +598,11 @@ function parseBufferNumber(bufferName) {
                                     return `${label}: ${value}`;
                                 }
                             }
+                        }
+                    },
+                    scales: {
+                        y:  {
+                            beginAtZero: true,
                         }
                     },
                     onClick: function(event, elements) {
@@ -594,24 +621,24 @@ function parseBufferNumber(bufferName) {
             console.error("Canvas context could not be found.");
         }
     }
-    
-    
+
+
     function addChartToggleButton() {
         const button = $('<button id="toggleChartButton"  style="position: fixed; top: 35px; left: calc(50% - 22px); padding: 10px; background: rgb(0, 123, 255); color: white; border: none; cursor: pointer; border-radius: 5px; font-size: 14px;">Mostra grafico recuperi</button>');
-        
-    
+
+
         button.on('click', function() {
             const chartContainer = document.getElementById('chartContainer');
             if (chartContainer.style.display === 'none') {
                 chartContainer.style.display = 'block';  // Show the chart container
-                generatePieChart(filteredSummary);  // Generate chart if it's not already done
+                generateBarChart(filteredSummary);  // Generate chart if it's not already done
                 $(this).text('Nascondi Grafico');
             } else {
                 chartContainer.style.display = 'none';  // Hide the chart container
                 $(this).text('Mostra Grafico');
             }
         });
-    
+
         $('body').append(button);
     }
 
@@ -638,10 +665,10 @@ function parseBufferNumber(bufferName) {
         addChartToggleButton();
         fetchBufferSummary();
     });
-
     // Aggiorna i dati ogni 3 minuti
     setInterval(fetchBufferSummary, 180000); // 180,000 ms = 3 minuti
 })();
+
 
 
 // TRUCK FUTURI
