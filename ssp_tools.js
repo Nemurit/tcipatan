@@ -225,9 +225,7 @@
     async function addSealTooltips() {
         try {
             let sealNums = {};
-            const nodeSelectorOptions = document.getElementById('availableNodeName').options
-            const nodeId = nodeSelectorOptions[nodeSelectorOptions.selectedIndex].text;
-            // At very beginning of page load, date picker is blank. Use default. If not, overwrite with date range.
+            const nodeId = "MXP6";
             let postData = {
                 entity: 'getDefaultOutboundDockView',
                 nodeId: nodeId
@@ -284,7 +282,7 @@
                 }
             });
         } catch(e) {
-            console.group('SSP Util');
+            console.group('SSP Tools');
             console.log('Error getting seals from SSP:');
             console.error(e);
             console.groupEnd();}
@@ -321,9 +319,10 @@
                 processData: false,
                 dataType: 'json'
             });
+            console.log(response);
             for (let record of response.returnedObject.records) {
                 // debugger;
-                console.log(record.vehicleRunId, record);
+                //console.log(record.vehicleRunId, record);
                 retVRIDOperationTypeMap[record.vehicleRunId] = record.shipperAccounts[0];
                 retCarrierMap[record.carrierId] = record.carrierName;
                 // Also have choice of plan id, tour id...
@@ -346,7 +345,7 @@
             }
             return [retCarrierMap, retDriverPlateMap, retDriverIdMap, retVRIDOperationTypeMap];
         } catch(e) {
-            console.group('SSP Util');
+            console.group('SSP Tools');
             console.log('Error getting data from FMC:');
             console.error(e);
             console.groupEnd();
@@ -371,7 +370,7 @@
         const ttLink = document.createTextNode("TT");
         b.appendChild(ttLink);
         b.title = "Open VRID in TT";
-        b.href = "https://trans-logistics-eu.amazon.com/sortcenter/tantei?nodeId=" + facility + "&searchId=" + vrid;
+        b.href = "https://trans-logistics" + urlRegion + ".amazon.com/sortcenter/tantei?nodeId=" + facility + "&searchId=" + vrid;
         b.target = "_blank";
         b.style.marginLeft = "5px";
         b.addEventListener('click', function(e) {
@@ -384,7 +383,7 @@
         const erLink = document.createTextNode('ER');
         c.appendChild(erLink);
         c.title = "Open VRID in Event Report";
-        c.href = "https://trans-logistics-eu.amazon.com/yms/eventHistory#/eventReport?yard=MXP6&loadIdentifier=" + vrid;
+        c.href = "https://trans-logistics" + urlRegion + ".amazon.com/yms/eventHistory#/eventReport?yard=" + facility + "&loadIdentifier=" + vrid;
         c.target = "_blank";
         c.style.marginLeft = "5px";
         c.addEventListener('click', function(e) {
@@ -420,9 +419,9 @@
         });
         container.appendChild(wt);
 
-        // Add ubication API
+        // Add FMC Map
         const f = document.createElement('a');
-        const dc = document.createTextNode('📍');
+        const dc = document.createTextNode('📍');
         f.appendChild(dc);
         f.title = "Open VRID in FMC Map";
         f.href = "https://trans-logistics" + urlRegion + ".amazon.com/fmc/map?loadId=" + vrid;
@@ -436,9 +435,9 @@
 
         // Add pause loading
         const g = document.createElement('a');
-        const gc = document.createTextNode('⏸️');
+        const gc = document.createTextNode('⏸️');
         g.addEventListener("click", function() {
-            pauseLoading(vrid)
+            pauseLoading(vrid);
         });
         g.appendChild(gc);
         g.title = "Pause Loading";
@@ -446,12 +445,12 @@
         g.style.fontSize = "11px";
         g.addEventListener('click', function(e) {
             e.stopPropagation();
-        });
+        }, {once: true});
         container.appendChild(g);
 
         // Add start detatch attach
         const sda = document.createElement('a');
-        const sdac = document.createTextNode('⏯️');
+        const sdac = document.createTextNode('⏯️');
         sda.addEventListener("click", function() {
             detachAttach(vrid);
         })
@@ -461,8 +460,153 @@
         sda.style.fontSize = "11px";
         sda.addEventListener('click', function(e) {
             e.stopPropagation();
-        });
+        }, {once: true});
         container.appendChild(sda);
+
+        // Actual Arrival Time
+        const sdt = container.parentElement.querySelector('.trailerNumCol').nextElementSibling.nextElementSibling.nextElementSibling;
+        const url = 'https://trans-logistics-eu.amazon.com/fmc/api/v2/execution/load/' + vrid + '/mapFeature/stops';
+        const eventsArray = [];
+
+        GM_xmlhttpRequest({
+            method: 'GET',
+            url: url,
+            onload: function(response) {
+                try {
+                    const res = JSON.parse(response.responseText);
+
+                    if (res[0]?.timelineEvent?.stopActions?.[0]?.plannedTime?.utcMillis) {
+                        const utcMillis = res[0].timelineEvent.stopActions[0].plannedTime.utcMillis;
+
+                        if (utcMillis) {
+                            const localDateTime = new Date(utcMillis).toLocaleString('en-GB', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: false
+                            }).replace(/ /g, '-').replace(',-', ' ');
+
+                            eventsArray.push(`${localDateTime} - SAT`)
+                        }
+                    }
+
+                    if (res[0]?.timelineEvent?.stopActions?.[0]?.events) {
+                        const events = res[0].timelineEvent.stopActions[0].events;
+
+                        events.forEach((event) => {
+                            if (event.localizableDescription?.enumValue === "CHECKED_IN") {
+                                const type = event.eventSource;
+                                const utcMillis = event.timeAndFacilityTimeZone?.utcMillis;
+
+                                if (utcMillis) {
+                                    const localDateTime = new Date(utcMillis).toLocaleString('en-GB', {
+                                        day: '2-digit',
+                                        month: 'short',
+                                        year: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        hour12: false
+                                    }).replace(/ /g, '-').replace(',-', ' ');
+
+                                    eventsArray.push(`${localDateTime} - ${type}`)
+                                }
+                            }
+                        });
+
+
+                        const idWrapper = document.createElement('SPAN');
+                        idWrapper.classList.add('tooltip');
+                        const sdtNode = sdt.childNodes[0];
+                        const tooltip = document.createElement('SPAN');
+                        tooltip.classList.add('tooltip-text');
+                        tooltip.innerHTML = eventsArray.join("<br>");
+                        idWrapper.appendChild(sdtNode);
+                        idWrapper.appendChild(tooltip);
+                        sdt.insertBefore(idWrapper, sdt.children[0]);
+                        const tooltipRect = tooltip.getBoundingClientRect();
+                        tooltip.style.transform = `translate(-${tooltipRect.width * 0.8}px, -${tooltipRect.height * 1.3}px)`;
+                        tooltip.style.whiteSpace = 'nowrap';
+                        tooltip.style.textAlign = 'left';
+                    }
+                } catch(e) {
+                    console.group('SSP Tools');
+                    console.log('Error getting data from FMC Map:');
+                    console.error(e);
+                    console.groupEnd();
+                }
+            },
+            onerror: function(response) {
+                console.error(response);
+            }
+        });
+
+        // Add loaded containers
+        const parentRow = container.parentElement;
+        const targetCell = Array.from(parentRow.querySelectorAll('td')).find(td => {
+            const divChild = td.querySelector('div');
+            return divChild && divChild.id.startsWith('loadedCCell');
+        });
+        const loadedCell = targetCell ? targetCell.querySelector('div') : null;
+
+        if (loadedCell) {
+            const observer = new MutationObserver(() => {
+                const anchor = loadedCell.querySelector('a');
+                if (anchor) {
+                    const dataLoadGroupId = anchor.getAttribute('data-loadgroupid');
+                    const dataPlanId = anchor.getAttribute('data-planid');
+                    const dataVrid = anchor.getAttribute('data-vrid');
+                    const dataTrailerId = anchor.getAttribute('data-trailerid');
+
+                    observer.disconnect();
+
+                    const url = `https://trans-logistics-eu.amazon.com/ssp/dock/hrz/ob/fetchdata?
+                                 entity=getOutboundLoadContainerDetails
+                                 &nodeId=${facility}
+                                 &loadGroupId=${dataLoadGroupId}
+                                 &planId=${dataPlanId}
+                                 &vrId=${dataVrid}
+                                 &status=
+                                 &trailerId=${dataTrailerId}
+                                 &trailerNumber=`
+
+                    GM_xmlhttpRequest({
+                        method: 'GET',
+                        url: url.replace(/\s+/g, ''),
+                        onload: function(response) {
+                            const res = JSON.parse(response.responseText);
+
+                            let counter = 0;
+
+                            var children;
+                            if (res.ret.aaData.ROOT_NODE[0].container.contType === "TRAILER") {
+                                children = res.ret.aaData.ROOT_NODE[0].childNodes;
+                            } else {
+                                children = res.ret.aaData.ROOT_NODE;
+                            }
+
+                            const validTypes = ["GAYLORD", "PALLET", "CART"];
+                            children.forEach(child => {
+                                if (validTypes.includes(child.container.contType)) {
+                                    counter++;
+                                }
+                            });
+
+                            const boldText = document.createElement('strong');
+                            boldText.textContent = ` (${counter})`;
+                            loadedCell.parentElement.appendChild(boldText);
+                        },
+                        onerror: function(response) {
+                            console.error(response);
+                        }
+                    });
+                }
+            });
+
+            observer.observe(loadedCell, { childList: true, subtree: true });
+        }
+
         // Add loaded volume
         const locLabel = container.previousElementSibling.querySelector('.locLabel');
         if (locLabel && locLabel.previousSibling && locLabel.previousSibling.classList.contains("DOCK_DOOR")) {
@@ -565,7 +709,7 @@
                         dataType: 'json'
                     });
                     searchBtn.innerHTML = 'Search';
-                    window.open('https://trans-logistics' + urlRegion + '.amazon.com'+response.suggestedUrl,'_blank')
+                    window.open('https://trans-logistics' + urlRegion + '.amazon.com' + response.suggestedUrl,'_blank')
                 } catch(e) {
                     console.error(e);
                 }
@@ -842,10 +986,11 @@
             if (!element.classList.contains('addedVSM')) {
                 element.classList.add('addedVSM');
                 if (element.textContent.trim() !== "" && !element.textContent.trim().startsWith("MXP6->")) {
-                    console.log(_vsmDict[element.innerHTML], _vsmDict[element.innerHTML] === undefined);
+                    //console.log(_vsmDict[element.innerHTML], _vsmDict[element.innerHTML] === undefined);
                     let vsm = _vsmDict[element.innerHTML] !== undefined ? _vsmDict[element.innerHTML] : "N/A";
                     let vsmElement = document.createElement('strong');
                     vsmElement.style.color = 'red';
+                    vsmElement.style.whiteSpace = 'nowrap';
                     let textNode = document.createTextNode(vsm);
                     vsmElement.appendChild(textNode);
                     element.innerHTML += ' / ';
@@ -1022,15 +1167,11 @@ selectorTxt,    /* Required: The jQuery selector string that
 
     if (targetNodes  &&  targetNodes.length > 0) {
         btargetsFound   = true;
-        /*--- Found target node(s).  Go through each and act if they
-            are new.
-        */
         targetNodes.each ( function () {
             var jThis        = $(this);
             var alreadyFound = jThis.data ('alreadyFound')  ||  false;
 
             if (!alreadyFound) {
-                //--- Call the payload function.
                 var cancelFound     = actionFunction (jThis);
                 if (cancelFound)
                     btargetsFound   = false;
@@ -1043,22 +1184,18 @@ selectorTxt,    /* Required: The jQuery selector string that
         btargetsFound   = false;
     }
 
-    //--- Get the timer-control variable for this selector.
-    var controlObj      = waitForKeyElements.controlObj  ||  {};
+    var controlObj      = waitForKeyElements.controlObj || {};
     var controlKey      = selectorTxt.replace (/[^\w]/g, "_");
     var timeControl     = controlObj [controlKey];
 
-    //--- Now set or clear the timer as appropriate.
-    if (btargetsFound  &&  bWaitOnce  &&  timeControl) {
-        //--- The only condition where we need to clear the timer.
+    if (btargetsFound && bWaitOnce && timeControl) {
         clearInterval (timeControl);
         delete controlObj [controlKey]
     }
     else {
-        //--- Set a timer, if needed.
         if ( ! timeControl) {
             timeControl = setInterval ( function () {
-                waitForKeyElements (    selectorTxt,
+                waitForKeyElements (selectorTxt,
                                     actionFunction,
                                     bWaitOnce,
                                     iframeSelector
@@ -1071,66 +1208,6 @@ selectorTxt,    /* Required: The jQuery selector string that
     }
     waitForKeyElements.controlObj   = controlObj;
 };
-
-(function() {
-
-    function replaceElementAndBoldButton() {
-        const initialHTML = `<!-- <div class="floatL">
-              <a title="Toggle andon view" class="switchAndon"  href="javascript:void(0);"><input type="button" value="Switch"></a>
-         </div> -->`;
-
-        const finalHTML = `<div class="floatL">
-              <a title="Toggle andon view" class="switchAndon"  href="javascript:void(0);"><input type="button" value="Switch"></a>
-         </div>`;
-
-        // Find and replace the initial HTML with the final one
-        const bodyContent = document.body.innerHTML;
-        const replacedContent = bodyContent.replace(initialHTML, finalHTML);
-
-        // Update the document with the replaced content
-        document.body.innerHTML = replacedContent;
-
-        // Find the button with the value "Switch" and make its text bold
-        const buttons = document.getElementsByTagName('input');
-        for (const button of buttons) {
-            if (button.value === 'Switch') {
-                button.style.fontWeight = 'bold';
-            }
-        }
-
-        // After replacing the elements and making the button bold, run the observer for progress divs
-        observeProgressDivs();
-    }
-
-    function observeProgressDivs() {
-        // Observe changes in the DOM to detect when the progress divs appear
-        const observer = new MutationObserver(function(mutationsList) {
-            for (const mutation of mutationsList) {
-                if (mutation.type === 'childList') {
-                    removeStyleFromProgressDivs();
-                }
-            }
-        });
-
-        // Start observing the body for changes (subtree) to detect the appearance of progress divs
-        observer.observe(document.body, { childList: true, subtree: true });
-    }
-
-    function removeStyleFromProgressDivs() {
-        // Find and remove the style tag from div elements whose class starts with "progressbarDashboard progressCell"
-        const divElements1 = document.querySelectorAll('div[class^="progressbarDashboard progressCell"]');
-        for (const div1 of divElements1) {
-            div1.removeAttribute('style');
-        }
-        const divElements2 = document.querySelectorAll('div[class^="progressbarDashboard progressbarDashboardBorder progressCell"]');
-        for (const div2 of divElements2) {
-            div2.removeAttribute('style');
-        }
-    }
-
-    // Immediately run the replaceElementAndBoldButton function
-    //setTimeout(replaceElementAndBoldButton, 2000);
-})();
 
 (function() {
     'use strict';
@@ -1152,13 +1229,12 @@ selectorTxt,    /* Required: The jQuery selector string that
 }
 `)
 
-    // Handle Tampermonkey running the script too late to catch the loading events
     if (document.readyState != 'complete') {
         window.addEventListener('load', windowLoadedCallback);
     } else {
         windowLoadedCallback();
     }
-    // Determine region
+
     const urlRegion = window.location.href.indexOf('trans-logistics-eu') > 0 ? '-eu' : '';
 
     function windowLoadedCallback() {
@@ -1166,7 +1242,7 @@ selectorTxt,    /* Required: The jQuery selector string that
         const obsConfig = { attributes: true, attributeFilter:["class"], attributeOldValue: true };
         const targetNode = document.getElementById('resourceAvailable');
         observer.observe(targetNode, obsConfig);
-        // Set up mutation observer to watch when refresh dialog is shown & cleared
+
         function elemChangeCallback (mutationsList, observer) {
             console.log("mutation occurred");
             for (let mutation of mutationsList) {
@@ -1174,7 +1250,6 @@ selectorTxt,    /* Required: The jQuery selector string that
                 const selectedVrid = document.querySelectorAll('tr.selectedTableRow');
                 const selectedVridDriverPresent = selectedVrid[0].cells[7].children[1];
 
-                //Checks for moveguardAlert and deletes it if it exists
                 const containerDivExists = document.getElementById('moveguardContainer');
                 console.log(containerDivExists);
                 if (containerDivExists) {
@@ -1189,7 +1264,6 @@ selectorTxt,    /* Required: The jQuery selector string that
             }
         }
 
-        //This is a catch all function to enable easy expansion of options
         function createAlert(alertContent,warningContent,hasAlert,hasWarning){
             var element = document.getElementById("resourceAvailableDiv");
 
@@ -1198,48 +1272,39 @@ selectorTxt,    /* Required: The jQuery selector string that
 
             element.prepend(containerDiv);
             if(hasAlert){
-                //Checks for moveguardAlert and deletes it if it exists
                 const alertDivExists = document.getElementById('moveguardAlert');
                 if (alertDivExists) {
                     console.log("Exists");
                     console.log(alertDivExists);
                     element.removeChild(alertDivExists);
                 }
-                //This scramble generates a container and text element containing the fed text for the ALERT
+
                 var alertDiv = document.createElement("div");
                 alertDiv.classList.add("ccs-error-box-centered");
                 alertDiv.style.fontSize = "20px"
                 alertDiv.style.fontWeight = "bold"
-                //makes finding the alert easier later for removal
                 alertDiv.setAttribute('id', 'moveguardAlert');
                 var alertTextHead = document.createTextNode(alertContent);
                 alertDiv.appendChild(alertTextHead);
 
-                //adds alertDiv to our Element
-                //element.prepend(alertDiv);
                 containerDiv.appendChild(alertDiv);
             }
-            //begin warningspace
             if (hasWarning){
-                //Checks for moveguardAlert and deletes it if it exists
                 const warningDivExists = document.getElementById('moveguardWarning');
                 if (warningDivExists) {
                     console.log("Exists");
                     console.log(warningDivExists);
                     element.removeChild(warningDivExists);
                 }
-                //This scramble generates a container and text element containing the fed text for the ALERT
+
                 var warningDiv = document.createElement("div");
                 warningDiv.classList.add("ccs-error-box-centered");
                 warningDiv.style.fontSize = "12px"
                 warningDiv.style.fontStyle = "italic"
-                //makes finding the alert easier later for removal
                 warningDiv.setAttribute('id', 'moveguardWarning');
                 var warningTextHead = document.createTextNode(warningContent);
                 warningDiv.appendChild(warningTextHead);
 
-                //adds alertDiv to our Element
-                //element.prepend(warningDiv);
                 containerDiv.appendChild(warningDiv);
             }
         }
