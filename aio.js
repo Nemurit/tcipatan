@@ -18,11 +18,11 @@
             url: stackingFilterMapUrl,
             onload: function(response) {
                 try {
-                    const laneData = JSON.parse(response.responseText);
+                    const routeData = JSON.parse(response.responseText);
 
-                    for (const [lane, stackingFilters] of Object.entries(laneData)) {
+                    for (const [route, stackingFilters] of Object.entries(routeData)) {
                         stackingFilters.forEach(filter => {
-                            stackingToLaneMap[filter] = lane.split('[')[0];
+                            stackingToLaneMap[filter] = route.split('[')[0];
                         });
                     }
 
@@ -95,7 +95,7 @@
     containers.forEach(container => {
         const location = container.location || '';
         const stackingFilter = container.stackingFilter || 'N/A';
-        const lane = stackingToLaneMap[stackingFilter] || 'N/A';
+        const route = container.route || 'N/A';
         const cpt = container.cpt || null;
 
         // Filter only the buffers that contain "BUFFER"
@@ -103,27 +103,27 @@
                 location.toUpperCase().startsWith("BUFFER") &&
                 (selectedBufferFilter === '' || matchesBufferByString(location, selectedBufferFilter)) &&
                 (selectedNumberFilter === '' || matchesBufferByNumber(location, selectedNumberFilter)) &&
-                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
+                (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => route.toUpperCase().includes(laneFilter.toUpperCase()))) &&
                 (selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter)))
             ) {
-            if (!filteredSummary[lane]) {
-                filteredSummary[lane] = {};
+            if (!filteredSummary[route]) {
+                filteredSummary[route] = {};
             }
 
-            if (!filteredSummary[lane][location]) {
-                filteredSummary[lane][location] = { count: 0, cpt: cpt };
+            if (!filteredSummary[route][location]) {
+                filteredSummary[route][location] = { count: 0, cpt: cpt };
             }
 
-            filteredSummary[lane][location].count++;
+            filteredSummary[route][location].count++;
         }
     });
 
     console.log("Filtered Summary:", filteredSummary); // Debugging line
 
     const sortedSummary = {};
-    Object.keys(filteredSummary).forEach(lane => {
-        const laneSummary = filteredSummary[lane];
-        sortedSummary[lane] = Object.keys(laneSummary)
+    Object.keys(filteredSummary).forEach(route => {
+        const routeSummary = filteredSummary[route];
+        sortedSummary[route] = Object.keys(routeSummary)
             .sort((a, b) => {
                 const numA = parseBufferNumber(a);
                 const numB = parseBufferNumber(b);
@@ -134,7 +134,7 @@
                 return numA - numB;
             })
             .reduce((acc, location) => {
-                acc[location] = laneSummary[location];
+                acc[location] = routeSummary[location];
                 return acc;
             }, {});
     });
@@ -198,34 +198,34 @@ function processAndDisplay(containers) {
     containers.forEach(container => {
         const location = container.location || '';
         const stackingFilter = container.stackingFilter || 'N/A';
-        const lane = stackingToLaneMap[stackingFilter] || 'N/A';
+        const route = container.route || 'N/A';
         const cpt = container.cpt || null;
 
         // Filtro solo i buffer che contengono "BUFFER" e applico il filtro selezionato
         if (
             location.toUpperCase().startsWith("BUFFER") &&
             (selectedBufferFilter === '' || matchesExactBufferString(location, selectedBufferFilter)) &&  // Usa matchesExactBufferString
-            (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => lane.toUpperCase().includes(laneFilter.toUpperCase()))) &&
+            (selectedLaneFilters.length === 0 || selectedLaneFilters.some(laneFilter => route.toUpperCase().includes(laneFilter.toUpperCase()))) &&
             (selectedCptFilter === '' || (cpt && filterCpt(cpt, selectedCptFilter)))
         ) {
-            if (!filteredSummary[lane]) {
-                filteredSummary[lane] = {};
+            if (!filteredSummary[route]) {
+                filteredSummary[route] = {};
             }
 
-            if (!filteredSummary[lane][location]) {
-                filteredSummary[lane][location] = { count: 0, cpt: cpt };
+            if (!filteredSummary[route][location]) {
+                filteredSummary[route][location] = { count: 0, cpt: cpt };
             }
 
-            filteredSummary[lane][location].count++;
+            filteredSummary[route][location].count++;
         }
     });
 
     console.log("Filtered Summary:", filteredSummary); // Debugging line
 
     const sortedSummary = {};
-    Object.keys(filteredSummary).forEach(lane => {
-        const laneSummary = filteredSummary[lane];
-        sortedSummary[lane] = Object.keys(laneSummary)
+    Object.keys(filteredSummary).forEach(route => {
+        const routeSummary = filteredSummary[route];
+        sortedSummary[route] = Object.keys(routeSummary)
             .sort((a, b) => {
                 const numA = parseBufferNumber(a);
                 const numB = parseBufferNumber(b);
@@ -236,7 +236,7 @@ function processAndDisplay(containers) {
                 return numA - numB;
             })
             .reduce((acc, location) => {
-                acc[location] = laneSummary[location];
+                acc[location] = routeSummary[location];
                 return acc;
             }, {});
     });
@@ -344,34 +344,34 @@ function parseBufferNumber(bufferName) {
         const tbody = $('<tbody></tbody>');
         let totalContainers = 0;
 
-        Object.entries(sortedSummary).forEach(([lane, laneSummary]) => {
-            let laneTotal = 0;
+        Object.entries(sortedSummary).forEach(([route, routeSummary]) => {
+            let routeTotal = 0;
 
-            Object.entries(laneSummary).forEach(([location, data]) => {
-                laneTotal += data.count;
+            Object.entries(routeSummary).forEach(([location, data]) => {
+                routeTotal += data.count;
             });
 
-            let laneColor = '';
-            if (laneTotal <= 10) {
-                laneColor = 'green';
-            } else if (laneTotal <= 30) {
-                laneColor = 'orange';
+            let routeColor = '';
+            if (routeTotal <= 10) {
+                routeColor = 'green';
+            } else if (routeTotal <= 30) {
+                routeColor = 'orange';
             } else {
-                laneColor = 'red';
+                routeColor = 'red';
             }
 
-            const laneRow = $(`<tr class="laneRow" style="cursor: pointer;">
-                <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${lane} - Totale: <span style="color: ${laneColor};">${laneTotal}</span></td>
+            const routeRow = $(`<tr class="routeRow" style="cursor: pointer;">
+                <td colspan="3" style="font-weight: bold; text-align: left;">Lane: ${route } - Totale: <span style="color: ${routeColor};">${routeTotal}</span></td>
             </tr>`);
 
-            laneRow.on('click', function() {
-                const nextRows = $(this).nextUntil('.laneRow');
+            routeRow.on('click', function() {
+                const nextRows = $(this).nextUntil('.routeRow');
                 nextRows.toggle();
             });
 
-            tbody.append(laneRow);
+            tbody.append(routeRow);
 
-            Object.entries(laneSummary).forEach(([location, data]) => {
+            Object.entries(routeSummary).forEach(([location, data]) => {
                 // Visualizza il CPT solo nelle righe delle lane
                 const row = $('<tr class="locationRow"></tr>');
                 row.append(`<td>${location}</td>`);
@@ -380,7 +380,7 @@ function parseBufferNumber(bufferName) {
                 tbody.append(row);
             });
 
-            totalContainers += laneTotal;
+            totalContainers += routeTotal;
         });
 
         const tfoot = $('<tfoot></tfoot>');
@@ -525,8 +525,8 @@ function parseBufferNumber(bufferName) {
         // Aggregate data by buffer location
         const bufferLocations = {};  // To store the total count of containers per buffer location
 
-        Object.entries(filteredSummary).forEach(([lane, laneSummary]) => {
-            Object.entries(laneSummary).forEach(([location, data]) => {
+        Object.entries(filteredSummary).forEach(([route, routeSummary]) => {
+            Object.entries(routeSummary).forEach(([location, data]) => {
                 if (location.startsWith("BUFFER")) {
                     if (!bufferLocations[location]) {
                         bufferLocations[location] = 0;
@@ -667,7 +667,6 @@ function parseBufferNumber(bufferName) {
     // Aggiorna i dati ogni 3 minuti
     setInterval(fetchBufferSummary, 180000); // 180,000 ms = 3 minuti
 })();
-
 
 
 
