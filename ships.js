@@ -1,5 +1,4 @@
 // RECUPERI 
-
 (function() {
     'use strict';
 
@@ -670,6 +669,8 @@ function parseBufferNumber(bufferName) {
 })();
 
 
+
+
 // TRUCK FUTURI
 (function () {
     'use strict';
@@ -727,7 +728,7 @@ document.title = "Clerk Handover"
         });
     }
 
-      function processFetchedData(apiData, hours) {
+    function processFetchedData(apiData, hours) {
     const now = new Date();
     const maxDate = new Date(now.getTime() + hours * 60 * 60 * 1000);
 
@@ -773,6 +774,7 @@ document.title = "Clerk Handover"
 
     filterAndShowData(hours);
 }
+
 
 
     function filterAndShowData(hours) {
@@ -920,7 +922,7 @@ document.title = "Clerk Handover"
         dropdown = document.createElement('select');
         dropdown.style.marginRight = '5px';
         dropdown.style.padding = '3px';
-        ['Tutti', 'CPT', 'COLLECTION','TSO', 'TRANSFER'].forEach(option => {
+        ['TUTTI', 'CPT', 'COLLECTION', 'TSO', 'TRANSFER'].forEach(option => {
             const opt = document.createElement('option');
             opt.value = option;
             opt.innerHTML = option;
