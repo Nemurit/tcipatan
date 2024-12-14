@@ -258,7 +258,7 @@
                 }
             }
             const response = await jQuery.ajax({
-                url: 'https://trans-logistics' + urlRegion + '.amazon.com/ssp/dock/hrz/ob/fetchdata',
+                url: 'https://www.amazonlogistics.eu/ssp/dock/hrz/ob/fetchdata',
                 type: 'POST',
                 data: postData,
                 dataType: 'json'
@@ -301,7 +301,7 @@
             let retDriverPlateMap = {};
             let retDriverIdMap = {};
             let retVRIDOperationTypeMap = {};
-            const postUrl = 'https://trans-logistics' + urlRegion + '.amazon.com/fmc/search/execution/by-id';
+            const postUrl = 'https://www.amazonlogistics.eu/fmc/search/execution/by-id';
             const postData = {
                 "searchIds": vridList,
                 "page": 0,
@@ -358,7 +358,7 @@
         const linkText = document.createTextNode("FMC");
         a.appendChild(linkText);
         a.title = "Open VRID in FMC";
-        a.href = "https://trans-logistics" + urlRegion + ".amazon.com/fmc/execution/search/" + vrid;
+        a.href = "https://www.amazonlogistics.eu/fmc/execution/search/" + vrid;
         a.target = "_blank";
         a.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -370,7 +370,7 @@
         const ttLink = document.createTextNode("TT");
         b.appendChild(ttLink);
         b.title = "Open VRID in TT";
-        b.href = "https://trans-logistics" + urlRegion + ".amazon.com/sortcenter/tantei?nodeId=" + facility + "&searchId=" + vrid;
+        b.href = "https://www.amazonlogistics.eu/sortcenter/tantei?nodeId=" + facility + "&searchId=" + vrid;
         b.target = "_blank";
         b.style.marginLeft = "5px";
         b.addEventListener('click', function(e) {
@@ -383,7 +383,7 @@
         const erLink = document.createTextNode('ER');
         c.appendChild(erLink);
         c.title = "Open VRID in Event Report";
-        c.href = "https://trans-logistics" + urlRegion + ".amazon.com/yms/eventHistory#/eventReport?yard=" + facility + "&loadIdentifier=" + vrid;
+        c.href = "https://www.amazonlogistics.eu/yms/eventHistory#/eventReport?yard=" + facility + "&loadIdentifier=" + vrid;
         c.target = "_blank";
         c.style.marginLeft = "5px";
         c.addEventListener('click', function(e) {
@@ -424,7 +424,7 @@
         const dc = document.createTextNode('📍');
         f.appendChild(dc);
         f.title = "Open VRID in FMC Map";
-        f.href = "https://trans-logistics" + urlRegion + ".amazon.com/fmc/map?loadId=" + vrid;
+        f.href = "https://www.amazonlogistics.eu/fmc/map?loadId=" + vrid;
         f.target = "_blank";
         f.style.marginLeft = "5px";
         f.style.fontSize = "11px";
@@ -648,7 +648,7 @@
         // Get driver number
         try {
             const response = await jQuery.ajax({
-                url: 'https://trans-logistics' + urlRegion + '.amazon.com/fmc/driver/detail/'+scac+'/'+driverId,
+                url: 'https://www.amazonlogistics.eu/fmc/driver/detail/'+scac+'/'+driverId,
                 type: 'GET',
             });
             const name = response.returnedObject.name;
@@ -689,7 +689,7 @@
                 // Cut off last comma
                 vridListString = vridListString.slice(0,-1);
                 // Go!
-                const postUrl = 'https://trans-logistics' + urlRegion + '.amazon.com/fmc/search/execution/by-id';
+                const postUrl = 'https://www.amazonlogistics.eu/fmc/search/execution/by-id';
                 const postData = {
                     "searchIds": vridList,
                     "page": 0,
@@ -709,7 +709,7 @@
                         dataType: 'json'
                     });
                     searchBtn.innerHTML = 'Search';
-                    window.open('https://trans-logistics' + urlRegion + '.amazon.com' + response.suggestedUrl,'_blank')
+                    window.open('https://www.amazonlogistics.eu + response.suggestedUrl,'_blank')
                 } catch(e) {
                     console.error(e);
                 }
