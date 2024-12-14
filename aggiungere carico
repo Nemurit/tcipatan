@@ -1,0 +1,58 @@
+const loadedCell = targetCell ? targetCell.querySelector('div') : null;
+
+        if (loadedCell) {
+            const observer = new MutationObserver(() => {
+                const anchor = loadedCell.querySelector('a');
+                if (anchor) {
+                    const dataLoadGroupId = anchor.getAttribute('data-loadgroupid');
+                    const dataPlanId = anchor.getAttribute('data-planid');
+                    const dataVrid = anchor.getAttribute('data-vrid');
+                    const dataTrailerId = anchor.getAttribute('data-trailerid');
+
+                    observer.disconnect();
+
+                    const url = `https://www.amazonlogistics.eu/ssp/dock/hrz/ob/fetchdata?
+                                 entity=getOutboundLoadContainerDetails
+                                 &nodeId=${facility}
+                                 &loadGroupId=${dataLoadGroupId}
+                                 &planId=${dataPlanId}
+                                 &vrId=${dataVrid}
+                                 &status=
+                                 &trailerId=${dataTrailerId}
+                                 &trailerNumber=`
+
+                    GM_xmlhttpRequest({
+                        method: 'GET',
+                        url: url.replace(/\s+/g, ''),
+                        onload: function(response) {
+                            const res = JSON.parse(response.responseText);
+
+                            let counter = 0;
+
+                            var children;
+                            if (res.ret.aaData.ROOT_NODE[0].container.contType === "TRAILER") {
+                                children = res.ret.aaData.ROOT_NODE[0].childNodes;
+                            } else {
+                                children = res.ret.aaData.ROOT_NODE;
+                            }
+
+                            const validTypes = ["GAYLORD", "PALLET", "CART"];
+                            children.forEach(child => {
+                                if (validTypes.includes(child.container.contType)) {
+                                    counter++;
+                                }
+                            });
+
+                            const boldText = document.createElement('strong');
+                            boldText.textContent = ` (${counter})`;
+                            loadedCell.parentElement.appendChild(boldText);
+                        },
+                        onerror: function(response) {
+                            console.error(response);
+                        }
+                    });
+                }
+            });
+
+            observer.observe(loadedCell, { childList: true, subtree: true });
+        }
