@@ -465,7 +465,7 @@
 
         // Actual Arrival Time
         const sdt = container.parentElement.querySelector('.trailerNumCol').nextElementSibling.nextElementSibling.nextElementSibling;
-        const url = 'https://www.amazonlogistics.eu.amazon.com/fmc/api/v2/execution/load/' + vrid + '/mapFeature/stops';
+        const url = 'https://www.amazonlogistics.eu/fmc/api/v2/execution/load/' + vrid + '/mapFeature/stops';
         const eventsArray = [];
 
         GM_xmlhttpRequest({
@@ -561,7 +561,7 @@
 
                     observer.disconnect();
 
-                    const url = `https://www.amazonlogistics.eu.amazon.com/ssp/dock/hrz/ob/fetchdata?
+                    const url = `https://www.amazonlogistics.eu/ssp/dock/hrz/ob/fetchdata?
                                  entity=getOutboundLoadContainerDetails
                                  &nodeId=${facility}
                                  &loadGroupId=${dataLoadGroupId}
@@ -720,7 +720,7 @@
     function pauseLoading(vrid) {
         GM_xmlhttpRequest({
             method: "GET",
-            url: "https://www.amazonlogistics.eu.amazon.com/sortcenter/tantei",
+            url: "https://www.amazonlogistics.eu/sortcenter/tantei",
             onload: function (response) {
                 const placeholder = document.createElement('div');
                 placeholder.innerHTML = response.responseText;
@@ -731,7 +731,7 @@
                 poster.variables.queryInput.push({"nodeId": "MXP6", "searchId" : vrid, "searchIdType" : "UNKNOWN"});
                 GM_xmlhttpRequest({
                     method: "POST",
-                    url: "https://www.amazonlogistics.eu.amazon.com/sortcenter/tantei/graphql",
+                    url: "https://www.amazonlogistics.eu/sortcenter/tantei/graphql",
                     data: JSON.stringify(poster),
                     headers: {
                         "Accept" :"*/*",
@@ -750,7 +750,7 @@
                                 if (result) {
                                     GM_xmlhttpRequest({
                                         method: "GET",
-                                        url: "https://www.amazonlogistics.eu.amazon.com/ssp/dock/hrz/ob/fetchdata?entity=setLoadStatusLoadingPaused&nodeId=MXP6&planId=" + loadId + "&vrId=" + vrid,
+                                        url: "https://www.amazonlogistics.eu/ssp/dock/hrz/ob/fetchdata?entity=setLoadStatusLoadingPaused&nodeId=MXP6&planId=" + loadId + "&vrId=" + vrid,
                                         onload: function(response) {}
                                     });
                                     setTimeout(function() {
@@ -768,7 +768,7 @@
     function detachAttach(vrid) {
         GM_xmlhttpRequest({
             method: "GET",
-            url: "https://www.amazonlogistics.eu.amazon.com/sortcenter/tantei",
+            url: "https://www.amazonlogistics.eu/sortcenter/tantei",
             onload: function (response) {
                 const placeholder = document.createElement('div');
                 placeholder.innerHTML = response.responseText;
@@ -779,7 +779,7 @@
                 poster.variables.queryInput.push({"nodeId": "MXP6", "searchId" : vrid, "searchIdType" : "UNKNOWN"});
                 GM_xmlhttpRequest({
                     method: "POST",
-                    url: "https://www.amazonlogistics.eu.amazon.com/sortcenter/tantei/graphql",
+                    url: "https://www.amazonlogistics.eu/sortcenter/tantei/graphql",
                     data: JSON.stringify(poster),
                     headers: {
                         "Accept" :"*/*",
@@ -799,12 +799,12 @@
                                 if (result) {
                                     GM_xmlhttpRequest({
                                         method: "GET",
-                                        url: "https://www.amazonlogistics.eu.amazon.com/ssp/dock/hrz/ob/fetchdata?entity=detachLoadFromTrailer&nodeId=MXP6&planId=" + loadId + "&trailerId=" + trailerId + "&vrId=" + vrid,
+                                        url: "https://www.amazonlogistics.eu/ssp/dock/hrz/ob/fetchdata?entity=detachLoadFromTrailer&nodeId=MXP6&planId=" + loadId + "&trailerId=" + trailerId + "&vrId=" + vrid,
                                         onload: function(response) {
                                             setTimeout(function() {
                                                 GM_xmlhttpRequest({
                                                     method: "GET",
-                                                    url: "https://www.amazonlogistics.eu.amazon.com/ssp/dock/hrz/ob/fetchdata?entity=attachLoadToTrailer&nodeId=MXP6&planId=" + loadId + "&trailerId="+ trailerId + "&resourceType=DOCK_DOOR&domesticLoadAttachFrictionOverridden=false",
+                                                    url: "https://www.amazonlogistics.eu/ssp/dock/hrz/ob/fetchdata?entity=attachLoadToTrailer&nodeId=MXP6&planId=" + loadId + "&trailerId="+ trailerId + "&resourceType=DOCK_DOOR&domesticLoadAttachFrictionOverridden=false",
                                                     onload: function(response) {
                                                         setTimeout(function() {
                                                             document.querySelector("#manualRefresh").click();
@@ -826,7 +826,7 @@
     function acesTarget(vrid) {
         GM_xmlhttpRequest({
             method: "GET",
-            url: "https://www.amazonlogistics.eu.amazon.com/sortcenter/tantei",
+            url: "https://www.amazonlogistics.eu/sortcenter/tantei",
             onload: function (response) {
                 const placeholder = document.createElement('div');
                 placeholder.innerHTML = response.responseText;
@@ -837,7 +837,7 @@
                 poster.variables.queryInput.push({"nodeId": "MXP6", "searchId" : vrid, "searchIdType" : "UNKNOWN"});
                 GM_xmlhttpRequest({
                     method: "POST",
-                    url: "https://www.amazonlogistics.eu.amazon.com/sortcenter/tantei/graphql",
+                    url: "https://www.amazonlogistics.eu/sortcenter/tantei/graphql",
                     data: JSON.stringify(poster),
                     headers: {
                         "Accept" :"*/*",
@@ -855,7 +855,7 @@
                                 var trailerId = lst[k].summary.attachedTrailerId;
                                 GM_xmlhttpRequest({
                                     method: "GET",
-                                    url: "https://www.amazonlogistics.eu.amazon.com/ssp/dock/hrz/ob/fetchdata?entity=getOutboundLoadContainerDetails&nodeId=MXP6&planId=" + loadId + "&vrId=" + vrid + "&status=&trailerId=" + trailerId + "&trailerNumber=",
+                                    url: "https://www.amazonlogistics.eu/ssp/dock/hrz/ob/fetchdata?entity=getOutboundLoadContainerDetails&nodeId=MXP6&planId=" + loadId + "&vrId=" + vrid + "&status=&trailerId=" + trailerId + "&trailerNumber=",
                                     responseType: 'json',
                                     onload: function(response) {
                                         const json = response.response;
@@ -1235,7 +1235,7 @@ selectorTxt,    /* Required: The jQuery selector string that
         windowLoadedCallback();
     }
 
-    const urlRegion = window.location.href.indexOf('www.amazonlogistics.eu') > 0 ? '-eu' : '';
+    const urlRegion = window.location.href.indexOf('trans-logistics-eu') > 0 ? '-eu' : '';
 
     function windowLoadedCallback() {
         const observer = new MutationObserver(elemChangeCallback);
