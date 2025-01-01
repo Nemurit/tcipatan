@@ -39,7 +39,7 @@
 
     function fetchBufferSummary() {
         const endTime = new Date().getTime();
-        const startTime = endTime - 24 * 60 * 60 * 1000;
+        const startTime = endTime - 72 * 60 * 60 * 1000;
 
         const apiUrl = `https://www.amazonlogistics.eu/sortcenter/vista/controller/getContainersDetailByCriteria`;
         const payload = {
