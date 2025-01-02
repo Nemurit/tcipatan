@@ -100,42 +100,47 @@
         });
     }
 
-    // Funzione per processare i containers "Stacked"
-    function processContainers(containers) {
-        containers.forEach(containerGroup => {
-            containerGroup.containerDetails.forEach(container => {
-                const stackingFilter = container.stackingFilter;
-                const location = container.location;
-                const containerId = container.id;
-                const childCount = container.childCount;
+ // Aggiungi una struttura per memorizzare i timestamp delle ultime modifiche
+const lastModificationTimestamps = {};
 
-                // Salva i dati relativi ai contenitori "Stacked"
-                containersStacked.push({
-                    containerId,
-                    stackingFilter,
-                    location,
-                    childCount
-                });
+// Aggiorna la funzione processContainers
+function processContainers(containers) {
+    const currentTime = new Date().getTime();
 
-                // Memorizza stackingFilter dei contenitori "Stacked"
-                stackingFilters[stackingFilter] = stackingFilter;
+    containers.forEach(containerGroup => {
+        containerGroup.containerDetails.forEach(container => {
+            const stackingFilter = container.stackingFilter;
+            const location = container.location;
+            const containerId = container.id;
+            const childCount = container.childCount;
 
-                // Verifica se il childCount è cambiato
-                if (previousChildCounts[containerId] !== undefined && previousChildCounts[containerId] !== childCount) {
-                    // Il childCount è cambiato, quindi nascondi il popup (se visibile)
-                    if (popupVisible) {
-                        closePopup();
-                    }
-                }
-
-                previousChildCounts[containerId] = childCount;  // Salva il nuovo childCount
+            // Salva i dati relativi ai contenitori "Stacked"
+            containersStacked.push({
+                containerId,
+                stackingFilter,
+                location,
+                childCount
             });
+
+            // Memorizza stackingFilter dei contenitori "Stacked"
+            stackingFilters[stackingFilter] = stackingFilter;
+
+            // Verifica se il childCount è cambiato
+            if (previousChildCounts[containerId] !== undefined && previousChildCounts[containerId] !== childCount) {
+                // Il childCount è cambiato, aggiorna il timestamp
+                lastModificationTimestamps[containerId] = currentTime;
+            } else if (lastModificationTimestamps[containerId] === undefined) {
+                // Imposta il timestamp iniziale se non esiste
+                lastModificationTimestamps[containerId] = currentTime;
+            }
+
+            previousChildCounts[containerId] = childCount;  // Salva il nuovo childCount
         });
+    });
 
-        // Filtra e mostra solo i contenitori "Stacked" che hanno stackingFilter che combaciano con quelli dei "Diverted"
-        updateTable();
-    }
-
+    // Filtra e mostra solo i contenitori "Stacked" che hanno stackingFilter che combaciano con quelli dei "Diverted"
+    updateTable();
+}
     // Funzione per processare i containers "Diverted"
     function processDivertedContainers(response) {
         const containers = response[0].containerDetails;
@@ -214,10 +219,17 @@
     showLocationTable();
 }
 
+// Modifica la funzione showLocationTable
 function showLocationTable() {
+    const currentTime = new Date().getTime();
+    const inactiveTimeThreshold = 15 * 60 * 1000; // 15 minuti
+
     const unchangedContainers = containersStacked.filter(container => {
-        return divertedStackingFilters[container.stackingFilter] &&
-            previousChildCounts[container.containerId] === container.childCount;
+        return (
+            divertedStackingFilters[container.stackingFilter] &&
+            previousChildCounts[container.containerId] === container.childCount &&
+            currentTime - lastModificationTimestamps[container.containerId] >= inactiveTimeThreshold
+        );
     });
 
     // Controlla se ci sono contenitori invariabili da visualizzare nel popup
@@ -305,19 +317,11 @@ function showLocationTable() {
 
             // Aggiungi il titolo del popup
             const title = popupDocument.createElement("h3");
-            title.textContent = "Chute innative ";
+            title.textContent = "Chute innative (15 min)";
             popupDocument.body.appendChild(title);
 
             // Crea la tabella
             const table = popupDocument.createElement("table");
-
-            // Crea l'intestazione
-            const thead = popupDocument.createElement("thead");
-            const headerRow = popupDocument.createElement("tr");
-            const headerCell = popupDocument.createElement("th");
-
-            thead.appendChild(headerRow);
-            table.appendChild(thead);
 
             // Crea il corpo della tabella
             const tbody = popupDocument.createElement("tbody");
@@ -340,7 +344,6 @@ function showLocationTable() {
         }
     }
 }
-
 
 
 
