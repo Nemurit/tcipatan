@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    const API_URL = "https://www.amazonlogistics.eu/sortcenter/vista/controller/getContainersDetailByCriteria";
+    const API_URL = "https://trans-logistics-eu.amazon.com/sortcenter/vista/controller/getContainersDetailByCriteria";
     const CHECK_INTERVAL = 15 * 60 * 1000; // 1 minuto
     const previousChildCounts = {};  // Memorizza i contatori di bambini dei contenitori "Stacked"
     const previousLocations = {};  // Memorizza le location precedenti dei contenitori "Stacked"
