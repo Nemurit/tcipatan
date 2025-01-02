@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    const url = 'https://www.amazonlogistics.eu/sortcenter/vista/controller/getContainersDetailByCriteria';
+    const url = 'https://trans-logistics-eu.amazon.com/sortcenter/vista/controller/getContainersDetailByCriteria';
     let previousCptMap = {}; // Memorizziamo lo stato precedente dei dati
     let isFirstFetch = true; // Flag per evitare notifiche al primo caricamento
 
