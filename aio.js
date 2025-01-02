@@ -1081,7 +1081,7 @@ document.title = "Clerk Handover"
     }
 
     // Caso 4: Se col8 contiene "DSSMITH", cambia le note in "Non Inventory"
-  if (col8 && (/DSSMITH/i.test(col8.innerText) || /ZETAC/i.test(col8.innerText))) {
+  if (col8 && (/DSSMITH/i.test(col8.innerText) || /ZETAC/i.test(col8.innerText) || /TransferShipSuCrossDock/i.test(col8.innerText))) {
     note = "Non Inventory"; // Cambia le note in "Non Inventory"
     data.push([location, note, isTractorPresent, true]); // Aggiungi Location e le nuove note, ignorando la col8
 }
