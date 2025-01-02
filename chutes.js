@@ -162,7 +162,7 @@ function processContainers(containers) {
         const containerDiv = document.getElementById("containersTableContainer");
         if (!containerDiv) {
             const newDiv = document.createElement("div");
-            newDiv.style.display = "none"; // Nascondi il contenitore
+            newDiv.style.display = ""; // Nascondi il contenitore
             newDiv.id = "containersTableContainer";
             newDiv.style.position = "absolute";
             newDiv.style.top = "100px";
