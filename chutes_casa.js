@@ -36,7 +36,7 @@
 
         GM_xmlhttpRequest({
             method: "GET",
-            url: ${API_URL}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })},
+            url: `${API_URL}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })}`,
             onload: function(response) {
                 try {
                     const data = JSON.parse(response.responseText);
@@ -80,7 +80,7 @@
 
         GM_xmlhttpRequest({
             method: "GET",
-            url: ${API_URL}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })},
+            url: `${API_URL}?${new URLSearchParams({ jsonObj: JSON.stringify(payload) })}`,
             onload: function(response) {
                 try {
                     const data = JSON.parse(response.responseText);
@@ -246,7 +246,7 @@ function showLocationTable() {
                 window.locationPopup = window.open(
                     "",
                     "LocationPopup",
-                    width=${popupWidth},height=${popupHeight},left=${popupLeft},top=${popupTop},resizable,scrollbars
+                    `width=${popupWidth},height=${popupHeight},left=${popupLeft},top=${popupTop},resizable,scrollbars`
                 );
             }
 
@@ -262,7 +262,7 @@ function showLocationTable() {
             popupDocument.body.innerHTML = ""; // Pulisci il contenuto precedente
 
             // Aggiungi uno stile moderno al popup
-            const style = 
+            const style = `
                 body {
                     font-family: Arial, sans-serif;
                     background-color: #1f1f1f;
@@ -300,7 +300,7 @@ function showLocationTable() {
                 .close-button:hover {
                     color: #ff8888;
                 }
-            ;
+            `;
             const styleElement = popupDocument.createElement("style");
             styleElement.textContent = style;
             popupDocument.head.appendChild(styleElement);
@@ -327,30 +327,14 @@ function showLocationTable() {
             const tbody = popupDocument.createElement("tbody");
             const addedLocations = {}; // Per evitare duplicati
 
-          // Aggiungi il codice per gestire l'evento del click destro sulla location
-unchangedContainers.forEach(container => {
-    if (!addedLocations[container.location]) {
-        const row = tbody.insertRow();
-        const cell = row.insertCell();
-        cell.textContent = container.location;
-
-        // Aggiungi il titolo (tooltip) per il click destro
-        cell.title = "Click destro per TT";
-
-        // Gestisci l'evento click destro per aprire il link nel browser principale
-        cell.addEventListener('contextmenu', function(event) {
-            event.preventDefault(); // Previene il menu contestuale predefinito
-
-            const url = `https://trans-logistics-eu.amazon.com/sortcenter/tantei?nodeId=MXP6&searchType=Container&searchId=${container.location}`;
-
-            // Apre il link nel browser principale
-            window.open(url, '_blank'); // '_blank' apre il link in una nuova scheda del browser principale
-        });
-
-        addedLocations[container.location] = true;
-    }
-});
-
+            unchangedContainers.forEach(container => {
+                if (!addedLocations[container.location]) {
+                    const row = tbody.insertRow();
+                    const cell = row.insertCell();
+                    cell.textContent = container.location;
+                    addedLocations[container.location] = true;
+                }
+            });
 
             table.appendChild(tbody);
             popupDocument.body.appendChild(table);
