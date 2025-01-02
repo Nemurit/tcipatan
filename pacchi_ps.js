@@ -34,7 +34,7 @@
                         const data = JSON.parse(response.responseText);
                         const containers = data?.ret?.getContainersDetailByCriteriaOutput?.containerDetails?.[0]?.containerDetails || [];
                         const filteredContainers = containers.filter(container =>
-                            container.location === "Runner_01" || container.location === "Pacchi Auditor" || container.location === "SLAM STATION-908" || container.location === "SLAM STATION-901" || container.location === "SLAM STATION-905"
+                         container.location === "SLAM STATION-908" || container.location === "SLAM STATION-901" || container.location === "SLAM STATION-905"
                         );
 
                         const cptMap = groupContainersByCpt(filteredContainers);
